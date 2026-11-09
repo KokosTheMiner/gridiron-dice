@@ -400,6 +400,13 @@
   .net-status { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--muted); }
   .net-status .dots { margin: 0; }
   .net-err { color: #ff8a80; font-weight: 600; margin: 10px 0 0; }
+  .diag { text-align: left; font-size: .78rem; line-height: 1.45; margin: 8px 0 0; padding: 10px 12px 10px 28px; border-radius: 12px; background: #0b1017; border: 1px solid #ff8a8055; color: #d9dee6; }
+  .diag li { margin: 3px 0; } .diag code { background: #ffffff14; padding: 0 4px; border-radius: 4px; font-size: .74rem; }
+  .net-test { text-align: left; margin: 12px 0 6px; padding: 10px 12px; border-radius: 12px; background: #0b1017; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+  .nt-row { display: flex; gap: 8px; align-items: flex-start; font-size: .82rem; }
+  .nt-row small { display: block; color: var(--muted); font-size: .74rem; }
+  .nt-verdict { margin: 4px 0 0; font-size: .8rem; font-weight: 600; }
+  .start-box { max-height: calc(100vh - 20px); overflow-y: auto; }
   .net-note { font-size: .75rem; color: var(--muted); margin: 12px 0 0; }
   #netbar { position: fixed; left: 8px; bottom: 8px; z-index: 97; display: flex; gap: 6px; align-items: center; pointer-events: none; font-size: .72rem; font-weight: 700; }
   #netbar[hidden] { display: none; }
@@ -1385,6 +1392,7 @@
     },
     onlineHost: () => onlineHost(),
     onlineJoin: () => onlineJoin(),
+    netTest: () => netTest(),
     inviteCopy: () => inviteCopy(),
     inviteShare: () => inviteShare(),
     onlineCancel: () => { netReset(); state.setup = { ...state.setup, step: "online", err: "", status: "" }; render(); },
@@ -1743,7 +1751,8 @@
         <div class="mode-btns"><button class="mode-btn home" data-action="onlineHost"><b>➕ Spiel erstellen</b><span>Du spielst Heim · Raum-Code an deinen Mitspieler geben</span></button></div>
         <div class="join-box"><b>🔑 Spiel beitreten</b><span>Du spielst Gast</span>
           <div class="join-row"><input id="joinCode" inputmode="numeric" maxlength="7" placeholder="GD-8492" autocomplete="off" value="${s.code && s.step === "online" ? s.code : ""}"><button class="play-btn" data-action="onlineJoin">Beitreten</button></div></div>
-        ${s.err ? `<p class="net-err">⚠️ ${s.err}</p>` : ""}
+        ${s.err ? `<p class="net-err">⚠️ ${s.err}</p>${s.diag || ""}` : ""}
+        ${netTestHTML(s)}
         <p class="net-note">⏱ Shot Clock: ${SHOT_SEC} s pro Entscheidung – sonst entscheidet die KI. Bei Verbindungsabbruch übernimmt die KI das gegnerische Team.</p>
         <div class="center-row"><button class="icon-btn" data-action="setupBack">← Zurück</button></div>
       </div></div>`;
@@ -1754,7 +1763,7 @@
         <h2>${host ? "➕ Spiel erstellt" : "🔑 Spiel beitreten"}</h2>
         ${host ? `<p>Schick deinem Mitspieler die Einladung – oder nenn ihm den Raum-Code:</p><div class="room-code">${s.code}</div>${inviteHTML(s.code)}`
                : `<p>${s.invited ? "📨 Einladung angenommen – " : ""}Raum <b>${s.code}</b></p>`}
-        <p class="net-status"><span class="dots"><i></i><i></i><i></i></span> ${s.status || ""}</p>
+        <p class="net-status"><span class="dots"><i></i><i></i><i></i></span> ${s.status || ""}</p>${s.diag || ""}
         <div class="center-row"><button class="icon-btn" data-action="onlineCancel">Abbrechen</button></div>
       </div></div>`;
     }
@@ -2291,7 +2300,7 @@
   const hostNow = () => Date.now() - (net.role === "guest" ? net.offset : 0);
   const LOCAL_FIELDS = ["kaderView", "focus", "peek", "info", "setup"];         // reine Ansichts-Zustände pro Gerät
   const LOCAL_ACTIONS = new Set(["reset", "setupMode", "setupSide", "setupBack", "setupClose", "layout", "fullscreen", "infoOk", "focus", "peek",
-                                 "sound", "kader", "kaderClose", "periodClose", "onlineHost", "onlineJoin", "onlineCancel", "inviteCopy", "inviteShare"]);
+                                 "sound", "kader", "kaderClose", "periodClose", "onlineHost", "onlineJoin", "onlineCancel", "inviteCopy", "inviteShare", "netTest"]);
   const ACK_ACTIONS = new Set(["evOk", "sumOk", "periodOk"]);                     // brauchen im Online-Duell die Bestätigung beider Spieler
   const netAvailable = () => typeof Peer === "function";
 
@@ -2303,18 +2312,93 @@
     Object.assign(net, { peer: null, conn: null, role: null, code: null, fx: [], sendQ: false, shotKey: null, shotTimer: null, started: false, cardsSent: false, cardsRef: null });
   }
   function netLeave() { if (!net.role) return; netSend({ t: "bye" }); setTimeout(netReset, 150); net.role = null; }
-  function setupErr(msg) { state.setup = { ...(state.setup || {}), step: "online", err: msg, status: "" }; render(); }
+  function setupErr(msg, diag = "") { state.setup = { ...(state.setup || {}), step: "online", err: msg, diag, status: "" }; render(); }
+
+  // ---------- Verbindungsaufbau: Server & Diagnose ----------
+  // STUN-Server: ermitteln die öffentliche Adresse für die Direktverbindung (kostenlos, ohne Konto).
+  // TURN-Server: leiten die Daten weiter, wenn eine Direktverbindung blockiert ist (z. B. gleiches WLAN + Router ohne
+  // „Hairpinning“, strenge Firewalls, Mobilfunk-NAT). Die früheren freien TURN-Server (PeerJS, Open Relay) sind abgeschaltet –
+  // eigene Zugangsdaten hier eintragen, z. B. vom kostenlosen Kontingent bei metered.ca:
+  //   { urls: ["turn:global.relay.metered.ca:80", "turn:global.relay.metered.ca:443?transport=tcp"], username: "…", credential: "…" }
+  const TURN_SERVERS = [];
+  const ICE_SERVERS = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }, { urls: "stun:stun.cloudflare.com:3478" }, ...TURN_SERVERS];
+  const PEER_OPTS = { config: { iceServers: ICE_SERVERS, sdpSemantics: "unified-plan" } };
+  const CONNECT_TIMEOUT = 20000, SIGNAL_TIMEOUT = 12000;
+  // Tipps, wenn die Direktverbindung nicht zustande kommt
+  const DIAG_TIPS = `<ul class="diag">
+      <li><b>Brave-Browser:</b> <code>brave://settings/privacy</code> → „WebRTC IP handling policy“ auf <b>„Default“</b> stellen und für die Spielseite die <b>Shields</b> (Löwe) ausschalten.</li>
+      <li><b>Gleiches WLAN:</b> manche Router lassen Geräte im eigenen Netz nicht über die Internet-Adresse zueinander. Test: <b>Handy ins Mobilfunknetz</b> (WLAN aus).</li>
+      <li><b>Anderer Browser:</b> Chrome, Edge oder Safari ausprobieren – VPN-/Datenschutz-Erweiterungen blockieren WebRTC oft.</li>
+      <li><b>Firmen-, Schul- oder Hotel-WLAN:</b> blockieren Direktverbindungen häufig – dann hilft nur ein TURN-Server${TURN_SERVERS.length ? "" : " (im Code bei <code>TURN_SERVERS</code> eintragbar, aktuell keiner eingerichtet)"}.</li>
+      <li>„🔍 Verbindungstest“ im Online-Menü zeigt, was dein Gerät erreichen kann.</li></ul>`;
+  // Welche Wege hat das eigene Gerät gefunden? (host = lokales Netz, srflx = Internet-Adresse via STUN, relay = TURN)
+  function watchCandidates(conn) {
+    const types = new Set();
+    const hook = () => { const pc = conn.peerConnection; if (!pc) return setTimeout(hook, 50); pc.addEventListener("icecandidate", e => { if (e.candidate) types.add(e.candidate.type); }); };
+    hook();
+    return types;
+  }
+  function diagSummary(conn, types) {
+    const pc = conn && conn.peerConnection, ice = pc ? pc.iceConnectionState : "–";
+    const t = [...types];
+    return `<p class="net-note">Technische Details: ICE-Status <b>${ice}</b> · gefundene Wege: <b>${t.length ? t.join(", ") : "keine"}</b>${t.includes("relay") ? "" : " · kein TURN-Weg"}${!t.includes("host") ? " · lokale Adresse verborgen (Datenschutz-Einstellung des Browsers?)" : ""}</p>`;
+  }
   function wireConn(conn) {
     net.conn = conn; net.lastSeen = Date.now();
-    conn.on("data", m => { net.lastSeen = Date.now(); onNetData(m); });
-    conn.on("close", () => netLost("Die Verbindung wurde getrennt"));
-    conn.on("error", () => netLost("Verbindungsfehler"));
+    conn.on("data", m => { if (net.conn !== conn) return; net.lastSeen = Date.now(); onNetData(m); });
+    conn.on("close", () => { if (net.conn === conn) netLost("Die Verbindung wurde getrennt"); });
+    conn.on("error", () => { if (net.conn === conn) netLost("Verbindungsfehler"); });
     clearInterval(net.hb);
     net.hb = setInterval(() => {   // Herzschlag: erkennt auch stille Abbrüche (Handy gesperrt, WLAN weg)
       netSend({ t: "ping" });
       if (net.started && Date.now() - net.lastSeen > 12000) netLost("Dein Mitspieler antwortet nicht mehr");
     }, 3000);
   }
+  // ---------- Verbindungstest (Online-Menü) ----------
+  async function probeIce(ms) {
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS }), types = new Set();
+    pc.createDataChannel("test");
+    pc.onicecandidate = e => { if (e.candidate) types.add(e.candidate.type); };
+    try { await pc.setLocalDescription(await pc.createOffer()); await new Promise(r => setTimeout(r, ms)); } catch (e) {}
+    pc.close(); return types;
+  }
+  function probeSignal() {
+    return new Promise(res => {
+      if (!netAvailable()) return res(false);
+      let p; try { p = new Peer(PEER_OPTS); } catch (e) { return res(false); }
+      const done = ok => { clearTimeout(t); try { p.destroy(); } catch (e) {} res(ok); };
+      const t = setTimeout(() => done(false), 8000);
+      p.on("open", () => done(true)); p.on("error", () => done(false));
+    });
+  }
+  async function netTest() {
+    if (!state.setup || (state.setup.test && state.setup.test.running)) return;
+    const inp = $("joinCode"); if (inp && inp.value) state.setup.code = inp.value;   // getippten Code behalten
+    state.setup.test = { running: true, rows: [] }; render();
+    const rows = [], add = (ok, label, hint = "") => rows.push({ ok, label, hint });
+    if (typeof RTCPeerConnection === "undefined") add(false, "WebRTC im Browser", "vom Browser oder einer Erweiterung blockiert – kein Online-Duell möglich");
+    else {
+      add(true, "WebRTC im Browser");
+      const [sig, types] = await Promise.all([probeSignal(), probeIce(5000)]);
+      add(sig, "Vermittlungs-Server (Raum-Codes)", sig ? "" : "nicht erreichbar – Internet prüfen, Blocker (z. B. Brave Shields) für die Seite ausschalten");
+      add(types.has("host"), "Adresse im eigenen Netz", types.has("host") ? "" : "verborgen – Datenschutz-Einstellung des Browsers (Brave: „WebRTC IP handling policy“ auf „Default“)");
+      add(types.has("srflx"), "Internet-Adresse (STUN)", types.has("srflx") ? "" : "nicht ermittelbar – UDP wird blockiert (Firewall/VPN); Verbindungen über das Internet scheitern dann");
+      add(TURN_SERVERS.length ? types.has("relay") : null, "Weiterleitung (TURN)", TURN_SERVERS.length ? (types.has("relay") ? "" : "eingetragener TURN-Server nicht erreichbar") : "nicht eingerichtet – nur nötig, wenn Direktverbindungen blockiert sind");
+    }
+    if (state.setup) { state.setup.test = { running: false, rows }; render(); }
+  }
+  function netTestHTML(s) {
+    const t = s.test;
+    const btn = `<div class="center-row"><button class="icon-btn" data-action="netTest" ${t && t.running ? "disabled" : ""}>🔍 ${t && t.running ? "Teste Verbindung …" : t ? "Verbindungstest wiederholen" : "Verbindungstest"}</button></div>`;
+    if (!t || t.running) return btn;
+    const bad = t.rows.filter(r => r.ok === false);
+    const verdict = !bad.length ? "✅ Dein Gerät ist bereit. Klappt es trotzdem nicht, liegt es am anderen Gerät oder am gemeinsamen Netz – dort ebenfalls testen."
+      : bad.some(r => /WebRTC|Vermittlung/.test(r.label)) ? "❌ Von diesem Gerät aus ist kein Online-Duell möglich – siehe Hinweise."
+      : "⚠️ Eingeschränkt: Verbindungen können scheitern – siehe Hinweise.";
+    return `<div class="net-test">${t.rows.map(r => `<div class="nt-row"><span>${r.ok === true ? "✅" : r.ok === false ? "❌" : "➖"}</span><div><b>${r.label}</b>${r.hint ? `<small>${r.hint}</small>` : ""}</div></div>`).join("")}
+      <p class="nt-verdict">${verdict}</p></div>${btn}`;
+  }
+
   // „Spiel erstellen“: Raum-Code GD-1234, Host spielt Heim
   function onlineHost() {
     if (!netAvailable()) return setupErr("PeerJS konnte nicht geladen werden – bitte Internetverbindung prüfen und neu laden.");
@@ -2322,17 +2406,32 @@
     const code = "GD-" + (1000 + Math.floor(Math.random() * 9000));
     Object.assign(net, { role: "host", me: 0, code });
     state.setup = { step: "hosting", code, status: "Verbinde mit dem Vermittlungs-Server …" }; render();
-    const peer = net.peer = new Peer(PEER_PREFIX + code);
-    peer.on("open", () => { if (state.setup && state.setup.step === "hosting") { state.setup.status = "Warte auf Mitspieler …"; render(); } });
+    const peer = net.peer = new Peer(PEER_PREFIX + code, PEER_OPTS);
+    const hostStatus = (txt, diag = "") => { if (net.peer === peer && state.setup && state.setup.step === "hosting") { state.setup.status = txt; state.setup.diag = diag; render(); } };
+    const sigTimer = setTimeout(() => { if (net.peer === peer && !peer.open) { netReset(); setupErr("Der Vermittlungs-Server ist nicht erreichbar.", `<p class="net-note">Internetverbindung prüfen. Werbe- oder Tracking-Blocker (auch Brave Shields) können <b>0.peerjs.com</b> blockieren.</p>`); } }, SIGNAL_TIMEOUT);
+    peer.on("open", () => { clearTimeout(sigTimer); hostStatus("Warte auf Mitspieler …"); });
     peer.on("connection", conn => {
-      if (net.conn) { conn.on("open", () => { conn.send({ t: "full" }); setTimeout(() => conn.close(), 300); }); return; }   // nur ein Gast
+      if (net.conn && net.conn.open) { conn.on("open", () => { conn.send({ t: "full" }); setTimeout(() => conn.close(), 300); }); return; }   // nur ein Gast
+      if (net.conn) { const old = net.conn; net.conn = null; try { old.close(); } catch (e) {} }   // hängender Versuch → durch neuen ersetzen
       wireConn(conn);
-      conn.on("open", startOnlineGame);
+      const types = watchCandidates(conn);
+      hostStatus("Mitspieler gefunden – baue Direktverbindung auf …");
+      const t = setTimeout(() => {
+        if (net.conn !== conn || conn.open) return;
+        const diag = diagSummary(conn, types);
+        net.conn = null; clearInterval(net.hb); try { conn.close(); } catch (e) {}
+        hostStatus("⚠️ Dein Mitspieler hat den Raum gefunden, aber die Direktverbindung ist blockiert. Ihr könnt es nach den Tipps einfach erneut versuchen – der Raum bleibt offen.", DIAG_TIPS + diag);
+      }, CONNECT_TIMEOUT);
+      conn.on("open", () => { clearTimeout(t); startOnlineGame(); });
     });
     peer.on("error", err => {
       if (err.type === "unavailable-id") return onlineHost();                 // Code schon vergeben → neuer Code
       if (net.started) return;                                                // Fehler im laufenden Spiel → Herzschlag/close regeln das
-      netReset(); setupErr("Netzwerkfehler (" + err.type + ") – bitte erneut versuchen.");
+      if (["network", "server-error", "socket-error", "socket-closed"].includes(err.type) || !peer.open) {
+        clearTimeout(sigTimer); netReset();
+        return setupErr("Verbindung zum Vermittlungs-Server fehlgeschlagen (" + err.type + ").", `<p class="net-note">Internetverbindung prüfen und erneut versuchen. Blocker wie Brave Shields können den Server sperren.</p>`);
+      }
+      hostStatus("Ein Verbindungsversuch ist fehlgeschlagen (" + err.type + ") – warte auf neuen Versuch …", DIAG_TIPS);
     });
   }
   // „Spiel beitreten“: Gast spielt Gast
@@ -2343,17 +2442,32 @@
     netReset();
     const code = "GD-" + raw;
     Object.assign(net, { role: "guest", me: 1, code });
-    state.setup = { step: "joining", code, status: "Verbinde …" }; render();
-    const peer = net.peer = new Peer();
+    state.setup = { step: "joining", code, status: "Verbinde mit dem Vermittlungs-Server …" }; render();
+    if (typeof RTCPeerConnection === "undefined") { netReset(); return setupErr("Dein Browser blockiert WebRTC – damit ist kein Online-Duell möglich.", DIAG_TIPS); }
+    const peer = net.peer = new Peer(PEER_OPTS);
+    const joinStatus = txt => { if (net.peer === peer && state.setup && state.setup.step === "joining") { state.setup.status = txt; render(); } };
+    let timer = setTimeout(() => { if (net.peer === peer && !peer.open) { netReset(); setupErr("Der Vermittlungs-Server ist nicht erreichbar.", `<p class="net-note">Internetverbindung prüfen. Werbe- oder Tracking-Blocker (auch Brave Shields) können <b>0.peerjs.com</b> blockieren.</p>`); } }, SIGNAL_TIMEOUT);
     peer.on("open", () => {
+      clearTimeout(timer);
+      joinStatus(`Suche Raum ${code} …`);
       // Standard-Serialisierung „binary“: PeerJS teilt große Spielstände automatisch in Pakete (JSON wäre auf ~16 KB begrenzt)
       const conn = peer.connect(PEER_PREFIX + code, { reliable: true });
       wireConn(conn);
-      conn.on("open", () => { if (state.setup) { state.setup.status = "Verbunden – das Spiel startet …"; render(); } netSend({ t: "hello" }); });
+      const types = watchCandidates(conn);
+      setTimeout(() => { if (net.conn === conn && !conn.open) joinStatus("Raum gefunden – baue Direktverbindung auf …"); }, 1500);
+      timer = setTimeout(() => {
+        if (net.conn !== conn || conn.open || net.started) return;
+        const diag = diagSummary(conn, types);
+        netReset();
+        setupErr(`Raum ${code} gefunden, aber die Direktverbindung zwischen euren Geräten kommt nicht zustande.`, DIAG_TIPS + diag);
+      }, CONNECT_TIMEOUT);
+      conn.on("open", () => { clearTimeout(timer); joinStatus("Verbunden – das Spiel startet …"); netSend({ t: "hello" }); });
     });
     peer.on("error", err => {
       if (net.started) return;
-      netReset(); setupErr(err.type === "peer-unavailable" ? `Raum ${code} wurde nicht gefunden.` : "Netzwerkfehler (" + err.type + ") – bitte erneut versuchen.");
+      clearTimeout(timer); netReset();
+      if (err.type === "peer-unavailable") return setupErr(`Raum ${code} wurde nicht gefunden.`, `<p class="net-note">Stimmt der Code? Ist das Spiel beim Ersteller noch geöffnet (Fenster „Spiel erstellt“)? Ein Raum gilt nur, solange dieses Fenster offen ist.</p>`);
+      setupErr("Netzwerkfehler (" + err.type + ") – bitte erneut versuchen.", DIAG_TIPS);
     });
   }
   function startOnlineGame() {
@@ -2460,6 +2574,12 @@
   function netLost(reason) {
     if (!net.role) return;
     const started = net.started, role = net.role;
+    // Host vor Spielbeginn: abgebrochener Versuch des Gasts → Raum bleibt offen für einen neuen Versuch
+    if (!started && role === "host" && net.peer && !net.peer.destroyed) {
+      net.conn = null; clearInterval(net.hb);
+      if (state.setup && state.setup.step === "hosting") { state.setup.status = "Verbindungsversuch abgebrochen – warte auf neuen Versuch …"; render(); }
+      return;
+    }
     netReset();
     if (!started || !isOnline()) { if (state.setup && ["hosting", "joining"].includes(state.setup.step)) setupErr(reason + "."); return; }
     const opp = 1 - net.me;
