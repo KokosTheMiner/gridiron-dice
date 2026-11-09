@@ -2320,7 +2320,13 @@
   // „Hairpinning“, strenge Firewalls, Mobilfunk-NAT). Die früheren freien TURN-Server (PeerJS, Open Relay) sind abgeschaltet –
   // eigene Zugangsdaten hier eintragen, z. B. vom kostenlosen Kontingent bei metered.ca:
   //   { urls: ["turn:global.relay.metered.ca:80", "turn:global.relay.metered.ca:443?transport=tcp"], username: "…", credential: "…" }
-  const TURN_SERVERS = [];
+  // Metered „Free Trial · Global“ (500 MB/Monat, stoppt am Limit, nie kostenpflichtig) – App „kokos-gridiron“
+  const TURN_USER = "e0c956594fdd26bf6fcc5484", TURN_PASS = "IjEfSaC3I7188JyC";
+  const TURN_SERVERS = [
+    { urls: "stun:stun.relay.metered.ca:80" },
+    { urls: ["turn:global.relay.metered.ca:80", "turn:global.relay.metered.ca:80?transport=tcp",
+             "turn:global.relay.metered.ca:443", "turns:global.relay.metered.ca:443?transport=tcp"], username: TURN_USER, credential: TURN_PASS },
+  ];
   const ICE_SERVERS = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }, { urls: "stun:stun.cloudflare.com:3478" }, ...TURN_SERVERS];
   const PEER_OPTS = { config: { iceServers: ICE_SERVERS, sdpSemantics: "unified-plan" } };
   const CONNECT_TIMEOUT = 20000, SIGNAL_TIMEOUT = 12000;
