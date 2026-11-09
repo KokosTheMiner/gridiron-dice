@@ -191,6 +191,11 @@ td.ptsc{font-size:28px;color:var(--yellow);text-shadow:0 0 6px rgba(255,212,0,.6
 .gcell .gr .w{color:var(--lime)}
 .chip{border-radius:4px}
 .fillv{color:var(--cyan);font-style:italic}
+.card label{display:block;color:var(--cyan);margin:10px 0 4px}
+.adm-pl{display:flex;flex-direction:column;gap:6px}
+.adm-row{display:flex;gap:8px;align-items:center;background:rgba(0,0,0,.25);padding:6px 8px;border-radius:6px}
+.adm-row span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adm-row .rbtn{font-size:8px;padding:7px 8px;min-height:32px;border-radius:5px}
 .th-team{display:flex;flex-direction:column;align-items:center;gap:2px}
 .th-team img{width:22px;height:22px}
 .th-res{font:18px var(--txt);color:var(--white)} .th-res .w{color:var(--lime)}
@@ -319,7 +324,12 @@ function tvFor(ev, key) {
   return [{n:"Sky", sure:false}];
 }
 const tvClass = n => /^rtl\s*\+|rtl\+/i.test(n) ? "tv-rtlp" : /^rtl/i.test(n) ? "tv-rtl" : /nitro/i.test(n) ? "tv-nitro" : /sky|wow/i.test(n) ? "tv-sky" : /dazn|game ?pass/i.test(n) ? "tv-gp" : "tv-x";
-const isAdmin = () => localStorage.getItem("tip-admin") === "1";
+/* ---------------- Admin ----------------
+   Admin-PIN (gehasht) liegt in tippspiel/<Gruppe>/admin/pin. Wer zuerst eine PIN festlegt, ist Admin. */
+const GROUP_BASE = () => `tippspiel/${CONFIG.GROUP}`;
+const adminHash = pin => hash(`admin:${CONFIG.GROUP}:${pin}`);
+const adminIn = () => !!S.adminPin && localStorage.getItem("tip-adm") === S.adminPin;
+const isAdmin = () => adminIn() && localStorage.getItem("tip-admin") === "1";   // ✎-Knopf bei den Spielen
 
 /* ===================================================================== */
 const $ = s => document.querySelector(s);
@@ -344,32 +354,32 @@ const S = {
 const DB = {
   remote: () => !!dbUrl,
   root: () => `tippspiel/${CONFIG.GROUP}/${S.season}`,
-  async get(path) {
+  async get(path, base = this.root()) {
     if (this.remote()) {
-      const r = await fetch(`${dbUrl}/${this.root()}/${path}.json`);
+      const r = await fetch(`${dbUrl}/${base}/${path}.json`);
       if (!r.ok) throw new Error("Datenbank-Fehler " + r.status);
       return await r.json();
     }
     let o = JSON.parse(localStorage.getItem("tip-local") || "{}");
-    for (const p of `${this.root()}/${path}`.split("/")) o = o?.[p];
+    for (const p of `${base}/${path}`.split("/")) o = o?.[p];
     return o ?? null;
   },
-  async keys(path) {
+  async keys(path, base = this.root()) {
     if (this.remote()) {
-      const r = await fetch(`${dbUrl}/${this.root()}/${path}.json?shallow=true`);
+      const r = await fetch(`${dbUrl}/${base}/${path}.json?shallow=true`);
       if (!r.ok) throw new Error("Datenbank-Fehler " + r.status);
       return Object.keys((await r.json()) || {});
     }
-    return Object.keys((await this.get(path)) || {});
+    return Object.keys((await this.get(path, base)) || {});
   },
-  async put(path, val) {
+  async put(path, val, base = this.root()) {
     if (this.remote()) {
-      const r = await fetch(`${dbUrl}/${this.root()}/${path}.json`, {method:"PUT", body:JSON.stringify(val)});
+      const r = await fetch(`${dbUrl}/${base}/${path}.json`, {method:"PUT", body:JSON.stringify(val)});
       if (!r.ok) throw new Error("Datenbank-Fehler " + r.status);
       return await r.json();
     }
     const all = JSON.parse(localStorage.getItem("tip-local") || "{}");
-    const parts = `${this.root()}/${path}`.split("/");
+    const parts = `${base}/${path}`.split("/");
     let o = all;
     for (const p of parts.slice(0, -1)) o = (o[p] ??= {});
     const json = JSON.stringify(val).replace(/\{"\.sv":"timestamp"\}/g, Date.now());
@@ -907,13 +917,80 @@ function renderSetup() {
     <li>Mit <b>?</b> = der Sender zeigt nur eines der Spiele dieses Slots. Welches, steht kurz vorher im <a href="https://dasprogramm.de/sport/nfl/sendetermine/" target="_blank" rel="noopener">RTL-Programm</a>.</li>
     <li>Alle Spiele live: NFL Game Pass (bei DAZN).</li>
   </ul><p class="muted">Ohne Gewähr – die Sender werden nach Anstoßzeit ermittelt.</p></div>
-  <div class="panel card"><details><summary><b>⚙ Für den Admin</b></summary>
-    <label style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="admTv" style="width:auto" ${isAdmin() ? "checked" : ""}> TV-Sender bei den Spielen selbst eintragen (✎-Knopf)</label>
-    <p>Aktuell: <b>${DB.remote() ? "Online-Datenbank (Firebase)" : "Lokaler Testmodus – nur dieser Browser"}</b></p>
-    <div class="row"><input id="dbIn" placeholder="https://xxxx-default-rtdb.europe-west1.firebasedatabase.app" value="${esc(dbUrl)}"></div>
-    <div class="row"><button class="rbtn y" id="dbSave">Speichern & testen</button><button class="rbtn g" id="dbLocal">Testmodus</button></div>
-  </details></div>`;
+  ${adminCard()}`;
+  if ($("#shareBtn")) $("#shareBtn").onclick = () => { navigator.clipboard?.writeText($("#shareIn").value); $("#shareIn").select(); toast("Link kopiert"); };
+  bindAdmin();
+}
+
+function adminCard() {
+  if (!S.adminPin) return `<div class="panel card"><details><summary><b>⚙ Admin einrichten</b></summary>
+    <p class="muted">Noch kein Admin festgelegt. Wer hier zuerst eine Admin-PIN festlegt, ist Admin.</p>
+    <label>Admin-PIN (mind. 6 Zeichen)</label><input id="adP1" type="password" autocomplete="new-password">
+    <label>PIN wiederholen</label><input id="adP2" type="password" autocomplete="new-password">
+    <div class="row"><button class="rbtn y" id="adSet">Admin-PIN festlegen</button></div></details></div>`;
+  if (!adminIn()) return `<div class="panel card"><details><summary><b>🔑 Admin-Login</b></summary>
+    <label>Admin-PIN</label><input id="adPin" type="password" autocomplete="current-password">
+    <div class="row"><button class="rbtn y" id="adLogin">Als Admin anmelden</button></div></details></div>`;
+  const pl = Object.entries(S.players).sort((a, b) => a[1].name.localeCompare(b[1].name));
+  return `<div class="panel card"><h3>⚙ Admin-Bereich</h3>
+    <label style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="admTv" style="width:auto" ${isAdmin() ? "checked" : ""}> TV-Sender bei den Spielen selbst eintragen (✎-Knopf)</label>
+    <h3 style="margin-top:16px">👥 Spieler (${pl.length})</h3>
+    ${pl.length ? `<div class="adm-pl">${pl.map(([id, p]) => `<div class="adm-row"><span>${esc(p.name)}</span>
+      <button class="rbtn c" data-pin="${id}">PIN neu</button><button class="rbtn r" data-del="${id}">Löschen</button></div>`).join("")}</div>` : `<p class="muted">Noch keine Spieler.</p>`}
+    <details style="margin-top:16px"><summary><b>Datenbank</b></summary>
+      <p>Aktuell: <b>${DB.remote() ? "Online-Datenbank (Firebase)" : "Lokaler Testmodus – nur dieser Browser"}</b></p>
+      <div class="row"><input id="dbIn" placeholder="https://xxxx-default-rtdb.europe-west1.firebasedatabase.app" value="${esc(dbUrl)}"></div>
+      <div class="row"><button class="rbtn y" id="dbSave">Speichern & testen</button><button class="rbtn g" id="dbLocal">Testmodus</button></div>
+    </details>
+    <div class="row" style="margin-top:16px"><button class="rbtn g" id="adChg">Admin-PIN ändern</button><button class="rbtn r" id="adOut">Admin abmelden</button></div>
+  </div>`;
+}
+
+function bindAdmin() {
+  const on = (sel, fn) => { const el = $(sel); if (el) el.onclick = fn; };
+  on("#adSet", async () => {
+    const a = $("#adP1").value, b = $("#adP2").value;
+    if (a.length < 6) return toast("PIN zu kurz (mind. 6 Zeichen)");
+    if (a !== b) return toast("PINs stimmen nicht überein");
+    const h = await adminHash(a);
+    try {
+      if (await DB.get("admin/pin", GROUP_BASE())) { toast("Es gibt schon einen Admin"); await reloadData(); return render(); }
+      await DB.put("admin/pin", h, GROUP_BASE());
+    } catch (e) { return toast("Fehler: " + e.message); }
+    S.adminPin = h; localStorage.setItem("tip-adm", h); toast("Du bist jetzt Admin ✓"); render();
+  });
+  on("#adLogin", async () => {
+    const h = await adminHash($("#adPin").value);
+    if (h !== S.adminPin) return toast("Falsche Admin-PIN");
+    localStorage.setItem("tip-adm", h); toast("Admin angemeldet ✓"); render();
+  });
+  if (!adminIn()) return;
   $("#admTv").onchange = e => { localStorage.setItem("tip-admin", e.target.checked ? "1" : "0"); toast(e.target.checked ? "✎ Sender-Eingabe an" : "Sender-Eingabe aus"); };
+  on("#adOut", () => { localStorage.removeItem("tip-adm"); localStorage.removeItem("tip-admin"); toast("Admin abgemeldet"); render(); });
+  on("#adChg", async () => {
+    const a = prompt("Neue Admin-PIN (mind. 6 Zeichen):");
+    if (a === null) return;
+    if (a.length < 6) return toast("PIN zu kurz");
+    const h = await adminHash(a);
+    try { await DB.put("admin/pin", h, GROUP_BASE()); } catch (e) { return toast("Fehler: " + e.message); }
+    S.adminPin = h; localStorage.setItem("tip-adm", h); toast("Admin-PIN geändert ✓");
+  });
+  document.querySelectorAll("[data-pin]").forEach(b => b.onclick = async () => {
+    const id = b.dataset.pin, p = S.players[id];
+    const pin = prompt(`Neue PIN für ${p.name} (mind. 4 Zeichen):`);
+    if (pin === null) return;
+    if (pin.length < 4) return toast("PIN zu kurz");
+    try { await DB.put(`players/${id}/pin`, await hash(id + pin)); } catch (e) { return toast("Fehler: " + e.message); }
+    p.pin = await hash(id + pin); toast(`Neue PIN für ${p.name} gespeichert`);
+  });
+  document.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
+    const id = b.dataset.del, p = S.players[id];
+    if (!confirm(`${p.name} wirklich löschen?\nDer Spieler verschwindet aus allen Tabellen. Das kann nicht rückgängig gemacht werden.`)) return;
+    try { await DB.put(`players/${id}`, null); } catch (e) { return toast("Fehler: " + e.message); }
+    delete S.players[id];
+    if (S.me === id) setMe(null);
+    toast(`${p.name} gelöscht`); render();
+  });
   $("#dbSave").onclick = async () => {
     const u = $("#dbIn").value.trim().replace(/\/+$/, "");
     if (!/^https:\/\/.+/.test(u)) return toast("Bitte gültige https-URL eingeben");
@@ -924,7 +1001,6 @@ function renderSetup() {
     dbUrl = u; localStorage.setItem("tip-db", u); toast("Datenbank verbunden ✓"); await reloadData(); updateHeader(); render();
   };
   $("#dbLocal").onclick = async () => { dbUrl = ""; localStorage.removeItem("tip-db"); toast("Lokaler Testmodus"); await reloadData(); updateHeader(); render(); };
-  if ($("#shareBtn")) $("#shareBtn").onclick = () => { navigator.clipboard?.writeText($("#shareIn").value); $("#shareIn").select(); toast("Link kopiert"); };
 }
 
 function render() {
@@ -937,8 +1013,8 @@ document.querySelectorAll("nav .rbtn").forEach(b => b.onclick = () => { S.tab = 
 
 /* ---------------- Laden ---------------- */
 async function reloadData() {
-  const [players, tips, tv, tipKeys] = await Promise.all([DB.get("players"), DB.get(`tips/${S.key}`), DB.get(`tv/${S.key}`).catch(() => null), DB.keys("tips").catch(() => [])]);
-  S.players = players || {}; S.tips = tips || {}; S.tv = tv || {};
+  const [players, tips, tv, tipKeys, adminPin] = await Promise.all([DB.get("players"), DB.get(`tips/${S.key}`), DB.get(`tv/${S.key}`).catch(() => null), DB.keys("tips").catch(() => []), DB.get("admin/pin", GROUP_BASE()).catch(() => null)]);
+  S.players = players || {}; S.tips = tips || {}; S.tv = tv || {}; S.adminPin = adminPin || null;
   S.firstKey = tipKeys.sort((a, b) => weekOrder(a) - weekOrder(b))[0] || null;
   if (S.me && !S.players[S.me]) { S.me = null; localStorage.removeItem("tip-me"); }
   if (!S.dirty) resetDraft();
