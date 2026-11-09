@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NFL Tippspiel</title>
+<style>
+:root{
+  --bg:#0d1420; --panel:#162131; --panel2:#1d2b40; --line:#2a3b55; --text:#e8eef7; --muted:#8fa3bf;
+  --accent:#3b82f6; --green:#22c55e; --red:#ef4444; --gold:#f5b301; --half:#a78bfa;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+input,select{font:inherit;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
+header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(90deg,#013369,#0d1420 70%);border-bottom:2px solid #d50a0a;position:sticky;top:0;z-index:5}
+header h1{font-size:19px;margin:0;flex:1;white-space:nowrap}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;white-space:nowrap}
+.chip.warn{border-color:var(--gold);color:var(--gold)}
+nav{display:flex;gap:4px;padding:8px 16px 0;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto}
+nav button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;color:var(--muted);font-weight:600;white-space:nowrap}
+nav button.on{color:var(--text);border-color:var(--accent)}
+main{max-width:1100px;margin:0 auto;padding:16px 16px 100px}
+.weekbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.weekbar select{width:auto;min-width:170px}
+.weekbar .nb{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+.info{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.info b{color:var(--text)} .info span{color:var(--muted)}
+.lock-open{color:var(--green)!important} .lock-closed{color:var(--red)!important}
+.day{margin:18px 0 8px;color:var(--muted);font-weight:700;text-transform:uppercase;font-size:12px;letter-spacing:.06em}
+.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+.game{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+.game.dbl{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+.game.half{border-color:var(--half);box-shadow:0 0 0 1px var(--half) inset}
+.ghead{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:8px}
+.live{color:var(--red);font-weight:700}
+.teams{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:stretch}
+.at{align-self:center;color:var(--muted);font-size:12px}
+.team{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 6px;background:var(--panel2);border:2px solid transparent;border-radius:10px;position:relative;min-height:112px}
+.team:disabled{cursor:default}
+.team img{width:42px;height:42px}
+.team b{font-size:16px}
+.team small{color:var(--muted);font-size:11px;text-align:center}
+.team .score{font-size:22px;font-weight:800;margin-top:2px}
+.team.sel{border-color:var(--accent);background:#1e3a66}
+.team.won .score{color:var(--green)}
+.team.sel.right{border-color:var(--green);background:#14432a}
+.team.sel.wrong{border-color:var(--red);background:#4a1c1c}
+.team .mark{position:absolute;top:4px;right:6px;font-weight:800}
+.odds{margin-top:8px;font-size:12px;color:var(--muted)}
+.bar{display:flex;height:18px;border-radius:5px;overflow:hidden;margin-bottom:4px;font-size:11px;font-weight:700}
+.bar span{display:flex;align-items:center;padding:0 6px;white-space:nowrap;overflow:hidden}
+.bar .a{background:#33507a;justify-content:flex-start}
+.bar .h{background:#24364f;justify-content:flex-end;flex:1}
+.fav{color:var(--gold)}
+.mods{display:flex;gap:6px;margin-top:10px;align-items:center}
+.mod{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:13px;color:var(--muted)}
+.mod:disabled{opacity:.45;cursor:default}
+.mod.on.d{background:var(--gold);color:#111;border-color:var(--gold);opacity:1}
+.mod.on.h{background:var(--half);color:#111;border-color:var(--half);opacity:1}
+.pts{margin-left:auto;font-weight:800}
+.pts.g{color:var(--green)} .pts.r{color:var(--red)}
+.savebar{position:fixed;left:0;right:0;bottom:0;background:rgba(13,20,32,.96);border-top:1px solid var(--line);padding:10px 16px;display:flex;justify-content:center;gap:12px;align-items:center;z-index:6}
+.btn{background:var(--accent);border:0;border-radius:10px;padding:11px 20px;font-weight:700;color:#fff}
+.btn.sec{background:var(--panel2);border:1px solid var(--line)}
+.btn.danger{background:var(--red)}
+.btn:disabled{opacity:.5;cursor:default}
+.tbl-wrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+th{color:var(--muted);font-size:12px;font-weight:600;background:var(--panel2);position:sticky;top:0}
+td.l,th.l{text-align:left;position:sticky;left:0;background:var(--panel);z-index:1}
+th.l{background:var(--panel2);z-index:2}
+tr.me td{background:#1a2f4f} tr.me td.l{background:#1a2f4f}
+td.big{font-weight:800;font-size:16px}
+.c-r{color:var(--green);font-weight:700} .c-w{color:var(--red)} .c-o{color:var(--muted)}
+.tag{font-size:10px;padding:1px 4px;border-radius:4px;margin-left:2px;vertical-align:top}
+.tag.d{background:var(--gold);color:#111} .tag.h{background:var(--half);color:#111}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.card h3{margin:0 0 10px}
+.card ul,.card ol{margin:0;padding-left:20px} .card li{margin:4px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px} .row>*{flex:1;min-width:140px}
+.muted{color:var(--muted)}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;width:100%;max-width:400px}
+.modal h3{margin:0 0 12px}
+.modal label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+.modal hr{border:0;border-top:1px solid var(--line);margin:18px 0}
+#toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:10px 18px;border-radius:10px;z-index:30;display:none;box-shadow:0 6px 24px rgba(0,0,0,.4)}
+.loading{padding:40px;text-align:center;color:var(--muted)}
+.trophy{color:var(--gold)}
+code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:13px;word-break:break-all}
+@media (max-width:520px){header h1{font-size:16px}.games{grid-template-columns:1fr}.chip.warn{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏈 NFL Tippspiel</h1>
+  <span id="modeChip" class="chip warn" hidden>Testmodus: nur dieses Gerät</span>
+  <button id="userChip" class="chip">Anmelden</button>
+</header>
+<nav>
+  <button data-tab="tippen" class="on">Tippen</button>
+  <button data-tab="woche">Wochenabrechnung</button>
+  <button data-tab="tabelle">Tabelle</button>
+  <button data-tab="setup">Regeln & Einstellungen</button>
+</nav>
+<main id="view"><div class="loading">Lade NFL-Spielplan …</div></main>
+<div id="savebar" class="savebar" hidden></div>
+<div id="modal" class="modal-bg"><div class="modal" id="modalBox"></div></div>
+<div id="toast"></div>
+
+<script>
+/* =====================================================================
+   KONFIGURATION – hier anpassen
+   ===================================================================== */
+const CONFIG = {
+  // Firebase Realtime Database URL (leer = lokaler Testmodus, nur dieses Gerät)
+  // z.B. "https://mein-tippspiel-default-rtdb.europe-west1.firebasedatabase.app"
+  FIREBASE_URL: "",
+  GROUP: "freunde",      // Name der Tipprunde (mehrere Runden in einer DB möglich)
+  LOCK_MINUTES: 60,      // Sperre X Minuten vor dem ersten Spiel der Woche
+  DOUBLE_MAX: 2,         // Anzahl Doppelt-Spiele
+  HALF_MAX: 1,           // Anzahl Halb-Spiele
+  REFRESH_SECONDS: 60    // Live-Aktualisierung
+};
+const ESPN = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
+
+/* ===================================================================== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtPts = n => (Math.round(n * 10) / 10).toString().replace(".", ",");
+const fmtDay = new Intl.DateTimeFormat("de-DE", {weekday:"long", day:"2-digit", month:"2-digit"});
+const fmtTime = new Intl.DateTimeFormat("de-DE", {hour:"2-digit", minute:"2-digit"});
+const fmtFull = new Intl.DateTimeFormat("de-DE", {weekday:"short", day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit"});
+
+// DB-URL kann per Link (?db=...) geteilt werden
+const qs = new URLSearchParams(location.search);
+if (qs.get("db")) { localStorage.setItem("tip-db", qs.get("db")); history.replaceState(null, "", location.pathname); }
+let dbUrl = (localStorage.getItem("tip-db") || CONFIG.FIREBASE_URL || "").trim().replace(/\/+$/, "");
+
+const S = {
+  season: null, curKey: null, key: null, week: null,
+  players: {}, tips: {}, me: localStorage.getItem("tip-me"),
+  draft: null, dirty: false, tab: "tippen"
+};
+
+/* ---------------- Speicher: Firebase REST oder localStorage ---------------- */
+const DB = {
+  remote: () => !!dbUrl,
+  root: () => `tippspiel/${CONFIG.GROUP}/${S.season}`,
+  async get(path) {
+    if (this.remote()) {
+      const r = await fetch(`${dbUrl}/${this.root()}/${path}.json`);
+      if (!r.ok) throw new Error("Datenbank-Fehler " + r.status);
+      return await r.json();
+    }
+    let o = JSON.parse(localStorage.getItem("tip-local") || "{}");
+    for (const p of `${this.root()}/${path}`.split("/")) o = o?.[p];
+    return o ?? null;
+  },
+  async put(path, val) {
+    if (this.remote()) {
+      const r = await fetch(`${dbUrl}/${this.root()}/${path}.json`, {method:"PUT", body:JSON.stringify(val)});
+      if (!r.ok) throw new Error("Datenbank-Fehler " + r.status);
+      return await r.json();
+    }
+    const all = JSON.parse(localStorage.getItem("tip-local") || "{}");
+    const parts = `${this.root()}/${path}`.split("/");
+    let o = all;
+    for (const p of parts.slice(0, -1)) o = (o[p] ??= {});
+    const json = JSON.stringify(val).replace(/\{"\.sv":"timestamp"\}/g, Date.now());
+    if (val === null) delete o[parts.at(-1)]; else o[parts.at(-1)] = JSON.parse(json);
+    localStorage.setItem("tip-local", JSON.stringify(all));
+    return val;
+  }
+};
+const SERVER_TS = {".sv": "timestamp"};
+
+/* ---------------- ESPN-Daten ---------------- */
+const WEEKS = [
+  ...Array.from({length:18}, (_, i) => ({key:`2-${i+1}`, label:`Woche ${i+1}`})),
+  {key:"3-1", label:"Wild Card"}, {key:"3-2", label:"Divisional Round"},
+  {key:"3-3", label:"Conference Finals"}, {key:"3-5", label:"Super Bowl"}
+];
+const weekLabel = k => WEEKS.find(w => w.key === k)?.label || k;
+const weekOrder = k => { const [t, w] = k.split("-").map(Number); return t * 100 + w; };
+
+function mlToProb(ml) { const n = parseInt(ml, 10); if (!n) return null; return n < 0 ? -n / (-n + 100) : 100 / (n + 100); }
+
+function parseEvent(e) {
+  const c = e.competitions[0];
+  const team = x => ({
+    abbr: x.team.abbreviation, name: x.team.shortDisplayName, logo: x.team.logo,
+    score: x.score, record: x.records?.[0]?.summary || "", winner: !!x.winner
+  });
+  const home = team(c.competitors.find(x => x.homeAway === "home"));
+  const away = team(c.competitors.find(x => x.homeAway === "away"));
+  const st = e.status.type;
+  let winner = null;
+  if (st.completed) winner = home.winner ? home.abbr : away.winner ? away.abbr : "TIE";
+  let odds = null;
+  const o = (c.odds || [])[0];
+  if (o) {
+    const mlH = o.moneyline?.home?.close?.odds, mlA = o.moneyline?.away?.close?.odds;
+    let pH = mlToProb(mlH), pA = mlToProb(mlA);
+    if (pH && pA) { const s = pH + pA; pH /= s; pA /= s; }
+    odds = {
+      provider: o.provider?.name || "Buchmacher", details: o.details, ou: o.overUnder, mlH, mlA, pH, pA,
+      fav: o.homeTeamOdds?.favorite ? home.abbr : o.awayTeamOdds?.favorite ? away.abbr : null
+    };
+  }
+  return {
+    id: e.id, date: new Date(e.date).getTime(), state: st.state, completed: st.completed,
+    detail: st.shortDetail, home, away, winner, odds, neutral: c.neutralSite
+  };
+}
+
+const sbCache = {};
+async function loadWeek(key, force = false) {
+  if (!force && sbCache[key]) return sbCache[key];
+  const lsKey = `tip-sb-${S.season}-${key}`;
+  if (!force) {
+    const c = localStorage.getItem(lsKey);
+    if (c) return (sbCache[key] = JSON.parse(c));
+  }
+  const [t, w] = key.split("-");
+  const r = await fetch(`${ESPN}?seasontype=${t}&week=${w}&dates=${S.season}`);
+  if (!r.ok) throw new Error("ESPN nicht erreichbar (" + r.status + ")");
+  const d = await r.json();
+  const events = (d.events || []).map(parseEvent).sort((a, b) => a.date - b.date);
+  const wk = {
+    key, events,
+    lock: events.length ? events[0].date - CONFIG.LOCK_MINUTES * 60000 : null,
+    done: events.length > 0 && events.every(e => e.completed)
+  };
+  sbCache[key] = wk;
+  if (wk.done) localStorage.setItem(lsKey, JSON.stringify(wk)); // fertige Wochen cachen
+  return wk;
+}
+
+/* ---------------- Wertung ---------------- */
+const isLocked = wk => wk.lock !== null && Date.now() >= wk.lock;
+function multiplier(tip, eid) {
+  if ((tip.dbl || []).includes(eid)) return 2;
+  if (tip.half === eid) return 0.5;
+  return 1;
+}
+function scoreTip(tip, wk) {
+  const res = {pts: 0, correct: 0, decided: 0, picked: 0, late: false, per: {}};
+  if (!tip) return res;
+  res.late = !!(tip.ts && wk.lock && tip.ts > wk.lock); // nach Sperre gespeichert -> ungültig
+  for (const ev of wk.events) {
+    const pick = tip.picks?.["e" + ev.id];
+    if (pick) res.picked++;
+    if (!ev.completed) continue;
+    res.decided++;
+    const ok = !!pick && pick === ev.winner && !res.late;
+    const p = ok ? multiplier(tip, ev.id) : 0;
+    res.per[ev.id] = {ok, p, pick};
+    if (ok) { res.correct++; res.pts += p; }
+  }
+  return res;
+}
+
+/* ---------------- Spieler / Login ---------------- */
+async function hash(s) {
+  if (crypto?.subtle) {
+    const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+    return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
+  }
+  let h = 0; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) | 0; return "x" + h;
+}
+const meName = () => S.players[S.me]?.name;
+
+function openLogin() {
+  const opts = Object.entries(S.players).sort((a, b) => a[1].name.localeCompare(b[1].name))
+    .map(([id, p]) => `<option value="${id}">${esc(p.name)}</option>`).join("");
+  $("#modalBox").innerHTML = `
+    ${opts ? `<h3>Anmelden</h3><label>Spieler</label><select id="lgP">${opts}</select>
+      <label>PIN</label><input id="lgPin" type="password" inputmode="numeric" autocomplete="off">
+      <div class="row"><button class="btn" id="lgGo">Anmelden</button></div><hr>` : ""}
+    <h3>Neu dabei?</h3>
+    <label>Dein Name</label><input id="nwName" maxlength="20">
+    <label>PIN wählen (mind. 4 Zeichen)</label><input id="nwPin" type="password" inputmode="numeric" autocomplete="off">
+    <div class="row"><button class="btn" id="nwGo">Mitspielen</button><button class="btn sec" id="mClose">Abbrechen</button></div>`;
+  $("#modal").classList.add("show");
+  $("#mClose").onclick = closeModal;
+  if (opts) $("#lgGo").onclick = async () => {
+    const id = $("#lgP").value, p = S.players[id];
+    if (p.pin !== await hash(id + $("#lgPin").value)) return toast("Falsche PIN");
+    setMe(id); closeModal(); toast(`Hallo ${p.name}!`);
+  };
+  $("#nwGo").onclick = async () => {
+    const name = $("#nwName").value.trim(), pin = $("#nwPin").value;
+    if (!name) return toast("Bitte Namen eingeben");
+    if (pin.length < 4) return toast("PIN zu kurz");
+    if (Object.values(S.players).some(p => p.name.toLowerCase() === name.toLowerCase())) return toast("Name schon vergeben");
+    const id = "p" + Math.random().toString(36).slice(2, 10);
+    const player = {name, pin: await hash(id + pin), joined: SERVER_TS};
+    try { await DB.put(`players/${id}`, player); } catch (e) { return toast(e.message); }
+    S.players[id] = {...player, joined: Date.now()};
+    setMe(id); closeModal(); toast(`Willkommen ${name}!`);
+  };
+}
+function setMe(id) {
+  S.me = id;
+  if (id) localStorage.setItem("tip-me", id); else localStorage.removeItem("tip-me");
+  resetDraft(); updateHeader(); render();
+}
+function closeModal() { $("#modal").classList.remove("show"); }
+function updateHeader() {
+  $("#userChip").textContent = meName() ? `👤 ${meName()}` : "Anmelden";
+  $("#modeChip").hidden = DB.remote();
+}
+$("#userChip").onclick = () => {
+  if (!S.me) return openLogin();
+  $("#modalBox").innerHTML = `<h3>👤 ${esc(meName())}</h3><p class="muted">Angemeldet auf diesem Gerät.</p>
+    <div class="row"><button class="btn danger" id="lo">Abmelden</button><button class="btn sec" id="mClose">Schließen</button></div>`;
+  $("#modal").classList.add("show");
+  $("#mClose").onclick = closeModal;
+  $("#lo").onclick = () => { if (S.dirty && !confirm("Ungespeicherte Tipps verwerfen?")) return; S.dirty = false; setMe(null); closeModal(); };
+};
+$("#modal").onclick = e => { if (e.target.id === "modal") closeModal(); };
+
+let toastT;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toastT); toastT = setTimeout(() => t.style.display = "none", 2600); }
+
+/* ---------------- Tipp-Entwurf ---------------- */
+function resetDraft() {
+  const t = S.tips[S.me];
+  S.draft = t ? {picks: {...(t.picks || {})}, dbl: [...(t.dbl || [])], half: t.half ?? null} : {picks: {}, dbl: [], half: null};
+  S.dirty = false;
+}
+async function saveTips() {
+  if (!S.me) return openLogin();
+  if (isLocked(S.week)) return toast("Tippabgabe ist gesperrt");
+  const btn = $("#saveBtn"); if (btn) btn.disabled = true;
+  try {
+    const val = {picks: S.draft.picks, dbl: S.draft.dbl, half: S.draft.half, ts: SERVER_TS};
+    await DB.put(`tips/${S.key}/${S.me}`, val);
+    S.tips[S.me] = {...val, ts: Date.now()};
+    S.dirty = false; toast("Tipps gespeichert ✓"); render();
+  } catch (e) { toast("Fehler: " + e.message); if (btn) btn.disabled = false; }
+}
+window.addEventListener("beforeunload", e => { if (S.dirty) { e.preventDefault(); e.returnValue = ""; } });
+
+/* ---------------- Rendering ---------------- */
+function weekBar() {
+  const opts = WEEKS.map(w => `<option value="${w.key}" ${w.key === S.key ? "selected" : ""}>${w.label}${w.key === S.curKey ? " (aktuell)" : ""}</option>`).join("");
+  return `<div class="weekbar">
+    <button class="nb" data-wk="-1">◀</button><select id="wkSel">${opts}</select><button class="nb" data-wk="1">▶</button>
+    ${S.key !== S.curKey ? `<button class="nb" data-wk="0">Aktuelle Woche</button>` : ""}
+  </div>`;
+}
+function bindWeekBar() {
+  document.querySelectorAll("[data-wk]").forEach(b => b.onclick = () => {
+    const d = +b.dataset.wk, i = WEEKS.findIndex(w => w.key === S.key);
+    const k = d === 0 ? S.curKey : WEEKS[Math.min(WEEKS.length - 1, Math.max(0, i + d))].key;
+    selectWeek(k);
+  });
+  const sel = $("#wkSel"); if (sel) sel.onchange = () => selectWeek(sel.value);
+}
+function countdown(ms) {
+  if (ms <= 0) return "0 Min";
+  const d = Math.floor(ms / 864e5), h = Math.floor(ms / 36e5) % 24, m = Math.floor(ms / 6e4) % 60, s = Math.floor(ms / 1000) % 60;
+  return d ? `${d} T ${h} Std` : h ? `${h} Std ${m} Min` : `${m} Min ${s} s`;
+}
+function lockInfo() {
+  const wk = S.week;
+  if (!wk.events.length) return `<span>Keine Spiele in dieser Woche.</span>`;
+  if (wk.done) return `<b class="lock-closed">🏁 Woche abgeschlossen & abgerechnet</b>`;
+  if (isLocked(wk)) return `<b class="lock-closed">🔒 Tippabgabe gesperrt</b> <span>seit ${fmtFull.format(wk.lock)}</span>`;
+  return `<b class="lock-open">🟢 Tippabgabe offen</b> <span>bis ${fmtFull.format(wk.lock)} · noch <b id="cd">${countdown(wk.lock - Date.now())}</b></span>`;
+}
+
+function oddsHtml(ev) {
+  const o = ev.odds; if (!o) return "";
+  let bar = "";
+  if (o.pA && o.pH) {
+    const a = Math.round(o.pA * 100), h = 100 - a;
+    bar = `<div class="bar"><span class="a" style="width:${a}%">${ev.away.abbr} ${a}%</span><span class="h">${h}% ${ev.home.abbr}</span></div>`;
+  }
+  const parts = [];
+  if (o.fav) parts.push(`Favorit: <b class="fav">${o.fav}</b>`);
+  if (o.details) parts.push(esc(o.details));
+  if (o.ou) parts.push(`O/U ${o.ou}`);
+  if (o.mlA && o.mlH) parts.push(`ML ${ev.away.abbr} ${o.mlA} / ${ev.home.abbr} ${o.mlH}`);
+  return `<div class="odds">${bar}${parts.join(" · ")} <span title="Quelle">(${esc(o.provider)})</span></div>`;
+}
+
+function renderTippen() {
+  const wk = S.week, locked = isLocked(wk), d = S.draft, myTip = S.tips[S.me];
+  const sc = locked && myTip ? scoreTip(myTip, wk) : null;
+  const src = locked ? (myTip || {picks:{}, dbl:[], half:null}) : d;
+  const nPicked = Object.keys(src.picks || {}).length;
+  let html = weekBar() + `<div class="info">${lockInfo()}</div>`;
+
+  if (!S.me) html += `<div class="info"><span>Melde dich an, um zu tippen.</span><button class="btn" id="loginBtn">Anmelden / Mitspielen</button></div>`;
+  else if (wk.events.length) {
+    html += `<div class="info">
+      <span>Getippt: <b>${nPicked}/${wk.events.length}</b></span>
+      <span>Doppelt: <b>${(src.dbl || []).length}/${CONFIG.DOUBLE_MAX}</b></span>
+      <span>Halb: <b>${src.half ? 1 : 0}/${CONFIG.HALF_MAX}</b></span>
+      ${sc ? `<span>Punkte: <b>${fmtPts(sc.pts)}</b> (${sc.correct}/${sc.decided} richtig)</span>` : ""}
+      ${sc?.late ? `<b class="lock-closed">⚠ Tipps nach der Sperre gespeichert – ungültig</b>` : ""}
+      ${locked && !myTip ? `<b class="lock-closed">Du hast diese Woche nicht getippt.</b>` : ""}
+    </div>`;
+  }
+
+  let lastDay = "";
+  html += `<div>`;
+  for (const ev of wk.events) {
+    const day = fmtDay.format(ev.date);
+    if (day !== lastDay) { if (lastDay) html += `</div>`; html += `<div class="day">${day}</div><div class="games">`; lastDay = day; }
+    const pick = src.picks?.["e" + ev.id];
+    const isD = (src.dbl || []).includes(ev.id), isH = src.half === ev.id;
+    const canEdit = !!S.me && !locked;
+    const teamBtn = t => {
+      let cls = "team";
+      if (S.me && pick === t.abbr) cls += " sel";
+      if (ev.completed && ev.winner === t.abbr) cls += " won";
+      let mark = "";
+      if (S.me && pick === t.abbr && ev.completed) { const ok = ev.winner === t.abbr && !sc?.late; cls += ok ? " right" : " wrong"; mark = ok ? "✓" : "✗"; }
+      const showScore = ev.state !== "pre";
+      return `<button class="${cls}" data-e="${ev.id}" data-t="${t.abbr}" ${canEdit ? "" : "disabled"}>
+        ${mark ? `<span class="mark">${mark}</span>` : ""}
+        <img src="${t.logo}" alt="" loading="lazy"><b>${t.abbr}</b><small>${esc(t.name)}${t.record ? " · " + t.record : ""}</small>
+        ${showScore ? `<span class="score">${t.score}</span>` : ""}</button>`;
+    };
+    const status = ev.state === "in" ? `<span class="live">● LIVE ${esc(ev.detail)}</span>` : ev.completed ? `Endstand${ev.winner === "TIE" ? " (Unentschieden)" : ""}` : fmtTime.format(ev.date) + " Uhr";
+    let ptsHtml = "";
+    if (sc && sc.per[ev.id]) { const p = sc.per[ev.id]; ptsHtml = `<span class="pts ${p.ok ? "g" : "r"}">${p.ok ? "+" + fmtPts(p.p) : "0"}</span>`; }
+    html += `<div class="game ${isD ? "dbl" : ""} ${isH ? "half" : ""}">
+      <div class="ghead"><span>${ev.away.name} @ ${ev.home.name}${ev.neutral ? " (neutral)" : ""}</span>${status}</div>
+      <div class="teams">${teamBtn(ev.away)}<span class="at">@</span>${teamBtn(ev.home)}</div>
+      ${oddsHtml(ev)}
+      ${S.me ? `<div class="mods">
+        <button class="mod d ${isD ? "on" : ""}" data-mod="d" data-e="${ev.id}" ${canEdit ? "" : "disabled"}>×2 Doppelt</button>
+        <button class="mod h ${isH ? "on" : ""}" data-mod="h" data-e="${ev.id}" ${canEdit ? "" : "disabled"}>½ Halb</button>
+        ${ptsHtml}</div>` : ""}
+    </div>`;
+  }
+  if (lastDay) html += `</div>`;
+  html += `</div>`;
+  $("#view").innerHTML = html;
+  bindWeekBar();
+  if ($("#loginBtn")) $("#loginBtn").onclick = openLogin;
+
+  document.querySelectorAll(".team[data-e]").forEach(b => b.onclick = () => {
+    const k = "e" + b.dataset.e;
+    if (d.picks[k] === b.dataset.t) delete d.picks[k]; else d.picks[k] = b.dataset.t;
+    S.dirty = true; render();
+  });
+  document.querySelectorAll(".mod[data-mod]").forEach(b => b.onclick = () => {
+    const id = b.dataset.e;
+    if (b.dataset.mod === "d") {
+      if (d.dbl.includes(id)) d.dbl = d.dbl.filter(x => x !== id);
+      else { if (d.dbl.length >= CONFIG.DOUBLE_MAX) return toast(`Maximal ${CONFIG.DOUBLE_MAX} Doppelt-Spiele`); d.dbl.push(id); if (d.half === id) d.half = null; }
+    } else {
+      if (d.half === id) d.half = null;
+      else { d.half = id; d.dbl = d.dbl.filter(x => x !== id); }
+    }
+    S.dirty = true; render();
+  });
+
+  const sb = $("#savebar");
+  if (S.me && !locked && wk.events.length) {
+    sb.hidden = false;
+    sb.innerHTML = `<span class="muted">${S.dirty ? "Ungespeicherte Änderungen" : myTip ? "Tipps gespeichert ✓" : "Noch nichts gespeichert"}</span>
+      <button class="btn" id="saveBtn" ${S.dirty ? "" : "disabled"}>Tipps speichern</button>`;
+    $("#saveBtn").onclick = saveTips;
+  } else sb.hidden = true;
+}
+
+function renderWoche() {
+  const wk = S.week, locked = isLocked(wk);
+  const ids = Object.keys(S.players);
+  const rows = ids.map(id => ({id, name: S.players[id].name, tip: S.tips[id], sc: scoreTip(S.tips[id], wk)}))
+    .sort((a, b) => b.sc.pts - a.sc.pts || b.sc.correct - a.sc.correct || a.name.localeCompare(b.name));
+  const best = rows.length ? rows[0].sc.pts : 0;
+  let html = weekBar() + `<div class="info">${lockInfo()}</div>`;
+  if (!locked) html += `<div class="info"><span>Die Tipps der anderen werden erst nach der Sperre sichtbar.</span></div>`;
+  if (wk.done && best > 0) {
+    const winners = rows.filter(r => r.sc.pts === best && r.tip).map(r => esc(r.name)).join(", ");
+    html += `<div class="info"><b class="trophy">🏆 Wochensieg: ${winners} mit ${fmtPts(best)} Punkten</b></div>`;
+  }
+  html += `<div class="tbl-wrap"><table><thead><tr><th class="l">#</th><th class="l">Tipper</th>`;
+  for (const ev of wk.events) {
+    const res = ev.completed ? `<br><span class="${ev.winner === ev.away.abbr ? "c-r" : ""}">${ev.away.score}</span>:<span class="${ev.winner === ev.home.abbr ? "c-r" : ""}">${ev.home.score}</span>` : ev.state === "in" ? `<br><span class="live">${ev.away.score}:${ev.home.score}</span>` : "";
+    html += `<th title="${esc(ev.away.name)} @ ${esc(ev.home.name)}">${ev.away.abbr}<br>@${ev.home.abbr}${res}</th>`;
+  }
+  html += `<th>Richtig</th><th>Punkte</th></tr></thead><tbody>`;
+  rows.forEach((r, i) => {
+    const showPicks = locked || r.id === S.me;
+    html += `<tr class="${r.id === S.me ? "me" : ""}"><td class="l">${i + 1}</td><td class="l">${esc(r.name)}${wk.done && r.sc.pts === best && best > 0 ? " 🏆" : ""}${r.sc.late ? ' <span class="c-w" title="nach Sperre gespeichert">⚠</span>' : ""}</td>`;
+    for (const ev of wk.events) {
+      const pick = r.tip?.picks?.["e" + ev.id];
+      if (!r.tip) { html += `<td class="c-o">–</td>`; continue; }
+      if (!showPicks) { html += `<td class="c-o">${pick ? "✓" : "·"}</td>`; continue; }
+      const m = multiplier(r.tip, ev.id);
+      const tag = m === 2 ? `<span class="tag d">2×</span>` : m === 0.5 ? `<span class="tag h">½</span>` : "";
+      const cls = !pick ? "c-o" : ev.completed ? (r.sc.per[ev.id]?.ok ? "c-r" : "c-w") : "";
+      html += `<td class="${cls}">${pick || "–"}${pick ? tag : ""}</td>`;
+    }
+    html += `<td>${r.tip ? `${r.sc.correct}/${r.sc.decided}` : "–"}</td><td class="big">${r.tip ? fmtPts(r.sc.pts) : "–"}</td></tr>`;
+  });
+  if (!rows.length) html += `<tr><td colspan="${wk.events.length + 4}" class="muted">Noch keine Tipper angemeldet.</td></tr>`;
+  html += `</tbody></table></div>
+    <p class="muted">Grün = richtig, Rot = falsch. 2× = doppelte Punkte, ½ = halbe Punkte. ${wk.done ? "" : "Punkte sind vorläufig, bis alle Spiele beendet sind."}</p>`;
+  $("#view").innerHTML = html;
+  bindWeekBar();
+}
+
+async function renderTabelle() {
+  $("#view").innerHTML = `<div class="loading">Berechne Saisontabelle …</div>`;
+  let all;
+  try { all = (await DB.get("tips")) || {}; } catch (e) { $("#view").innerHTML = `<div class="card">${esc(e.message)}</div>`; return; }
+  const keys = Object.keys(all).sort((a, b) => weekOrder(a) - weekOrder(b));
+  const weeks = await Promise.all(keys.map(k => loadWeek(k, k === S.curKey).catch(() => null)));
+  const st = {};
+  for (const id of Object.keys(S.players)) st[id] = {id, name: S.players[id].name, pts: 0, correct: 0, decided: 0, wins: 0, weeks: 0, per: {}};
+  keys.forEach((k, i) => {
+    const wk = weeks[i]; if (!wk) return;
+    let best = 0; const scores = {};
+    for (const [pid, tip] of Object.entries(all[k] || {})) {
+      if (!st[pid]) continue;
+      const sc = scoreTip(tip, wk); scores[pid] = sc.pts;
+      st[pid].pts += sc.pts; st[pid].correct += sc.correct; st[pid].decided += sc.decided; st[pid].weeks++;
+      st[pid].per[k] = sc.pts; best = Math.max(best, sc.pts);
+    }
+    if (wk.done && best > 0) for (const [pid, p] of Object.entries(scores)) if (p === best) st[pid].wins++;
+  });
+  const rows = Object.values(st).sort((a, b) => b.pts - a.pts || b.wins - a.wins || b.correct - a.correct || a.name.localeCompare(b.name));
+  const lead = rows[0]?.pts || 0;
+  let html = `<div class="card"><h3>🏆 Saison ${S.season} – Gesamtstand</h3><span class="muted">Wochensiege zählen nur für abgeschlossene Wochen. Laufende Woche ist vorläufig.</span></div>
+    <div class="tbl-wrap"><table><thead><tr><th class="l">#</th><th class="l">Tipper</th><th>Punkte</th><th>Rückstand</th><th>Wochensiege</th><th>Trefferquote</th>`;
+  keys.forEach((k, i) => html += `<th title="${weekLabel(k)}">${weekLabel(k).replace("Woche ", "W")}${weeks[i] && !weeks[i].done ? "*" : ""}</th>`);
+  html += `</tr></thead><tbody>`;
+  let rank = 0, prev = null;
+  rows.forEach((r, i) => {
+    if (r.pts !== prev) { rank = i + 1; prev = r.pts; }
+    const q = r.decided ? Math.round(r.correct / r.decided * 100) + "%" : "–";
+    html += `<tr class="${r.id === S.me ? "me" : ""}"><td class="l">${rank}</td><td class="l">${esc(r.name)}</td>
+      <td class="big">${fmtPts(r.pts)}</td><td class="muted">${r.pts === lead ? "–" : "−" + fmtPts(lead - r.pts)}</td>
+      <td>${r.wins ? "🏆".repeat(Math.min(r.wins, 5)) + (r.wins > 5 ? " " + r.wins : "") : "0"}</td><td>${q} <span class="muted">(${r.correct}/${r.decided})</span></td>`;
+    keys.forEach(k => html += `<td>${k in r.per ? fmtPts(r.per[k]) : '<span class="c-o">–</span>'}</td>`);
+    html += `</tr>`;
+  });
+  if (!rows.length) html += `<tr><td colspan="${6 + keys.length}" class="muted">Noch keine Tipper.</td></tr>`;
+  html += `</tbody></table></div><p class="muted">* = Woche läuft noch</p>`;
+  if (S.tab === "tabelle") $("#view").innerHTML = html;
+}
+
+function renderSetup() {
+  const share = dbUrl ? `${location.origin}${location.pathname}?db=${encodeURIComponent(dbUrl)}` : "";
+  $("#view").innerHTML = `
+  <div class="card"><h3>📜 Regeln</h3><ul>
+    <li>Pro Spiel tippst du den <b>Sieger</b>. Richtig = <b>1 Punkt</b>, falsch = 0 Punkte.</li>
+    <li><b>${CONFIG.DOUBLE_MAX} Spiele</b> kannst du als <b>Doppelt (×2)</b> markieren → 2 Punkte bei richtigem Tipp.</li>
+    <li><b>${CONFIG.HALF_MAX} Spiel</b> kannst du als <b>Halb (½)</b> markieren → 0,5 Punkte bei richtigem Tipp.</li>
+    <li><b>${CONFIG.LOCK_MINUTES} Minuten vor dem ersten Spiel</b> der Woche (meist Donnerstag) wird die Tippabgabe für die ganze Woche gesperrt.</li>
+    <li>Nicht getippte Spiele und Unentschieden geben 0 Punkte.</li>
+    <li>Nach der Sperre sieht jeder die Tipps der anderen. Nach dem letzten Spiel (Montag/Dienstag) ist die Woche abgerechnet; die Höchstpunktzahl gewinnt die Woche 🏆.</li>
+    <li>Gesamtwertung: Summe aller Wochenpunkte.</li>
+  </ul></div>
+  <div class="card"><h3>💾 Speicherort der Tipps</h3>
+    <p>Aktuell: <b>${DB.remote() ? "Online-Datenbank (Firebase) – alle Freunde sehen dieselben Daten" : "Lokaler Testmodus – Tipps liegen nur in diesem Browser"}</b></p>
+    <label class="muted">Firebase Realtime Database URL</label>
+    <div class="row"><input id="dbIn" placeholder="https://xxxx-default-rtdb.europe-west1.firebasedatabase.app" value="${esc(dbUrl)}">
+    </div>
+    <div class="row"><button class="btn" id="dbSave">Speichern & testen</button><button class="btn sec" id="dbLocal">Lokalen Testmodus nutzen</button></div>
+    ${share ? `<p>Link für deine Freunde (enthält die Datenbank-Adresse):</p><div class="row"><input readonly value="${esc(share)}" id="shareIn"><button class="btn sec" id="shareBtn">Link kopieren</button></div>` : ""}
+    <details style="margin-top:12px"><summary><b>Anleitung: Kostenlose Firebase-Datenbank einrichten (ca. 5 Min)</b></summary><ol>
+      <li><a href="https://console.firebase.google.com" target="_blank" rel="noopener" style="color:var(--accent)">console.firebase.google.com</a> öffnen, mit Google-Konto anmelden.</li>
+      <li><b>Projekt erstellen</b> → Name z.B. <code>nfl-tippspiel</code> → Google Analytics ausschalten → Erstellen.</li>
+      <li>Links im Menü: <b>Erstellen → Realtime Database</b> → <b>Datenbank erstellen</b> → Standort <b>Belgien (europe-west1)</b> → <b>Im Testmodus starten</b>.</li>
+      <li>Oben steht die URL (endet auf <code>firebasedatabase.app</code>) → kopieren und hier oben einfügen → <b>Speichern & testen</b>.</li>
+      <li>Wichtig: Der Testmodus läuft nach 30 Tagen ab. Unter <b>Regeln</b> stattdessen eintragen und <b>Veröffentlichen</b>:<br>
+      <code>{ "rules": { "tippspiel": { ".read": true, ".write": true } } }</code></li>
+      <li>Den Link von oben an deine Freunde schicken – fertig.</li>
+    </ol></details>
+  </div>
+  <div class="card"><h3>ℹ️ Datenquellen</h3>
+    <p class="muted">Spielplan, Live-Ergebnisse und Quoten kommen von der öffentlichen ESPN-Schnittstelle (Quoten von ${"DraftKings"}, nur als Info, wer Favorit ist – Prozentwerte = Siegwahrscheinlichkeit laut Moneyline). Für vergangene Spiele liefert ESPN meist keine Quoten mehr.</p>
+    <p class="muted">Hinweis: Das ist ein Spaß-Tippspiel unter Freunden ohne echte Sicherheit. Die PIN schützt nur vor Versehen. Tipps, die laut Server-Zeitstempel nach der Sperre gespeichert wurden, werden automatisch nicht gewertet.</p>
+  </div>`;
+  $("#dbSave").onclick = async () => {
+    const u = $("#dbIn").value.trim().replace(/\/+$/, "");
+    if (!/^https:\/\/.+/.test(u)) return toast("Bitte gültige https-URL eingeben");
+    try {
+      const r = await fetch(`${u}/tippspiel/${CONFIG.GROUP}/ping.json`, {method:"PUT", body: JSON.stringify(SERVER_TS)});
+      if (!r.ok) throw new Error("Status " + r.status + (r.status === 401 ? " – Regeln erlauben keinen Zugriff" : ""));
+    } catch (e) { return toast("Verbindung fehlgeschlagen: " + e.message); }
+    dbUrl = u; localStorage.setItem("tip-db", u); toast("Datenbank verbunden ✓"); await reloadData(); updateHeader(); render();
+  };
+  $("#dbLocal").onclick = async () => { dbUrl = ""; localStorage.removeItem("tip-db"); toast("Lokaler Testmodus"); await reloadData(); updateHeader(); render(); };
+  if ($("#shareBtn")) $("#shareBtn").onclick = () => { navigator.clipboard?.writeText($("#shareIn").value); $("#shareIn").select(); toast("Link kopiert"); };
+}
+
+function render() {
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === S.tab));
+  if (S.tab !== "tippen") $("#savebar").hidden = true;
+  if (!S.week) return;
+  ({tippen: renderTippen, woche: renderWoche, tabelle: renderTabelle, setup: renderSetup})[S.tab]();
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => { S.tab = b.dataset.tab; render(); });
+
+/* ---------------- Laden ---------------- */
+async function reloadData() {
+  const [players, tips] = await Promise.all([DB.get("players"), DB.get(`tips/${S.key}`)]);
+  S.players = players || {}; S.tips = tips || {};
+  if (S.me && !S.players[S.me]) { S.me = null; localStorage.removeItem("tip-me"); }
+  if (!S.dirty) resetDraft();
+}
+async function selectWeek(key) {
+  if (S.dirty && !confirm("Ungespeicherte Tipps verwerfen?")) return render();
+  S.dirty = false; S.key = key;
+  $("#view").innerHTML = `<div class="loading">Lade ${weekLabel(key)} …</div>`;
+  try {
+    S.week = await loadWeek(key, !sbCache[key]?.done);
+    await reloadData();
+  } catch (e) { $("#view").innerHTML = `<div class="card">Fehler: ${esc(e.message)}</div>`; return; }
+  if (S.tab === "tabelle") S.tab = "tippen";
+  render();
+}
+
+async function init() {
+  updateHeader();
+  try {
+    const d = await (await fetch(ESPN)).json();
+    S.season = d.season.year;
+    const t = d.season.type, w = d.week?.number || 1;
+    S.curKey = t === 2 ? `2-${w}` : t === 3 ? (w === 4 ? "3-5" : `3-${w}`) : t === 1 ? "2-1" : "3-5";
+    if (!WEEKS.some(x => x.key === S.curKey)) S.curKey = "2-1";
+  } catch (e) {
+    $("#view").innerHTML = `<div class="card">ESPN-Daten konnten nicht geladen werden: ${esc(e.message)}</div>`; return;
+  }
+  updateHeader();
+  await selectWeek(S.curKey);
+  updateHeader();
+
+  // Countdown & Sperre live
+  setInterval(() => {
+    if (!S.week || S.week.lock === null) return;
+    const el = $("#cd"); const left = S.week.lock - Date.now();
+    if (el) el.textContent = countdown(left);
+    if (left <= 0 && left > -1500 && S.tab === "tippen") render();
+  }, 1000);
+  // Live-Ergebnisse & neue Tipps
+  setInterval(async () => {
+    if (!S.week || S.week.done || document.hidden || S.tab === "setup") return;
+    try { S.week = await loadWeek(S.key, true); await reloadData(); if (!S.dirty || S.tab !== "tippen") render(); } catch {}
+  }, CONFIG.REFRESH_SECONDS * 1000);
+}
+init();
+</script>
+</body>
+</html>
