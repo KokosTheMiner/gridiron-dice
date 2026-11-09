@@ -4,112 +4,268 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NFL Tippspiel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0d1420; --panel:#162131; --panel2:#1d2b40; --line:#2a3b55; --text:#e8eef7; --muted:#8fa3bf;
-  --accent:#3b82f6; --green:#22c55e; --red:#ef4444; --gold:#f5b301; --half:#a78bfa;
+  --pix:"Press Start 2P",monospace; --txt:"VT323",ui-monospace,monospace;
+  --panel:#1f2740; --panel2:#262f4d; --hi:#46527a; --lo:#0f1326; --ink:#0b0f2e;
+  --yellow:#ffd400; --cyan:#2ce8f5; --magenta:#ff3eb5; --lime:#7dff3c; --orange:#ff8a00;
+  --red:#ff2a2a; --green:#33e05a; --white:#f4f6ff; --muted:#a9b4ff; --gold:#ffcf3a; --half:#c08bff;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;color:var(--white);font:21px/1.15 var(--txt);
+  background:
+    linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,.55)),
+    repeating-linear-gradient(90deg,#1f7a2e 0 60px,#26893a 60px 120px);
+  background-attachment:fixed;min-height:100vh;
+}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.10) 0 1px,transparent 1px 3px)}
 button{font:inherit;color:inherit;cursor:pointer}
-input,select{font:inherit;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
-header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(90deg,#013369,#0d1420 70%);border-bottom:2px solid #d50a0a;position:sticky;top:0;z-index:5}
-header h1{font-size:19px;margin:0;flex:1;white-space:nowrap}
-.chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;white-space:nowrap}
-.chip.warn{border-color:var(--gold);color:var(--gold)}
-nav{display:flex;gap:4px;padding:8px 16px 0;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto}
-nav button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;color:var(--muted);font-weight:600;white-space:nowrap}
-nav button.on{color:var(--text);border-color:var(--accent)}
-main{max-width:1100px;margin:0 auto;padding:16px 16px 100px}
-.weekbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.weekbar select{width:auto;min-width:170px}
-.weekbar .nb{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 12px}
-.info{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
-.info b{color:var(--text)} .info span{color:var(--muted)}
-.lock-open{color:var(--green)!important} .lock-closed{color:var(--red)!important}
-.day{margin:18px 0 8px;color:var(--muted);font-weight:700;text-transform:uppercase;font-size:12px;letter-spacing:.06em}
-.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
-.game{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
-.game.dbl{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
-.game.half{border-color:var(--half);box-shadow:0 0 0 1px var(--half) inset}
-.ghead{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:8px}
-.live{color:var(--red);font-weight:700}
-.teams{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:stretch}
-.at{align-self:center;color:var(--muted);font-size:12px}
-.team{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 6px;background:var(--panel2);border:2px solid transparent;border-radius:10px;position:relative;min-height:112px}
+input,select{font:20px var(--txt);background:#000;color:var(--lime);border:3px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo);padding:8px 10px;width:100%;border-radius:0}
+a{color:var(--cyan)}
+
+/* ---------- Retro-Bausteine ---------- */
+.panel{background:var(--panel);border:3px solid;border-color:var(--hi) var(--lo) var(--lo) var(--hi);box-shadow:4px 4px 0 rgba(0,0,0,.5);border-radius:8px}
+.panel.game,.panel.tbl-wrap{overflow:hidden}
+.panel.tbl-wrap{overflow-x:auto}
+.rbtn{font:11px/1.2 var(--pix);text-transform:uppercase;padding:11px 14px;min-height:42px;color:#000;
+  background:var(--b,#c8c8c8);border:3px solid;border-color:var(--bh,#fff) var(--bl,#444) var(--bl,#444) var(--bh,#fff);box-shadow:3px 3px 0 #000}
+.rbtn:active:not(:disabled),.rbtn.on{border-color:var(--bl,#444) var(--bh,#fff) var(--bh,#fff) var(--bl,#444);transform:translate(2px,2px);box-shadow:1px 1px 0 #000}
+.rbtn:disabled{opacity:.45;cursor:default}
+.y{--b:#ffd400;--bh:#fff59a;--bl:#8a6f00}
+.c{--b:#2ce8f5;--bh:#c4fbff;--bl:#0a6d75}
+.m{--b:#ff3eb5;--bh:#ffb3e1;--bl:#7a0a50}
+.l{--b:#7dff3c;--bh:#d5ffb8;--bl:#2e7a0a}
+.r{--b:#ff4a4a;--bh:#ffb0b0;--bl:#7a0a0a}
+.g{--b:#b9b9c9;--bh:#fff;--bl:#4a4a5a}
+/* dezente Menüfarben */
+.ny{--b:#d8bb52;--bh:#f1e2a8;--bl:#6e5a14}
+.nc{--b:#6fb7c0;--bh:#c3e6ea;--bl:#2b5a60}
+.nm{--b:#c47aa3;--bh:#ecc6dc;--bl:#5e2a48}
+.nl{--b:#8fbf6a;--bh:#d3e9c3;--bl:#3d5e26}
+nav .rbtn{border-radius:6px} nav .rbtn.on{filter:brightness(1.12) saturate(1.15)}
+/* TV-Sender */
+.tvs{display:flex;gap:4px;flex-wrap:wrap;align-items:center;flex:1}
+.tv{display:inline-block;font:8px/1 var(--pix);padding:4px 5px;border-radius:4px;color:#fff;border:1px solid rgba(0,0,0,.6);text-shadow:1px 1px 0 rgba(0,0,0,.6);white-space:nowrap}
+.tv-rtl{background:linear-gradient(90deg,#e4002b,#e4002b 33%,#f6b900 33% 66%,#0058a3 66%)}
+.tv-rtlp{background:#1b1b1b;color:#ff5aa0;border-color:#ff5aa0}
+.tv-nitro{background:#c8102e}
+.tv-sky{background:linear-gradient(135deg,#0072c9,#7b2fbe)}
+.tv-gp{background:#3a3f55}
+.tv-x{background:#555b75}
+.tv.maybe{opacity:.7;border-style:dashed;border-color:#ccc}
+.tvedit{background:none;border:1px dashed var(--muted);color:var(--muted);border-radius:4px;padding:0 5px;font-size:16px}
+.led{font-family:var(--txt);color:var(--orange);text-shadow:0 0 8px rgba(255,120,0,.8);background:#120700;border:3px solid;border-color:#000 #3a2a10 #3a2a10 #000;padding:2px 8px}
+
+/* ---------- Kopf ---------- */
+header{position:sticky;top:0;z-index:10;background:#000;border-bottom:4px solid var(--yellow);box-shadow:0 4px 0 var(--red)}
+.hwrap{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:10px 16px}
+.logo{flex:1;min-width:0}
+.logo h1{margin:0;font:18px/1.3 var(--pix);color:var(--yellow);text-shadow:3px 3px 0 var(--red),6px 6px 0 #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.logo .sub{color:var(--cyan);font-size:19px;margin-top:4px;letter-spacing:1px}
+#userChip{font-size:9px;padding:9px 10px;max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+nav{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px 16px 12px}
+nav .rbtn{font-size:10px;padding:10px 4px;white-space:nowrap}
+nav .rbtn .ic{display:block;font-size:18px;margin-bottom:4px}
+
+main{max-width:1180px;margin:0 auto;padding:6px 16px 120px}
+
+/* ---------- Wochenleiste & Status ---------- */
+.weekbar{display:flex;gap:8px;align-items:stretch;margin-bottom:12px;flex-wrap:wrap}
+.weekbar select{width:auto;flex:1;min-width:150px;font-size:22px;color:var(--yellow)}
+.weekbar .rbtn{padding:8px 14px}
+.status{padding:12px;margin-bottom:14px}
+.status .lockline{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:22px}
+.badge{font:10px/1 var(--pix);padding:7px 9px;color:#000;border:2px solid #000;white-space:nowrap}
+.b-open{background:var(--lime)} .b-closed{background:var(--red);color:#fff} .b-done{background:var(--gold)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px}
+.stat{background:#000;border:3px solid;border-color:#000 #333 #333 #000;padding:6px 8px;text-align:center}
+.stat .k{font:8px/1.3 var(--pix);color:var(--muted);text-transform:uppercase}
+.stat .v{font-size:32px;line-height:1;margin-top:4px;color:var(--orange);text-shadow:0 0 8px rgba(255,120,0,.7)}
+.stat .v.cy{color:var(--cyan);text-shadow:0 0 8px rgba(44,232,245,.6)}
+.stat .v.gd{color:var(--gold);text-shadow:0 0 8px rgba(255,207,58,.6)}
+.stat .v.pu{color:var(--half);text-shadow:0 0 8px rgba(192,139,255,.6)}
+.stat .v.gr{color:var(--lime);text-shadow:0 0 8px rgba(125,255,60,.6)}
+.hint{margin-top:10px;font-size:20px;color:var(--yellow)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:18px;color:var(--muted);margin:4px 2px 10px}
+.legend i{display:inline-block;width:16px;height:16px;vertical-align:-2px;margin-right:5px;border:2px solid #000}
+
+/* ---------- Spieltag ---------- */
+.day{display:flex;align-items:center;gap:10px;margin:20px 0 10px;font:11px/1.3 var(--pix);color:var(--yellow);text-transform:uppercase}
+.day::before{content:"";width:14px;height:14px;background:var(--magenta);box-shadow:3px 3px 0 #000}
+.day::after{content:"";flex:1;height:4px;background:repeating-linear-gradient(90deg,var(--yellow) 0 8px,transparent 8px 14px)}
+.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px}
+.game{padding:0;position:relative}
+.game.dbl{border-color:#e8d48a #6e5a14 #6e5a14 #e8d48a;background:#36321f}
+.game.half{border-color:#cdb6ec #43305e #43305e #cdb6ec;background:#2d2645}
+.ghead{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px;background:rgba(0,0,0,.75);font-size:20px}
+.ghead .t{color:var(--cyan)}
+.ghead .st{font:9px/1 var(--pix);padding:5px 6px;color:#000;background:var(--cyan)}
+.ghead .st.live{background:var(--red);color:#fff;animation:blink 1s steps(2) infinite}
+.ghead .st.fin{background:#888}
+.ghead .st.mul{background:var(--gold)} .ghead .st.mul.h{background:var(--half)}
+@keyframes blink{50%{opacity:.35}}
+.match{display:grid;grid-template-columns:1fr 26px 1fr;gap:8px;align-items:stretch;padding:10px 10px 4px}
+.vs{align-self:center;justify-self:center;font:9px var(--pix);color:#000;background:var(--yellow);width:26px;height:26px;display:grid;place-items:center;border:2px solid #000;border-radius:50%;box-shadow:2px 2px 0 #000}
+
+.team{position:relative;overflow:hidden;min-height:116px;padding:20px 6px 7px;display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:8px;
+  background:var(--c1);border:2px solid #000;box-shadow:inset 0 0 0 2px rgba(255,255,255,.2),3px 3px 0 #000;transition:transform .08s}
+.team::before{content:"";position:absolute;inset:0;z-index:0;
+  background:linear-gradient(115deg,transparent 0 56%,var(--c2) 56% 67%,var(--c3) 67% 73%,transparent 73%)}
+.team::after{content:"";position:absolute;inset:0;z-index:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.08) 0 2px,transparent 2px 4px)}
+.team>*{position:relative;z-index:1}
+.team.home{box-shadow:0 0 0 4px var(--red),inset 0 0 0 2px rgba(255,255,255,.2),5px 5px 0 #000}
+.team .tag{position:absolute;top:0;left:0;font:7px/1 var(--pix);padding:5px 6px;background:#000;color:#ccc;z-index:2;border-radius:0 0 6px 0}
+.team.home .tag{background:var(--red);color:#fff}
+.team .crest{width:44px;height:44px;border-radius:50%;background:#fff;border:2px solid #000;display:grid;place-items:center;box-shadow:2px 2px 0 rgba(0,0,0,.6)}
+.team .crest img{width:32px;height:32px}
+.team b{font:12px/1.2 var(--pix);color:#fff;text-shadow:2px 2px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000;margin-top:4px}
+.team small{font-size:17px;color:#fff;text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000;text-align:center;line-height:1}
+.team .score{margin-top:3px;font-size:28px;line-height:1;min-width:46px;text-align:center;border-radius:4px}
+.team.won .score{color:var(--lime);text-shadow:0 0 8px rgba(125,255,60,.8)}
 .team:disabled{cursor:default}
-.team img{width:42px;height:42px}
-.team b{font-size:16px}
-.team small{color:var(--muted);font-size:11px;text-align:center}
-.team .score{font-size:22px;font-weight:800;margin-top:2px}
-.team.sel{border-color:var(--accent);background:#1e3a66}
-.team.won .score{color:var(--green)}
-.team.sel.right{border-color:var(--green);background:#14432a}
-.team.sel.wrong{border-color:var(--red);background:#4a1c1c}
-.team .mark{position:absolute;top:4px;right:6px;font-weight:800}
-.odds{margin-top:8px;font-size:12px;color:var(--muted)}
-.bar{display:flex;height:18px;border-radius:5px;overflow:hidden;margin-bottom:4px;font-size:11px;font-weight:700}
-.bar span{display:flex;align-items:center;padding:0 6px;white-space:nowrap;overflow:hidden}
-.bar .a{background:#33507a;justify-content:flex-start}
-.bar .h{background:#24364f;justify-content:flex-end;flex:1}
+.team:not(:disabled):hover{transform:translateY(-2px)}
+.team.dim{filter:grayscale(.6) brightness(.7)}
+.team.sel{outline:3px solid var(--yellow);outline-offset:-8px}
+.team .pick{position:absolute;right:0;bottom:0;font:7px/1 var(--pix);background:var(--yellow);color:#000;padding:5px 6px;z-index:2;border-radius:6px 0 0 0}
+.team .stamp{position:absolute;top:4px;right:6px;z-index:3;font:20px var(--pix);text-shadow:2px 2px 0 #000}
+.team.right .stamp{color:var(--lime)} .team.wrong .stamp{color:var(--red)}
+.team.right{outline-color:var(--lime)} .team.wrong{outline-color:var(--red)}
+
+.odds{padding:4px 10px 0;font-size:18px;color:var(--muted)}
+.obar{display:flex;height:20px;border:2px solid #000;border-radius:5px;overflow:hidden;margin-bottom:4px;font:8px/1 var(--pix)}
+.obar span{display:flex;align-items:center;padding:0 6px;white-space:nowrap;overflow:hidden;color:#fff;text-shadow:1px 1px 0 #000,-1px -1px 0 #000}
+.obar .a{background:var(--ca)} .obar .h{background:var(--ch);flex:1;justify-content:flex-end}
 .fav{color:var(--gold)}
-.mods{display:flex;gap:6px;margin-top:10px;align-items:center}
-.mod{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:13px;color:var(--muted)}
-.mod:disabled{opacity:.45;cursor:default}
-.mod.on.d{background:var(--gold);color:#111;border-color:var(--gold);opacity:1}
-.mod.on.h{background:var(--half);color:#111;border-color:var(--half);opacity:1}
-.pts{margin-left:auto;font-weight:800}
-.pts.g{color:var(--green)} .pts.r{color:var(--red)}
-.savebar{position:fixed;left:0;right:0;bottom:0;background:rgba(13,20,32,.96);border-top:1px solid var(--line);padding:10px 16px;display:flex;justify-content:center;gap:12px;align-items:center;z-index:6}
-.btn{background:var(--accent);border:0;border-radius:10px;padding:11px 20px;font-weight:700;color:#fff}
-.btn.sec{background:var(--panel2);border:1px solid var(--line)}
-.btn.danger{background:var(--red)}
-.btn:disabled{opacity:.5;cursor:default}
-.tbl-wrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px}
-table{border-collapse:collapse;width:100%;font-size:14px}
-th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
-th{color:var(--muted);font-size:12px;font-weight:600;background:var(--panel2);position:sticky;top:0}
-td.l,th.l{text-align:left;position:sticky;left:0;background:var(--panel);z-index:1}
-th.l{background:var(--panel2);z-index:2}
-tr.me td{background:#1a2f4f} tr.me td.l{background:#1a2f4f}
-td.big{font-weight:800;font-size:16px}
-.c-r{color:var(--green);font-weight:700} .c-w{color:var(--red)} .c-o{color:var(--muted)}
-.tag{font-size:10px;padding:1px 4px;border-radius:4px;margin-left:2px;vertical-align:top}
-.tag.d{background:var(--gold);color:#111} .tag.h{background:var(--half);color:#111}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
-.card h3{margin:0 0 10px}
-.card ul,.card ol{margin:0;padding-left:20px} .card li{margin:4px 0}
-.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px} .row>*{flex:1;min-width:140px}
-.muted{color:var(--muted)}
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
-.modal-bg.show{display:flex}
-.modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;width:100%;max-width:400px}
-.modal h3{margin:0 0 12px}
-.modal label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
-.modal hr{border:0;border-top:1px solid var(--line);margin:18px 0}
-#toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:10px 18px;border-radius:10px;z-index:30;display:none;box-shadow:0 6px 24px rgba(0,0,0,.4)}
-.loading{padding:40px;text-align:center;color:var(--muted)}
+.mods{display:flex;gap:8px;align-items:center;padding:10px}
+.mods .rbtn{font-size:8px;padding:7px 9px;min-height:34px;border-radius:5px}
+.pts{margin-left:auto;font:14px var(--pix);text-shadow:2px 2px 0 #000}
+.pts.gp{color:var(--lime)} .pts.rp{color:var(--red)}
+
+/* ---------- Speicherleiste ---------- */
+.savebar{position:fixed;left:0;right:0;bottom:0;z-index:12;background:#000;border-top:4px solid var(--yellow);padding:10px 16px;display:flex;justify-content:center;gap:14px;align-items:center}
+.savebar .msg{font-size:20px;color:var(--muted)}
+.savebar .msg.dirty{color:var(--yellow);animation:blink 1.2s steps(2) infinite}
+
+/* ---------- Tabellen ---------- */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%}
+th{font:8px/1.4 var(--pix);color:var(--yellow);background:#000;padding:9px 6px;text-transform:uppercase;white-space:nowrap;position:sticky;top:0}
+td{padding:6px 7px;text-align:center;white-space:nowrap;border-bottom:2px solid var(--lo);font-size:21px}
+tbody tr:nth-child(odd) td{background:var(--panel)} tbody tr:nth-child(even) td{background:var(--panel2)}
+.l{text-align:left}
+.stick{position:sticky;left:0;z-index:1}
+th.stick{z-index:2}
+tr.me td{background:#4a3a00!important}
+.rank{display:inline-block;min-width:34px;font:11px/1 var(--pix);padding:6px 4px;color:#000;background:#9aa4d8;border:2px solid #000}
+.rk1 .rank{background:var(--gold)} .rk2 .rank{background:#d8dde8} .rk3 .rank{background:#d08a4a}
+td.ptsc{font-size:28px;color:var(--yellow);text-shadow:0 0 6px rgba(255,212,0,.6)}
+.chip{display:inline-block;font:9px/1 var(--pix);padding:5px 5px;color:#fff;background:var(--c1);border:2px solid #000;text-shadow:1px 1px 0 #000;position:relative}
+.chip.ok{box-shadow:0 0 0 2px var(--lime)}
+.chip.no{filter:grayscale(.8) brightness(.6)}
+.chip sup{font:7px var(--pix);background:var(--gold);color:#000;padding:2px;margin-left:3px;text-shadow:none}
+.chip sup.h{background:var(--half)}
+.dash{color:#6b74b8}
+.vtoggle{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.vtoggle span{color:var(--cyan);font:9px var(--pix);text-transform:uppercase}
+.vtoggle .rbtn{font-size:8px;padding:8px 10px;min-height:34px;border-radius:5px}
+.wk-hoch th{padding:6px 2px;font-size:7px;vertical-align:bottom}
+.wk-hoch th .rank{min-width:22px;font-size:8px;padding:3px 2px}
+.wk-hoch th .pn{font:15px/1 var(--txt);color:var(--white);text-transform:none;margin:3px auto 0;max-width:40px;overflow:hidden;text-overflow:clip}
+.wk-hoch th .pp{font:20px/1 var(--txt);color:var(--yellow);margin-top:2px}
+.wk-hoch th.meh{background:#4a3a00}
+.wk-hoch td{padding:6px 2px 3px;font-size:17px}
+.wk-hoch .chip{font:15px/1 var(--txt);padding:2px 3px;border-width:1px;border-radius:3px}
+.wk-hoch .chip sup{position:absolute;top:-7px;right:-7px;font:11px/1 var(--txt);padding:1px 2px;margin:0;border-radius:3px;z-index:1}
+.gcell{text-align:left;padding:3px 4px!important}
+.gcell .gl{display:flex;align-items:center;gap:1px;font-size:15px;white-space:nowrap}
+.gcell .gl img{width:14px;height:14px}
+.gcell .gl i{font-style:normal;color:var(--muted);margin:0 2px}
+.gcell .gr{font-size:15px;color:var(--muted);line-height:1}
+.gcell .gr .w{color:var(--lime)}
+.chip{border-radius:4px}
+.fillv{color:var(--cyan);font-style:italic}
+.th-team{display:flex;flex-direction:column;align-items:center;gap:2px}
+.th-team img{width:22px;height:22px}
+.th-res{font:18px var(--txt);color:var(--white)} .th-res .w{color:var(--lime)}
 .trophy{color:var(--gold)}
-code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:13px;word-break:break-all}
-@media (max-width:520px){header h1{font-size:16px}.games{grid-template-columns:1fr}.chip.warn{display:none}}
+.winner{padding:12px;margin-bottom:14px;text-align:center;font:12px/1.6 var(--pix);color:var(--gold);text-shadow:2px 2px 0 #000;background:#3a2a00}
+
+/* ---------- Karten / Modal ---------- */
+.card{padding:16px;margin-bottom:14px}
+.card h3{margin:0 0 10px;font:12px/1.4 var(--pix);color:var(--yellow);text-shadow:2px 2px 0 #000}
+.card ul,.card ol{margin:0;padding-left:22px} .card li{margin:6px 0}
+.card code{background:#000;color:var(--lime);padding:1px 5px;word-break:break-all}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px} .row>*{flex:1;min-width:140px}
+.muted{color:var(--muted)}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,20,.8);display:none;align-items:center;justify-content:center;z-index:40;padding:16px}
+.modal-bg.show{display:flex}
+.modal{width:100%;max-width:420px;padding:18px}
+.modal h3{margin:0 0 12px;font:13px/1.4 var(--pix);color:var(--yellow);text-shadow:2px 2px 0 #000}
+.modal label{display:block;color:var(--cyan);margin:10px 0 4px}
+.modal hr{border:0;border-top:3px dashed var(--hi);margin:18px 0}
+#toast{position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:45;display:none;font:10px/1.4 var(--pix);background:var(--yellow);color:#000;padding:12px 16px;border:3px solid #000;box-shadow:4px 4px 0 #000;max-width:90vw;text-align:center}
+.loading{padding:40px;text-align:center;font:11px var(--pix);color:var(--yellow)}
+details summary{cursor:pointer;color:var(--cyan)}
+
+/* ---------- Handy ---------- */
+@media (max-width:640px){
+  body{font-size:20px}
+  header{position:static}
+  .hwrap{padding:8px 10px;gap:8px}
+  .logo h1{font-size:12px}
+  .logo .sub{font-size:17px}
+  nav{padding:8px 10px 10px;gap:6px}
+  nav .rbtn{font-size:8px;padding:8px 2px}
+  nav .rbtn .ic{font-size:20px}
+  main{padding:4px 10px 110px}
+  .games{grid-template-columns:1fr}
+  .match{grid-template-columns:1fr 26px 1fr;gap:6px;padding:10px 8px 4px}
+  .vs{width:26px;height:26px;font-size:9px}
+  .team{min-height:108px}
+  .team b{font-size:11px}
+  .team small{font-size:16px}
+  .ghead{flex-wrap:wrap;gap:6px}
+  .stats{grid-template-columns:repeat(3,1fr);gap:6px}
+  .stat{padding:4px}
+  .stat.cdw{grid-column:1/-1;display:flex;justify-content:center;align-items:center;gap:12px}
+  .stat .k{font-size:7px}
+  .stat .v{font-size:26px}
+  .stat.cdw .v{margin-top:0}
+  .status{padding:10px}
+  .status .lockline{font-size:19px;gap:8px}
+  .weekbar{flex-wrap:nowrap;gap:6px}
+  .weekbar select{min-width:0;font-size:20px}
+  .weekbar .rbtn{padding:8px 10px}
+  .legend{font-size:16px;gap:10px}
+  .savebar{padding:8px 10px;gap:10px}
+  .savebar .msg{font-size:17px}
+  td{font-size:19px;padding:5px 5px}
+}
 </style>
 </head>
 <body>
 <header>
-  <h1>🏈 NFL Tippspiel</h1>
-  <span id="modeChip" class="chip warn" hidden>Testmodus: nur dieses Gerät</span>
-  <button id="userChip" class="chip">Anmelden</button>
+  <div class="hwrap">
+    <div class="logo"><h1>🏈 NFL TIPPSPIEL</h1><div class="sub" id="sub">LADE SPIELPLAN …</div></div>
+    <button id="userChip" class="rbtn nc" style="border-radius:6px">Anmelden</button>
+  </div>
+  <nav>
+    <button class="rbtn ny" data-tab="tippen"><span class="ic">🏈</span>Tippen</button>
+    <button class="rbtn nc" data-tab="woche"><span class="ic">📋</span>Woche</button>
+    <button class="rbtn nm" data-tab="tabelle"><span class="ic">🏆</span>Tabelle</button>
+    <button class="rbtn nl" data-tab="setup"><span class="ic">📜</span>Regeln</button>
+  </nav>
 </header>
-<nav>
-  <button data-tab="tippen" class="on">Tippen</button>
-  <button data-tab="woche">Wochenabrechnung</button>
-  <button data-tab="tabelle">Tabelle</button>
-  <button data-tab="setup">Regeln & Einstellungen</button>
-</nav>
-<main id="view"><div class="loading">Lade NFL-Spielplan …</div></main>
+<main id="view"><div class="loading">LADE NFL-SPIELPLAN …</div></main>
 <div id="savebar" class="savebar" hidden></div>
-<div id="modal" class="modal-bg"><div class="modal" id="modalBox"></div></div>
+<div id="modal" class="modal-bg"><div class="modal panel" id="modalBox"></div></div>
 <div id="toast"></div>
 
 <script>
@@ -118,7 +274,6 @@ code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:13px;word-
    ===================================================================== */
 const CONFIG = {
   // Firebase Realtime Database URL (leer = lokaler Testmodus, nur dieses Gerät)
-  // z.B. "https://mein-tippspiel-default-rtdb.europe-west1.firebasedatabase.app"
   FIREBASE_URL: "https://nfl-tippspiel-df32c-default-rtdb.europe-west1.firebasedatabase.app",
   GROUP: "freunde",      // Name der Tipprunde (mehrere Runden in einer DB möglich)
   LOCK_MINUTES: 60,      // Sperre X Minuten vor dem ersten Spiel der Woche
@@ -128,6 +283,44 @@ const CONFIG = {
 };
 const ESPN = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
 
+// Teamfarben: [Hauptfarbe, Zweitfarbe, Akzent]
+const TEAMC = {
+  ARI:["97233F","000000","FFB612"], ATL:["A71930","000000","A5ACAF"], BAL:["241773","000000","9E7C0C"],
+  BUF:["00338D","C60C30","FFFFFF"], CAR:["0085CA","101820","BFC0BF"], CHI:["0B162A","C83803","FFFFFF"],
+  CIN:["FB4F14","000000","FFFFFF"], CLE:["311D00","FF3C00","FFFFFF"], DAL:["003594","869397","FFFFFF"],
+  DEN:["FB4F14","002244","FFFFFF"], DET:["0076B6","B0B7BC","FFFFFF"], GB:["203731","FFB612","FFFFFF"],
+  HOU:["03202F","A71930","FFFFFF"], IND:["002C5F","A2AAAD","FFFFFF"], JAX:["006778","D7A22A","101820"],
+  KC:["E31837","FFB81C","FFFFFF"],  LV:["000000","A5ACAF","FFFFFF"],  LAC:["0080C6","FFC20E","FFFFFF"],
+  LAR:["003594","FFA300","FFFFFF"], MIA:["008E97","FC4C02","FFFFFF"], MIN:["4F2683","FFC62F","FFFFFF"],
+  NE:["002244","C60C30","B0B7BC"],  NO:["D3BC8D","101820","FFFFFF"],  NYG:["0B2265","A71930","FFFFFF"],
+  NYJ:["125740","FFFFFF","000000"], PHI:["004C54","A5ACAF","000000"], PIT:["FFB612","101820","FFFFFF"],
+  SF:["AA0000","B3995D","FFFFFF"],  SEA:["002244","69BE28","A5ACAF"], TB:["D50A0A","FF7900","34302B"],
+  TEN:["0C2340","4B92DB","C8102E"], WSH:["5A1414","FFB612","FFFFFF"]
+};
+const tc = t => TEAMC[t.abbr] || [t.color || "444444", t.alt || "888888", "FFFFFF"];
+const tvars = t => { const [a, b, c] = tc(t); return `--c1:#${a};--c2:#${b};--c3:#${c}`; };
+
+/* ---------------- TV-Sender im deutschsprachigen Raum (Saison 2026/27) ----------------
+   Regeln nach Anstoßzeit (deutsche Zeit). RTL (frei) + Sky (Pay) haben die Rechte.
+   sure:false = Sender zeigt in diesem Slot nur 1 von mehreren Spielen -> mit "?" markiert.
+   Genaue Sender pro Spiel kann der Admin im Spiel per ✎ eintragen (überschreibt die Regel). */
+const berlinFmt = new Intl.DateTimeFormat("en-GB", {timeZone:"Europe/Berlin", weekday:"short", hour:"2-digit", minute:"2-digit", hour12:false});
+function tvFor(ev, key) {
+  const o = S.tv?.["e" + ev.id];
+  if (o) return o.split(",").map(s => s.trim()).filter(Boolean).map(n => ({n, sure: true}));
+  const p = Object.fromEntries(berlinFmt.formatToParts(new Date(ev.date)).map(x => [x.type, x.value]));
+  const h = (+p.hour % 24) + (+p.minute) / 60, wd = p.weekday;
+  if (key === "3-5") return [{n:"RTL", sure:true}, {n:"Sky", sure:true}];          // Super Bowl
+  if (h < 6) return [{n:"RTL", sure:true}, {n:"Sky", sure:true}];                    // Thursday/Sunday/Monday Night
+  if (ev.neutral && h < 18) return [{n:"RTL", sure:true}];                          // Europa-Spiele
+  if (wd === "Sun" && h >= 18.5 && h < 20.5) return [{n:"Sky Konferenz", sure:true}, {n:"RTL / RTL+", sure:false}];
+  if (wd === "Sun" && h >= 21.5 && h < 23.5) return [{n:"Sky Konferenz", sure:true}, {n:"RTL", sure:false}];
+  if (wd === "Thu" && h >= 17) return [{n:"NITRO", sure:false}];                    // Thanksgiving-Nachmittag
+  return [{n:"Sky", sure:false}];
+}
+const tvClass = n => /^rtl\s*\+|rtl\+/i.test(n) ? "tv-rtlp" : /^rtl/i.test(n) ? "tv-rtl" : /nitro/i.test(n) ? "tv-nitro" : /sky|wow/i.test(n) ? "tv-sky" : /dazn|game ?pass/i.test(n) ? "tv-gp" : "tv-x";
+const isAdmin = () => localStorage.getItem("tip-admin") === "1";
+
 /* ===================================================================== */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -136,15 +329,15 @@ const fmtDay = new Intl.DateTimeFormat("de-DE", {weekday:"long", day:"2-digit", 
 const fmtTime = new Intl.DateTimeFormat("de-DE", {hour:"2-digit", minute:"2-digit"});
 const fmtFull = new Intl.DateTimeFormat("de-DE", {weekday:"short", day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit"});
 
-// DB-URL kann per Link (?db=...) geteilt werden
 const qs = new URLSearchParams(location.search);
 if (qs.get("db")) { localStorage.setItem("tip-db", qs.get("db")); history.replaceState(null, "", location.pathname); }
 let dbUrl = (localStorage.getItem("tip-db") || CONFIG.FIREBASE_URL || "").trim().replace(/\/+$/, "");
 
 const S = {
   season: null, curKey: null, key: null, week: null,
-  players: {}, tips: {}, me: localStorage.getItem("tip-me"),
-  draft: null, dirty: false, tab: "tippen"
+  players: {}, tips: {}, tv: {}, me: localStorage.getItem("tip-me"),
+  draft: null, dirty: false, tab: "tippen",
+  view: localStorage.getItem("tip-view") || (matchMedia("(orientation: portrait)").matches && innerWidth < 760 ? "hoch" : "quer")
 };
 
 /* ---------------- Speicher: Firebase REST oder localStorage ---------------- */
@@ -160,6 +353,14 @@ const DB = {
     let o = JSON.parse(localStorage.getItem("tip-local") || "{}");
     for (const p of `${this.root()}/${path}`.split("/")) o = o?.[p];
     return o ?? null;
+  },
+  async keys(path) {
+    if (this.remote()) {
+      const r = await fetch(`${dbUrl}/${this.root()}/${path}.json?shallow=true`);
+      if (!r.ok) throw new Error("Datenbank-Fehler " + r.status);
+      return Object.keys((await r.json()) || {});
+    }
+    return Object.keys((await this.get(path)) || {});
   },
   async put(path, val) {
     if (this.remote()) {
@@ -186,6 +387,7 @@ const WEEKS = [
   {key:"3-3", label:"Conference Finals"}, {key:"3-5", label:"Super Bowl"}
 ];
 const weekLabel = k => WEEKS.find(w => w.key === k)?.label || k;
+const weekShort = k => k.startsWith("2-") ? "W" + k.slice(2) : {"3-1":"WC","3-2":"DIV","3-3":"CONF","3-5":"SB"}[k] || k;
 const weekOrder = k => { const [t, w] = k.split("-").map(Number); return t * 100 + w; };
 
 function mlToProb(ml) { const n = parseInt(ml, 10); if (!n) return null; return n < 0 ? -n / (-n + 100) : 100 / (n + 100); }
@@ -194,6 +396,7 @@ function parseEvent(e) {
   const c = e.competitions[0];
   const team = x => ({
     abbr: x.team.abbreviation, name: x.team.shortDisplayName, logo: x.team.logo,
+    color: x.team.color, alt: x.team.alternateColor,
     score: x.score, record: x.records?.[0]?.summary || "", winner: !!x.winner
   });
   const home = team(c.competitors.find(x => x.homeAway === "home"));
@@ -221,7 +424,7 @@ function parseEvent(e) {
 const sbCache = {};
 async function loadWeek(key, force = false) {
   if (!force && sbCache[key]) return sbCache[key];
-  const lsKey = `tip-sb-${S.season}-${key}`;
+  const lsKey = `tip-sb2-${S.season}-${key}`;
   if (!force) {
     const c = localStorage.getItem(lsKey);
     if (c) return (sbCache[key] = JSON.parse(c));
@@ -237,7 +440,7 @@ async function loadWeek(key, force = false) {
     done: events.length > 0 && events.every(e => e.completed)
   };
   sbCache[key] = wk;
-  if (wk.done) localStorage.setItem(lsKey, JSON.stringify(wk)); // fertige Wochen cachen
+  if (wk.done) localStorage.setItem(lsKey, JSON.stringify(wk));
   return wk;
 }
 
@@ -251,7 +454,7 @@ function multiplier(tip, eid) {
 function scoreTip(tip, wk) {
   const res = {pts: 0, correct: 0, decided: 0, picked: 0, late: false, per: {}};
   if (!tip) return res;
-  res.late = !!(tip.ts && wk.lock && tip.ts > wk.lock); // nach Sperre gespeichert -> ungültig
+  res.late = !!(tip.ts && wk.lock && tip.ts > wk.lock);
   for (const ev of wk.events) {
     const pick = tip.picks?.["e" + ev.id];
     if (pick) res.picked++;
@@ -264,6 +467,29 @@ function scoreTip(tip, wk) {
   }
   return res;
 }
+
+/* ---------------- Ersatzpunkte ----------------
+   Gilt ab der ersten getippten Woche der Runde, für gesperrte Wochen:
+   - Hat in einer Woche jemand getippt: Wer erst später eingestiegen ist, bekommt den
+     Durchschnitt der vergebenen Punkte dieser Woche ("Ø").
+   - Hat in einer Woche niemand getippt: ALLE bekommen die halbe mögliche Punktzahl,
+     aufgerundet auf eine ganze Zahl ("~"). */
+function maxPoints(n) {
+  const d = Math.min(n, CONFIG.DOUBLE_MAX), h = Math.min(Math.max(n - d, 0), CONFIG.HALF_MAX);
+  return (n - d - h) + 2 * d + 0.5 * h;
+}
+const joinedAfter = (pid, wk) => wk.lock !== null && (S.players[pid]?.joined || 0) > wk.lock;
+// liefert für einen Spieler ohne Tipp {p, kind:"avg"|"half"} oder null
+function fillFor(pid, wk, tipsMap) {
+  if (!isLocked(wk) || !wk.events.length) return null;
+  const pts = Object.entries(tipsMap || {}).filter(([id]) => S.players[id]).map(([, t]) => scoreTip(t, wk).pts);
+  if (!pts.length) return {p: Math.ceil(maxPoints(wk.events.length) / 2), kind: "half"};
+  if (!joinedAfter(pid, wk)) return null;
+  return {p: Math.round(pts.reduce((a, b) => a + b, 0) / pts.length * 10) / 10, kind: "avg"};
+}
+const fillTxt = f => f.kind === "avg"
+  ? `<span class="fillv" title="Später eingestiegen – Durchschnitt der Woche">Ø${fmtPts(f.p)}</span>`
+  : `<span class="fillv" title="Niemand hat getippt – halbe Punktzahl für alle">~${fmtPts(f.p)}</span>`;
 
 /* ---------------- Spieler / Login ---------------- */
 async function hash(s) {
@@ -279,13 +505,13 @@ function openLogin() {
   const opts = Object.entries(S.players).sort((a, b) => a[1].name.localeCompare(b[1].name))
     .map(([id, p]) => `<option value="${id}">${esc(p.name)}</option>`).join("");
   $("#modalBox").innerHTML = `
-    ${opts ? `<h3>Anmelden</h3><label>Spieler</label><select id="lgP">${opts}</select>
+    ${opts ? `<h3>▶ Anmelden</h3><label>Spieler</label><select id="lgP">${opts}</select>
       <label>PIN</label><input id="lgPin" type="password" inputmode="numeric" autocomplete="off">
-      <div class="row"><button class="btn" id="lgGo">Anmelden</button></div><hr>` : ""}
-    <h3>Neu dabei?</h3>
+      <div class="row"><button class="rbtn y" id="lgGo">Anmelden</button></div><hr>` : ""}
+    <h3>▶ Neu dabei?</h3>
     <label>Dein Name</label><input id="nwName" maxlength="20">
     <label>PIN wählen (mind. 4 Zeichen)</label><input id="nwPin" type="password" inputmode="numeric" autocomplete="off">
-    <div class="row"><button class="btn" id="nwGo">Mitspielen</button><button class="btn sec" id="mClose">Abbrechen</button></div>`;
+    <div class="row"><button class="rbtn l" id="nwGo">Mitspielen</button><button class="rbtn g" id="mClose">Abbrechen</button></div>`;
   $("#modal").classList.add("show");
   $("#mClose").onclick = closeModal;
   if (opts) $("#lgGo").onclick = async () => {
@@ -313,12 +539,16 @@ function setMe(id) {
 function closeModal() { $("#modal").classList.remove("show"); }
 function updateHeader() {
   $("#userChip").textContent = meName() ? `👤 ${meName()}` : "Anmelden";
-  $("#modeChip").hidden = DB.remote();
+  const parts = [];
+  if (S.season) parts.push(`SAISON ${S.season}`);
+  if (S.key) parts.push(weekLabel(S.key).toUpperCase());
+  if (!DB.remote()) parts.push("TESTMODUS");
+  $("#sub").textContent = parts.join(" · ") || "LADE …";
 }
 $("#userChip").onclick = () => {
   if (!S.me) return openLogin();
   $("#modalBox").innerHTML = `<h3>👤 ${esc(meName())}</h3><p class="muted">Angemeldet auf diesem Gerät.</p>
-    <div class="row"><button class="btn danger" id="lo">Abmelden</button><button class="btn sec" id="mClose">Schließen</button></div>`;
+    <div class="row"><button class="rbtn r" id="lo">Abmelden</button><button class="rbtn g" id="mClose">Schließen</button></div>`;
   $("#modal").classList.add("show");
   $("#mClose").onclick = closeModal;
   $("#lo").onclick = () => { if (S.dirty && !confirm("Ungespeicherte Tipps verwerfen?")) return; S.dirty = false; setMe(null); closeModal(); };
@@ -349,10 +579,10 @@ window.addEventListener("beforeunload", e => { if (S.dirty) { e.preventDefault()
 
 /* ---------------- Rendering ---------------- */
 function weekBar() {
-  const opts = WEEKS.map(w => `<option value="${w.key}" ${w.key === S.key ? "selected" : ""}>${w.label}${w.key === S.curKey ? " (aktuell)" : ""}</option>`).join("");
+  const opts = WEEKS.map(w => `<option value="${w.key}" ${w.key === S.key ? "selected" : ""}>${w.label}${w.key === S.curKey ? " ★" : ""}</option>`).join("");
   return `<div class="weekbar">
-    <button class="nb" data-wk="-1">◀</button><select id="wkSel">${opts}</select><button class="nb" data-wk="1">▶</button>
-    ${S.key !== S.curKey ? `<button class="nb" data-wk="0">Aktuelle Woche</button>` : ""}
+    <button class="rbtn g" data-wk="-1" aria-label="Vorherige Woche">◀</button><select id="wkSel">${opts}</select><button class="rbtn g" data-wk="1" aria-label="Nächste Woche">▶</button>
+    ${S.key !== S.curKey ? `<button class="rbtn nc" data-wk="0" title="Aktuelle Woche">★ Jetzt</button>` : ""}
   </div>`;
 }
 function bindWeekBar() {
@@ -363,17 +593,18 @@ function bindWeekBar() {
   });
   const sel = $("#wkSel"); if (sel) sel.onchange = () => selectWeek(sel.value);
 }
+const pad = n => String(n).padStart(2, "0");
 function countdown(ms) {
-  if (ms <= 0) return "0 Min";
+  if (ms <= 0) return "00:00:00";
   const d = Math.floor(ms / 864e5), h = Math.floor(ms / 36e5) % 24, m = Math.floor(ms / 6e4) % 60, s = Math.floor(ms / 1000) % 60;
-  return d ? `${d} T ${h} Std` : h ? `${h} Std ${m} Min` : `${m} Min ${s} s`;
+  return (d ? `${d}T ` : "") + `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
-function lockInfo() {
+function lockLine() {
   const wk = S.week;
-  if (!wk.events.length) return `<span>Keine Spiele in dieser Woche.</span>`;
-  if (wk.done) return `<b class="lock-closed">🏁 Woche abgeschlossen & abgerechnet</b>`;
-  if (isLocked(wk)) return `<b class="lock-closed">🔒 Tippabgabe gesperrt</b> <span>seit ${fmtFull.format(wk.lock)}</span>`;
-  return `<b class="lock-open">🟢 Tippabgabe offen</b> <span>bis ${fmtFull.format(wk.lock)} · noch <b id="cd">${countdown(wk.lock - Date.now())}</b></span>`;
+  if (!wk.events.length) return `<span class="badge b-closed">Spielfrei</span><span>Keine Spiele in dieser Woche.</span>`;
+  if (wk.done) return `<span class="badge b-done">🏁 Abgerechnet</span><span>Alle Spiele beendet.</span>`;
+  if (isLocked(wk)) return `<span class="badge b-closed">🔒 Gesperrt</span><span class="muted">seit ${fmtFull.format(wk.lock)}</span>`;
+  return `<span class="badge b-open">🟢 Offen</span><span>Abgabe bis <b>${fmtFull.format(wk.lock)}</b></span>`;
 }
 
 function oddsHtml(ev) {
@@ -381,14 +612,13 @@ function oddsHtml(ev) {
   let bar = "";
   if (o.pA && o.pH) {
     const a = Math.round(o.pA * 100), h = 100 - a;
-    bar = `<div class="bar"><span class="a" style="width:${a}%">${ev.away.abbr} ${a}%</span><span class="h">${h}% ${ev.home.abbr}</span></div>`;
+    bar = `<div class="obar" style="--ca:#${tc(ev.away)[0]};--ch:#${tc(ev.home)[0]}"><span class="a" style="width:${a}%">${ev.away.abbr} ${a}%</span><span class="h">${h}% ${ev.home.abbr}</span></div>`;
   }
   const parts = [];
-  if (o.fav) parts.push(`Favorit: <b class="fav">${o.fav}</b>`);
-  if (o.details) parts.push(esc(o.details));
+  if (o.fav) parts.push(`Favorit <b class="fav">${o.fav}</b>`);
+  if (o.details && o.details !== "EVEN") parts.push(esc(o.details));
   if (o.ou) parts.push(`O/U ${o.ou}`);
-  if (o.mlA && o.mlH) parts.push(`ML ${ev.away.abbr} ${o.mlA} / ${ev.home.abbr} ${o.mlH}`);
-  return `<div class="odds">${bar}${parts.join(" · ")} <span title="Quelle">(${esc(o.provider)})</span></div>`;
+  return `<div class="odds">${bar}${parts.join(" · ")} <span class="muted">(${esc(o.provider)})</span></div>`;
 }
 
 function renderTippen() {
@@ -396,55 +626,69 @@ function renderTippen() {
   const sc = locked && myTip ? scoreTip(myTip, wk) : null;
   const src = locked ? (myTip || {picks:{}, dbl:[], half:null}) : d;
   const nPicked = Object.keys(src.picks || {}).length;
-  let html = weekBar() + `<div class="info">${lockInfo()}</div>`;
+  let html = weekBar();
 
-  if (!S.me) html += `<div class="info"><span>Melde dich an, um zu tippen.</span><button class="btn" id="loginBtn">Anmelden / Mitspielen</button></div>`;
-  else if (wk.events.length) {
-    html += `<div class="info">
-      <span>Getippt: <b>${nPicked}/${wk.events.length}</b></span>
-      <span>Doppelt: <b>${(src.dbl || []).length}/${CONFIG.DOUBLE_MAX}</b></span>
-      <span>Halb: <b>${src.half ? 1 : 0}/${CONFIG.HALF_MAX}</b></span>
-      ${sc ? `<span>Punkte: <b>${fmtPts(sc.pts)}</b> (${sc.correct}/${sc.decided} richtig)</span>` : ""}
-      ${sc?.late ? `<b class="lock-closed">⚠ Tipps nach der Sperre gespeichert – ungültig</b>` : ""}
-      ${locked && !myTip ? `<b class="lock-closed">Du hast diese Woche nicht getippt.</b>` : ""}
-    </div>`;
+  html += `<div class="panel status"><div class="lockline">${lockLine()}</div><div class="stats">`;
+  if (!locked && wk.events.length) html += `<div class="stat cdw"><div class="k">Eingabe wird gesperrt in</div><div class="v" id="cd">${countdown(wk.lock - Date.now())}</div></div>`;
+  if (S.me && wk.events.length) {
+    html += `<div class="stat"><div class="k">Getippt</div><div class="v cy">${nPicked}/${wk.events.length}</div></div>
+      <div class="stat"><div class="k">Doppelt 2×</div><div class="v gd">${(src.dbl || []).length}/${CONFIG.DOUBLE_MAX}</div></div>
+      <div class="stat"><div class="k">Halb ½</div><div class="v pu">${src.half ? 1 : 0}/${CONFIG.HALF_MAX}</div></div>`;
+    if (sc) html += `<div class="stat"><div class="k">Punkte</div><div class="v gr">${fmtPts(sc.pts)}</div></div>
+      <div class="stat"><div class="k">Richtig</div><div class="v cy">${sc.correct}/${sc.decided}</div></div>`;
   }
+  html += `</div>`;
+  if (!S.me) html += `<div class="row"><button class="rbtn y" id="loginBtn">▶ Anmelden / Mitspielen</button></div>`;
+  if (sc?.late) html += `<div class="hint" style="color:var(--red)">⚠ Tipps nach der Sperre gespeichert – ungültig</div>`;
+  if (S.me && locked && !myTip && wk.events.length) html += `<div class="hint" style="color:var(--red)">Du hast diese Woche nicht getippt.</div>`;
+  if (S.me && !locked && wk.events.length) html += `<div class="hint">▶ Sieger antippen · 2× und ½ vergeben · speichern</div>`;
+  html += `</div>`;
+
+  html += `<div class="legend"><span><i style="background:var(--red)"></i>Heimteam</span><span><i style="background:var(--yellow)"></i>Dein Tipp</span><span><i style="background:var(--gold)"></i>2× Doppelt</span><span><i style="background:var(--half)"></i>½ Halb</span></div>`;
 
   let lastDay = "";
-  html += `<div>`;
   for (const ev of wk.events) {
     const day = fmtDay.format(ev.date);
     if (day !== lastDay) { if (lastDay) html += `</div>`; html += `<div class="day">${day}</div><div class="games">`; lastDay = day; }
-    const pick = src.picks?.["e" + ev.id];
-    const isD = (src.dbl || []).includes(ev.id), isH = src.half === ev.id;
+    const pick = S.me ? src.picks?.["e" + ev.id] : null;
+    const isD = !!S.me && (src.dbl || []).includes(ev.id), isH = !!S.me && src.half === ev.id;
     const canEdit = !!S.me && !locked;
-    const teamBtn = t => {
-      let cls = "team";
-      if (S.me && pick === t.abbr) cls += " sel";
+    const teamBtn = (t, side) => {
+      let cls = "team" + (side === "home" ? " home" : "");
+      if (pick === t.abbr) cls += " sel"; else if (pick) cls += " dim";
       if (ev.completed && ev.winner === t.abbr) cls += " won";
-      let mark = "";
-      if (S.me && pick === t.abbr && ev.completed) { const ok = ev.winner === t.abbr && !sc?.late; cls += ok ? " right" : " wrong"; mark = ok ? "✓" : "✗"; }
+      let stamp = "";
+      if (pick === t.abbr && ev.completed) { const ok = ev.winner === t.abbr && !sc?.late; cls += ok ? " right" : " wrong"; stamp = ok ? "✔" : "✘"; }
       const showScore = ev.state !== "pre";
-      return `<button class="${cls}" data-e="${ev.id}" data-t="${t.abbr}" ${canEdit ? "" : "disabled"}>
-        ${mark ? `<span class="mark">${mark}</span>` : ""}
-        <img src="${t.logo}" alt="" loading="lazy"><b>${t.abbr}</b><small>${esc(t.name)}${t.record ? " · " + t.record : ""}</small>
-        ${showScore ? `<span class="score">${t.score}</span>` : ""}</button>`;
+      return `<button class="${cls}" style="${tvars(t)}" data-e="${ev.id}" data-t="${t.abbr}" ${canEdit ? "" : "disabled"} aria-label="${esc(t.name)} ${side === "home" ? "(Heim)" : "(Gast)"}">
+        <span class="tag">${side === "home" ? "HEIM" : "GAST"}</span>
+        ${stamp ? `<span class="stamp">${stamp}</span>` : ""}
+        <span class="crest"><img src="${t.logo}" alt="" loading="lazy"></span>
+        <b>${t.abbr}</b><small>${esc(t.name)}</small>${t.record ? `<small>${t.record}</small>` : ""}
+        ${showScore ? `<span class="score led">${t.score}</span>` : ""}
+        ${pick === t.abbr ? `<span class="pick">TIPP</span>` : ""}</button>`;
     };
-    const status = ev.state === "in" ? `<span class="live">● LIVE ${esc(ev.detail)}</span>` : ev.completed ? `Endstand${ev.winner === "TIE" ? " (Unentschieden)" : ""}` : fmtTime.format(ev.date) + " Uhr";
+    let st;
+    if (ev.state === "in") st = `<span class="st live">● LIVE ${esc(ev.detail)}</span>`;
+    else if (ev.completed) st = `<span class="st fin">${ev.winner === "TIE" ? "Remis" : "Endstand"}</span>`;
+    else if (isD) st = `<span class="st mul">2× Doppelt</span>`;
+    else if (isH) st = `<span class="st mul h">½ Halb</span>`;
+    else st = ev.neutral ? `<span class="st">Neutral</span>` : "";
     let ptsHtml = "";
-    if (sc && sc.per[ev.id]) { const p = sc.per[ev.id]; ptsHtml = `<span class="pts ${p.ok ? "g" : "r"}">${p.ok ? "+" + fmtPts(p.p) : "0"}</span>`; }
-    html += `<div class="game ${isD ? "dbl" : ""} ${isH ? "half" : ""}">
-      <div class="ghead"><span>${ev.away.name} @ ${ev.home.name}${ev.neutral ? " (neutral)" : ""}</span>${status}</div>
-      <div class="teams">${teamBtn(ev.away)}<span class="at">@</span>${teamBtn(ev.home)}</div>
+    if (sc && sc.per[ev.id]) { const p = sc.per[ev.id]; ptsHtml = `<span class="pts ${p.ok ? "gp" : "rp"}">${p.ok ? "+" + fmtPts(p.p) : "0"}</span>`; }
+    html += `<div class="panel game ${isD ? "dbl" : ""} ${isH ? "half" : ""}">
+      <div class="ghead"><span class="t">${fmtTime.format(ev.date)}</span>
+        <span class="tvs">${tvFor(ev, S.key).map(t => `<span class="tv ${tvClass(t.n)} ${t.sure ? "" : "maybe"}" title="${t.sure ? "Live" : "Zeigt in diesem Slot 1 Spiel – welches, steht im TV-Plan"}">${esc(t.n)}${t.sure ? "" : "?"}</span>`).join("")}
+        ${isAdmin() ? `<button class="tvedit" data-tv="${ev.id}" title="Sender eintragen">✎</button>` : ""}</span>${st}</div>
+      <div class="match">${teamBtn(ev.away, "away")}<span class="vs">@</span>${teamBtn(ev.home, "home")}</div>
       ${oddsHtml(ev)}
       ${S.me ? `<div class="mods">
-        <button class="mod d ${isD ? "on" : ""}" data-mod="d" data-e="${ev.id}" ${canEdit ? "" : "disabled"}>×2 Doppelt</button>
-        <button class="mod h ${isH ? "on" : ""}" data-mod="h" data-e="${ev.id}" ${canEdit ? "" : "disabled"}>½ Halb</button>
-        ${ptsHtml}</div>` : ""}
+        <button class="rbtn y ${isD ? "on" : ""}" data-mod="d" data-e="${ev.id}" ${canEdit ? "" : "disabled"}>2× Doppelt</button>
+        <button class="rbtn m ${isH ? "on" : ""}" data-mod="h" data-e="${ev.id}" ${canEdit ? "" : "disabled"}>½ Halb</button>
+        ${ptsHtml}</div>` : `<div style="height:10px"></div>`}
     </div>`;
   }
   if (lastDay) html += `</div>`;
-  html += `</div>`;
   $("#view").innerHTML = html;
   bindWeekBar();
   if ($("#loginBtn")) $("#loginBtn").onclick = openLogin;
@@ -454,7 +698,17 @@ function renderTippen() {
     if (d.picks[k] === b.dataset.t) delete d.picks[k]; else d.picks[k] = b.dataset.t;
     S.dirty = true; render();
   });
-  document.querySelectorAll(".mod[data-mod]").forEach(b => b.onclick = () => {
+  document.querySelectorAll("[data-tv]").forEach(b => b.onclick = async () => {
+    const k = "e" + b.dataset.tv;
+    const v = prompt("TV-Sender für dieses Spiel (mit Komma trennen, z.B. RTL, Sky).\nLeer lassen = automatische Regel.", S.tv[k] || "");
+    if (v === null) return;
+    try {
+      await DB.put(`tv/${S.key}/${k}`, v.trim() || null);
+      if (v.trim()) S.tv[k] = v.trim(); else delete S.tv[k];
+      toast("Sender gespeichert"); render();
+    } catch (e) { toast("Fehler: " + e.message); }
+  });
+  document.querySelectorAll("[data-mod]").forEach(b => b.onclick = () => {
     const id = b.dataset.e;
     if (b.dataset.mod === "d") {
       if (d.dbl.includes(id)) d.dbl = d.dbl.filter(x => x !== id);
@@ -469,130 +723,203 @@ function renderTippen() {
   const sb = $("#savebar");
   if (S.me && !locked && wk.events.length) {
     sb.hidden = false;
-    sb.innerHTML = `<span class="muted">${S.dirty ? "Ungespeicherte Änderungen" : myTip ? "Tipps gespeichert ✓" : "Noch nichts gespeichert"}</span>
-      <button class="btn" id="saveBtn" ${S.dirty ? "" : "disabled"}>Tipps speichern</button>`;
+    sb.innerHTML = `<span class="msg ${S.dirty ? "dirty" : ""}">${S.dirty ? "▶ Nicht gespeichert!" : myTip ? "✔ Gespeichert" : "Noch nichts gespeichert"}</span>
+      <button class="rbtn y" id="saveBtn" ${S.dirty ? "" : "disabled"}>💾 Speichern</button>`;
     $("#saveBtn").onclick = saveTips;
   } else sb.hidden = true;
 }
 
+function pickChip(ev, pick, mult, state) {
+  const t = pick === ev.home.abbr ? ev.home : ev.away;
+  const sup = mult === 2 ? `<sup>2×</sup>` : mult === 0.5 ? `<sup class="h">½</sup>` : "";
+  return `<span class="chip ${state}" style="${tvars(t)}">${pick}${sup}</span>`;
+}
+
 function renderWoche() {
   const wk = S.week, locked = isLocked(wk);
-  const ids = Object.keys(S.players);
-  const rows = ids.map(id => ({id, name: S.players[id].name, tip: S.tips[id], sc: scoreTip(S.tips[id], wk)}))
-    .sort((a, b) => b.sc.pts - a.sc.pts || b.sc.correct - a.sc.correct || a.name.localeCompare(b.name));
-  const best = rows.length ? rows[0].sc.pts : 0;
-  let html = weekBar() + `<div class="info">${lockInfo()}</div>`;
-  if (!locked) html += `<div class="info"><span>Die Tipps der anderen werden erst nach der Sperre sichtbar.</span></div>`;
+  const fillAllowed = S.firstKey && weekOrder(S.key) >= weekOrder(S.firstKey);
+  const rows = Object.keys(S.players).map(id => {
+    const tip = S.tips[id], sc = scoreTip(tip, wk);
+    const fill = !tip && fillAllowed ? fillFor(id, wk, S.tips) : null;
+    return {id, name: S.players[id].name, tip, sc, fill, pts: tip ? sc.pts : (fill?.p ?? 0)};
+  }).sort((a, b) => b.pts - a.pts || b.sc.correct - a.sc.correct || a.name.localeCompare(b.name));
+  const best = Math.max(0, ...rows.filter(r => r.tip).map(r => r.sc.pts));
+  const ptsTxt = r => r.tip ? fmtPts(r.sc.pts) : r.fill ? fillTxt(r.fill) : "–";
+  const fillLegend = (rows.some(r => r.fill?.kind === "avg") ? "<span>Ø = Durchschnitt (später eingestiegen)</span>" : "")
+    + (rows.some(r => r.fill?.kind === "half") ? "<span>~ = halbe Punktzahl (niemand hat getippt)</span>" : "");
+  const toggle = `<div class="vtoggle"><span>Ansicht</span>
+    <button class="rbtn ${S.view === "hoch" ? "nc on" : "g"}" data-view="hoch">📱 Hochformat</button>
+    <button class="rbtn ${S.view === "quer" ? "nc on" : "g"}" data-view="quer"><span style="display:inline-block;transform:rotate(90deg)">📱</span> Querformat</button></div>`;
+  let html = toggle + weekBar() + `<div class="panel status"><div class="lockline">${lockLine()}</div>
+    ${!locked ? `<div class="hint">Die Tipps der anderen werden erst nach der Sperre sichtbar.</div>` : ""}
+    ${!wk.done && locked ? `<div class="hint">Punkte sind vorläufig, bis alle Spiele beendet sind.</div>` : ""}</div>`;
   if (wk.done && best > 0) {
-    const winners = rows.filter(r => r.sc.pts === best && r.tip).map(r => esc(r.name)).join(", ");
-    html += `<div class="info"><b class="trophy">🏆 Wochensieg: ${winners} mit ${fmtPts(best)} Punkten</b></div>`;
+    const winners = rows.filter(r => r.tip && r.sc.pts === best).map(r => esc(r.name)).join(", ");
+    html += `<div class="panel winner">🏆 Wochensieg: ${winners}<br>${fmtPts(best)} Punkte</div>`;
   }
-  html += `<div class="tbl-wrap"><table><thead><tr><th class="l">#</th><th class="l">Tipper</th>`;
+  // Ränge
+  let rk = 0, pv = null;
+  rows.forEach((r, i) => { if (r.pts !== pv) { rk = i + 1; pv = r.pts; } r.rank = rk; });
+  const cell = (r, ev) => {
+    const pick = r.tip?.picks?.["e" + ev.id];
+    if (!r.tip || !pick) return `<td class="dash">–</td>`;
+    if (!(locked || r.id === S.me)) return `<td style="color:var(--lime)">✓</td>`;
+    const state = ev.completed ? (r.sc.per[ev.id]?.ok ? "ok" : "no") : "";
+    return `<td>${pickChip(ev, pick, multiplier(r.tip, ev.id), state)}</td>`;
+  };
+
+  if (S.view === "hoch") {
+    // Hochformat: Spiele untereinander, Tipper nebeneinander
+    html += `<div class="panel tbl-wrap"><table class="wk-hoch"><thead><tr><th class="stick l">Spiel</th>`;
+    rows.forEach(r => html += `<th class="${r.id === S.me ? "meh" : ""} rk${r.rank}" title="${esc(r.name)}"><span class="rank">${r.rank}</span><div class="pn">${esc(r.name.slice(0, 6))}</div><div class="pp">${ptsTxt(r)}</div></th>`);
+    html += `</tr></thead><tbody>`;
+    for (const ev of wk.events) {
+      const res = ev.state !== "pre" ? `<span class="${ev.winner === ev.away.abbr ? "w" : ""}">${ev.away.score}</span>:<span class="${ev.winner === ev.home.abbr ? "w" : ""}">${ev.home.score}</span>` : fmtTime.format(ev.date);
+      html += `<tr><td class="stick l gcell"><div class="gl"><img src="${ev.away.logo}" alt="">${ev.away.abbr}<i>@</i><img src="${ev.home.logo}" alt="">${ev.home.abbr}</div><div class="gr">${res}</div></td>`;
+      rows.forEach(r => html += cell(r, ev));
+      html += `</tr>`;
+    }
+    if (!rows.length) html += `<tr><td colspan="2" class="muted">Noch keine Tipper angemeldet.</td></tr>`;
+    html += `</tbody></table></div>`;
+    html += `<div class="legend"><span><i style="background:var(--lime)"></i>grün = richtig</span><span><i style="background:#555"></i>grau = falsch</span><span><i style="background:var(--gold)"></i>2×</span><span><i style="background:var(--half)"></i>½</span>${fillLegend}</div>`;
+    $("#view").innerHTML = html;
+    bindWeekBar(); bindView();
+    return;
+  }
+
+  html += `<div class="panel tbl-wrap"><table><thead><tr><th class="stick l">Tipper</th><th>Pkt</th><th>✔</th>`;
   for (const ev of wk.events) {
-    const res = ev.completed ? `<br><span class="${ev.winner === ev.away.abbr ? "c-r" : ""}">${ev.away.score}</span>:<span class="${ev.winner === ev.home.abbr ? "c-r" : ""}">${ev.home.score}</span>` : ev.state === "in" ? `<br><span class="live">${ev.away.score}:${ev.home.score}</span>` : "";
-    html += `<th title="${esc(ev.away.name)} @ ${esc(ev.home.name)}">${ev.away.abbr}<br>@${ev.home.abbr}${res}</th>`;
+    const res = ev.state !== "pre"
+      ? `<span class="th-res"><span class="${ev.winner === ev.away.abbr ? "w" : ""}">${ev.away.score}</span>:<span class="${ev.winner === ev.home.abbr ? "w" : ""}">${ev.home.score}</span></span>` : "";
+    html += `<th title="${esc(ev.away.name)} @ ${esc(ev.home.name)}"><div class="th-team"><img src="${ev.away.logo}" alt="">${ev.away.abbr}<span>@</span><img src="${ev.home.logo}" alt="">${ev.home.abbr}${res}</div></th>`;
   }
-  html += `<th>Richtig</th><th>Punkte</th></tr></thead><tbody>`;
-  rows.forEach((r, i) => {
+  html += `</tr></thead><tbody>`;
+  rows.forEach(r => {
+    const rank = r.rank;
     const showPicks = locked || r.id === S.me;
-    html += `<tr class="${r.id === S.me ? "me" : ""}"><td class="l">${i + 1}</td><td class="l">${esc(r.name)}${wk.done && r.sc.pts === best && best > 0 ? " 🏆" : ""}${r.sc.late ? ' <span class="c-w" title="nach Sperre gespeichert">⚠</span>' : ""}</td>`;
+    const crown = wk.done && r.tip && r.sc.pts === best && best > 0 ? " 🏆" : "";
+    html += `<tr class="${r.id === S.me ? "me" : ""} rk${rank}"><td class="stick l"><span class="rank">${rank}</span> ${esc(r.name)}${crown}${r.sc.late ? ' <span style="color:var(--red)" title="nach Sperre gespeichert">⚠</span>' : ""}</td>
+      <td class="ptsc">${ptsTxt(r)}</td><td>${r.tip ? `${r.sc.correct}/${r.sc.decided}` : "–"}</td>`;
     for (const ev of wk.events) {
       const pick = r.tip?.picks?.["e" + ev.id];
-      if (!r.tip) { html += `<td class="c-o">–</td>`; continue; }
-      if (!showPicks) { html += `<td class="c-o">${pick ? "✓" : "·"}</td>`; continue; }
-      const m = multiplier(r.tip, ev.id);
-      const tag = m === 2 ? `<span class="tag d">2×</span>` : m === 0.5 ? `<span class="tag h">½</span>` : "";
-      const cls = !pick ? "c-o" : ev.completed ? (r.sc.per[ev.id]?.ok ? "c-r" : "c-w") : "";
-      html += `<td class="${cls}">${pick || "–"}${pick ? tag : ""}</td>`;
+      if (!r.tip || !pick) { html += `<td class="dash">–</td>`; continue; }
+      if (!showPicks) { html += `<td style="color:var(--lime)">✓</td>`; continue; }
+      const state = ev.completed ? (r.sc.per[ev.id]?.ok ? "ok" : "no") : "";
+      html += `<td>${pickChip(ev, pick, multiplier(r.tip, ev.id), state)}</td>`;
     }
-    html += `<td>${r.tip ? `${r.sc.correct}/${r.sc.decided}` : "–"}</td><td class="big">${r.tip ? fmtPts(r.sc.pts) : "–"}</td></tr>`;
+    html += `</tr>`;
   });
-  if (!rows.length) html += `<tr><td colspan="${wk.events.length + 4}" class="muted">Noch keine Tipper angemeldet.</td></tr>`;
+  if (!rows.length) html += `<tr><td colspan="${wk.events.length + 3}" class="muted">Noch keine Tipper angemeldet.</td></tr>`;
   html += `</tbody></table></div>
-    <p class="muted">Grün = richtig, Rot = falsch. 2× = doppelte Punkte, ½ = halbe Punkte. ${wk.done ? "" : "Punkte sind vorläufig, bis alle Spiele beendet sind."}</p>`;
+    <div class="legend"><span><i style="background:var(--lime)"></i>grüner Rahmen = richtig</span><span><i style="background:#555"></i>grau = falsch</span><span><i style="background:var(--gold)"></i>2×</span><span><i style="background:var(--half)"></i>½</span>${fillLegend}</div>`;
   $("#view").innerHTML = html;
-  bindWeekBar();
+  bindWeekBar(); bindView();
+}
+function bindView() {
+  document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => {
+    S.view = b.dataset.view; localStorage.setItem("tip-view", S.view); render();
+  });
 }
 
 async function renderTabelle() {
-  $("#view").innerHTML = `<div class="loading">Berechne Saisontabelle …</div>`;
+  $("#view").innerHTML = `<div class="loading">BERECHNE TABELLE …</div>`;
   let all;
-  try { all = (await DB.get("tips")) || {}; } catch (e) { $("#view").innerHTML = `<div class="card">${esc(e.message)}</div>`; return; }
-  const keys = Object.keys(all).sort((a, b) => weekOrder(a) - weekOrder(b));
-  const weeks = await Promise.all(keys.map(k => loadWeek(k, k === S.curKey).catch(() => null)));
+  try { all = (await DB.get("tips")) || {}; } catch (e) { $("#view").innerHTML = `<div class="panel card">${esc(e.message)}</div>`; return; }
+  // Wochen von der ersten getippten Woche bis zur letzten getippten bzw. aktuellen Woche
+  const tipped = Object.keys(all).sort((a, b) => weekOrder(a) - weekOrder(b));
+  let keys = [], weeks = [];
+  if (tipped.length) {
+    const from = weekOrder(tipped[0]), to = Math.max(weekOrder(tipped.at(-1)), weekOrder(S.curKey));
+    const cand = WEEKS.map(w => w.key).filter(k => weekOrder(k) >= from && weekOrder(k) <= to);
+    const loaded = await Promise.all(cand.map(k => loadWeek(k, k === S.curKey).catch(() => null)));
+    cand.forEach((k, i) => { const wk = loaded[i]; if (wk && wk.events.length && (all[k] || isLocked(wk))) { keys.push(k); weeks.push(wk); } });
+  }
   const st = {};
-  for (const id of Object.keys(S.players)) st[id] = {id, name: S.players[id].name, pts: 0, correct: 0, decided: 0, wins: 0, weeks: 0, per: {}};
+  for (const id of Object.keys(S.players)) st[id] = {id, name: S.players[id].name, pts: 0, correct: 0, decided: 0, wins: 0, per: {}, fills: 0};
   keys.forEach((k, i) => {
-    const wk = weeks[i]; if (!wk) return;
+    const wk = weeks[i];
     let best = 0; const scores = {};
     for (const [pid, tip] of Object.entries(all[k] || {})) {
       if (!st[pid]) continue;
       const sc = scoreTip(tip, wk); scores[pid] = sc.pts;
-      st[pid].pts += sc.pts; st[pid].correct += sc.correct; st[pid].decided += sc.decided; st[pid].weeks++;
-      st[pid].per[k] = sc.pts; best = Math.max(best, sc.pts);
+      st[pid].pts += sc.pts; st[pid].correct += sc.correct; st[pid].decided += sc.decided;
+      st[pid].per[k] = {p: sc.pts}; best = Math.max(best, sc.pts);
     }
     if (wk.done && best > 0) for (const [pid, p] of Object.entries(scores)) if (p === best) st[pid].wins++;
+    // Ersatzpunkte (später eingestiegen bzw. niemand hat getippt)
+    for (const pid of Object.keys(st)) {
+      if (st[pid].per[k]) continue;
+      const f = fillFor(pid, wk, all[k]);
+      if (!f) continue;
+      st[pid].per[k] = {p: f.p, fill: f}; st[pid].pts += f.p; st[pid].fills++;
+    }
   });
   const rows = Object.values(st).sort((a, b) => b.pts - a.pts || b.wins - a.wins || b.correct - a.correct || a.name.localeCompare(b.name));
   const lead = rows[0]?.pts || 0;
-  let html = `<div class="card"><h3>🏆 Saison ${S.season} – Gesamtstand</h3><span class="muted">Wochensiege zählen nur für abgeschlossene Wochen. Laufende Woche ist vorläufig.</span></div>
-    <div class="tbl-wrap"><table><thead><tr><th class="l">#</th><th class="l">Tipper</th><th>Punkte</th><th>Rückstand</th><th>Wochensiege</th><th>Trefferquote</th>`;
-  keys.forEach((k, i) => html += `<th title="${weekLabel(k)}">${weekLabel(k).replace("Woche ", "W")}${weeks[i] && !weeks[i].done ? "*" : ""}</th>`);
+  let html = `<div class="panel card"><h3>🏆 Saison ${S.season} – Gesamtstand</h3><span class="muted">Wochensiege zählen nur für abgeschlossene Wochen. * = Woche läuft noch.</span></div>
+    <div class="panel tbl-wrap"><table><thead><tr><th class="stick l">Tipper</th><th>Punkte</th><th>Rückst.</th><th>Siege</th><th>Quote</th>`;
+  keys.forEach((k, i) => html += `<th title="${weekLabel(k)}">${weekShort(k)}${weeks[i] && !weeks[i].done ? "*" : ""}</th>`);
   html += `</tr></thead><tbody>`;
   let rank = 0, prev = null;
   rows.forEach((r, i) => {
     if (r.pts !== prev) { rank = i + 1; prev = r.pts; }
     const q = r.decided ? Math.round(r.correct / r.decided * 100) + "%" : "–";
-    html += `<tr class="${r.id === S.me ? "me" : ""}"><td class="l">${rank}</td><td class="l">${esc(r.name)}</td>
-      <td class="big">${fmtPts(r.pts)}</td><td class="muted">${r.pts === lead ? "–" : "−" + fmtPts(lead - r.pts)}</td>
-      <td>${r.wins ? "🏆".repeat(Math.min(r.wins, 5)) + (r.wins > 5 ? " " + r.wins : "") : "0"}</td><td>${q} <span class="muted">(${r.correct}/${r.decided})</span></td>`;
-    keys.forEach(k => html += `<td>${k in r.per ? fmtPts(r.per[k]) : '<span class="c-o">–</span>'}</td>`);
+    html += `<tr class="${r.id === S.me ? "me" : ""} rk${rank}"><td class="stick l"><span class="rank">${rank}</span> ${esc(r.name)}</td>
+      <td class="ptsc">${fmtPts(r.pts)}</td><td class="muted">${r.pts === lead ? "–" : "−" + fmtPts(lead - r.pts)}</td>
+      <td>${r.wins ? (r.wins > 3 ? "🏆×" + r.wins : "🏆".repeat(r.wins)) : "0"}</td><td>${q}</td>`;
+    keys.forEach(k => {
+      const c = r.per[k];
+      html += `<td>${!c ? '<span class="dash">–</span>' : c.fill ? fillTxt(c.fill) : fmtPts(c.p)}</td>`;
+    });
     html += `</tr>`;
   });
-  if (!rows.length) html += `<tr><td colspan="${6 + keys.length}" class="muted">Noch keine Tipper.</td></tr>`;
-  html += `</tbody></table></div><p class="muted">* = Woche läuft noch</p>`;
+  if (!rows.length) html += `<tr><td colspan="${5 + keys.length}" class="muted">Noch keine Tipper.</td></tr>`;
+  html += `</tbody></table></div>`;
+  const fl = rows.flatMap(r => Object.values(r.per).filter(c => c.fill).map(c => c.fill.kind));
+  if (fl.length) html += `<div class="legend">${fl.includes("avg") ? "<span>Ø = Durchschnitt der Woche (später eingestiegen)</span>" : ""}${fl.includes("half") ? "<span>~ = halbe mögliche Punktzahl (niemand hat getippt)</span>" : ""}</div>`;
   if (S.tab === "tabelle") $("#view").innerHTML = html;
 }
 
 function renderSetup() {
-  const share = dbUrl ? `${location.origin}${location.pathname}?db=${encodeURIComponent(dbUrl)}` : "";
+  const share = dbUrl ? `${location.origin}${location.pathname}` : "";
   $("#view").innerHTML = `
-  <div class="card"><h3>📜 Regeln</h3><ul>
+  <div class="panel card"><h3>📜 Regeln</h3><ul>
     <li>Pro Spiel tippst du den <b>Sieger</b>. Richtig = <b>1 Punkt</b>, falsch = 0 Punkte.</li>
-    <li><b>${CONFIG.DOUBLE_MAX} Spiele</b> kannst du als <b>Doppelt (×2)</b> markieren → 2 Punkte bei richtigem Tipp.</li>
-    <li><b>${CONFIG.HALF_MAX} Spiel</b> kannst du als <b>Halb (½)</b> markieren → 0,5 Punkte bei richtigem Tipp.</li>
-    <li><b>${CONFIG.LOCK_MINUTES} Minuten vor dem ersten Spiel</b> der Woche (meist Donnerstag) wird die Tippabgabe für die ganze Woche gesperrt.</li>
+    <li><b>${CONFIG.DOUBLE_MAX} Spiele</b> als <b style="color:var(--gold)">2× Doppelt</b> markieren → 2 Punkte bei richtigem Tipp.</li>
+    <li><b>${CONFIG.HALF_MAX} Spiel</b> als <b style="color:var(--half)">½ Halb</b> markieren → 0,5 Punkte bei richtigem Tipp.</li>
+    <li><b>${CONFIG.LOCK_MINUTES} Minuten vor dem ersten Spiel</b> der Woche wird die Tippabgabe für die ganze Woche gesperrt.</li>
     <li>Nicht getippte Spiele und Unentschieden geben 0 Punkte.</li>
-    <li>Nach der Sperre sieht jeder die Tipps der anderen. Nach dem letzten Spiel (Montag/Dienstag) ist die Woche abgerechnet; die Höchstpunktzahl gewinnt die Woche 🏆.</li>
+    <li>Nach der Sperre sieht jeder die Tipps der anderen. Nach dem letzten Spiel ist die Woche abgerechnet – die meisten Punkte gewinnen die Woche 🏆.</li>
     <li>Gesamtwertung: Summe aller Wochenpunkte.</li>
+    <li><b>Später einsteigen:</b> Wer während der Saison dazukommt, bekommt für jede verpasste Woche den <b>Durchschnitt der vergebenen Punkte</b> dieser Woche (in der Tabelle mit <span class="fillv">Ø</span> markiert).</li>
+    <li><b>Niemand hat getippt:</b> Hat in einer Woche keiner aus der Runde getippt, bekommen <b>alle</b> die <b>halbe mögliche Punktzahl</b>, aufgerundet (markiert mit <span class="fillv">~</span>).</li>
+    <li>Das Heimteam steht immer rechts und hat einen <b style="color:var(--red)">roten Rahmen</b>.</li>
   </ul></div>
-  <div class="card"><h3>💾 Speicherort der Tipps</h3>
-    <p>Aktuell: <b>${DB.remote() ? "Online-Datenbank (Firebase) – alle Freunde sehen dieselben Daten" : "Lokaler Testmodus – Tipps liegen nur in diesem Browser"}</b></p>
-    <label class="muted">Firebase Realtime Database URL</label>
-    <div class="row"><input id="dbIn" placeholder="https://xxxx-default-rtdb.europe-west1.firebasedatabase.app" value="${esc(dbUrl)}">
-    </div>
-    <div class="row"><button class="btn" id="dbSave">Speichern & testen</button><button class="btn sec" id="dbLocal">Lokalen Testmodus nutzen</button></div>
-    ${share ? `<p>Link für deine Freunde (enthält die Datenbank-Adresse):</p><div class="row"><input readonly value="${esc(share)}" id="shareIn"><button class="btn sec" id="shareBtn">Link kopieren</button></div>` : ""}
-    <details style="margin-top:12px"><summary><b>Anleitung: Kostenlose Firebase-Datenbank einrichten (ca. 5 Min)</b></summary><ol>
-      <li><a href="https://console.firebase.google.com" target="_blank" rel="noopener" style="color:var(--accent)">console.firebase.google.com</a> öffnen, mit Google-Konto anmelden.</li>
-      <li><b>Projekt erstellen</b> → Name z.B. <code>nfl-tippspiel</code> → Google Analytics ausschalten → Erstellen.</li>
-      <li>Links im Menü: <b>Erstellen → Realtime Database</b> → <b>Datenbank erstellen</b> → Standort <b>Belgien (europe-west1)</b> → <b>Im Testmodus starten</b>.</li>
-      <li>Oben steht die URL (endet auf <code>firebasedatabase.app</code>) → kopieren und hier oben einfügen → <b>Speichern & testen</b>.</li>
-      <li>Wichtig: Der Testmodus läuft nach 30 Tagen ab. Unter <b>Regeln</b> stattdessen eintragen und <b>Veröffentlichen</b>:<br>
-      <code>{ "rules": { "tippspiel": { ".read": true, ".write": true } } }</code></li>
-      <li>Den Link von oben an deine Freunde schicken – fertig.</li>
-    </ol></details>
+  ${share ? `<div class="panel card"><h3>📨 Freunde einladen</h3><div class="row"><input readonly value="${esc(share)}" id="shareIn"><button class="rbtn c" id="shareBtn">Link kopieren</button></div></div>` : ""}
+  <div class="panel card"><h3>ℹ️ Datenquellen</h3>
+    <p class="muted">Spielplan, Live-Ergebnisse und Quoten kommen von ESPN (Quoten von DraftKings, nur als Info, wer Favorit ist – Prozent = Siegchance laut Wettquote). Für vergangene Spiele gibt es meist keine Quoten mehr.</p>
+    <p class="muted">Spaß-Tippspiel unter Freunden: Die PIN schützt nur vor Versehen. Tipps, die laut Server-Zeit nach der Sperre gespeichert wurden, zählen nicht.</p>
   </div>
-  <div class="card"><h3>ℹ️ Datenquellen</h3>
-    <p class="muted">Spielplan, Live-Ergebnisse und Quoten kommen von der öffentlichen ESPN-Schnittstelle (Quoten von ${"DraftKings"}, nur als Info, wer Favorit ist – Prozentwerte = Siegwahrscheinlichkeit laut Moneyline). Für vergangene Spiele liefert ESPN meist keine Quoten mehr.</p>
-    <p class="muted">Hinweis: Das ist ein Spaß-Tippspiel unter Freunden ohne echte Sicherheit. Die PIN schützt nur vor Versehen. Tipps, die laut Server-Zeitstempel nach der Sperre gespeichert wurden, werden automatisch nicht gewertet.</p>
-  </div>`;
+  <div class="panel card"><h3>📺 Wo läuft's? (DE · AT · CH)</h3><ul>
+    <li><span class="tv tv-rtl">RTL</span> + <span class="tv tv-sky">Sky</span>: Thursday, Sunday und Monday Night Game (Nachtspiele), Super Bowl. RTL zeigt außerdem alle Europa-Spiele.</li>
+    <li>Sonntag 19:00: <span class="tv tv-sky">Sky Konferenz</span> plus je 1 Spiel auf <span class="tv tv-rtl maybe">RTL?</span> und <span class="tv tv-rtlp maybe">RTL+?</span></li>
+    <li>Sonntag 22:25: <span class="tv tv-sky">Sky Konferenz</span> plus 1 Spiel auf <span class="tv tv-rtl maybe">RTL?</span></li>
+    <li>Mit <b>?</b> = der Sender zeigt nur eines der Spiele dieses Slots. Welches, steht kurz vorher im <a href="https://dasprogramm.de/sport/nfl/sendetermine/" target="_blank" rel="noopener">RTL-Programm</a>.</li>
+    <li>Alle Spiele live: NFL Game Pass (bei DAZN).</li>
+  </ul><p class="muted">Ohne Gewähr – die Sender werden nach Anstoßzeit ermittelt.</p></div>
+  <div class="panel card"><details><summary><b>⚙ Für den Admin</b></summary>
+    <label style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="admTv" style="width:auto" ${isAdmin() ? "checked" : ""}> TV-Sender bei den Spielen selbst eintragen (✎-Knopf)</label>
+    <p>Aktuell: <b>${DB.remote() ? "Online-Datenbank (Firebase)" : "Lokaler Testmodus – nur dieser Browser"}</b></p>
+    <div class="row"><input id="dbIn" placeholder="https://xxxx-default-rtdb.europe-west1.firebasedatabase.app" value="${esc(dbUrl)}"></div>
+    <div class="row"><button class="rbtn y" id="dbSave">Speichern & testen</button><button class="rbtn g" id="dbLocal">Testmodus</button></div>
+  </details></div>`;
+  $("#admTv").onchange = e => { localStorage.setItem("tip-admin", e.target.checked ? "1" : "0"); toast(e.target.checked ? "✎ Sender-Eingabe an" : "Sender-Eingabe aus"); };
   $("#dbSave").onclick = async () => {
     const u = $("#dbIn").value.trim().replace(/\/+$/, "");
     if (!/^https:\/\/.+/.test(u)) return toast("Bitte gültige https-URL eingeben");
     try {
       const r = await fetch(`${u}/tippspiel/${CONFIG.GROUP}/ping.json`, {method:"PUT", body: JSON.stringify(SERVER_TS)});
-      if (!r.ok) throw new Error("Status " + r.status + (r.status === 401 ? " – Regeln erlauben keinen Zugriff" : ""));
+      if (!r.ok) throw new Error("Status " + r.status);
     } catch (e) { return toast("Verbindung fehlgeschlagen: " + e.message); }
     dbUrl = u; localStorage.setItem("tip-db", u); toast("Datenbank verbunden ✓"); await reloadData(); updateHeader(); render();
   };
@@ -601,29 +928,30 @@ function renderSetup() {
 }
 
 function render() {
-  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === S.tab));
+  document.querySelectorAll("nav .rbtn").forEach(b => b.classList.toggle("on", b.dataset.tab === S.tab));
   if (S.tab !== "tippen") $("#savebar").hidden = true;
   if (!S.week) return;
   ({tippen: renderTippen, woche: renderWoche, tabelle: renderTabelle, setup: renderSetup})[S.tab]();
 }
-document.querySelectorAll("nav button").forEach(b => b.onclick = () => { S.tab = b.dataset.tab; render(); });
+document.querySelectorAll("nav .rbtn").forEach(b => b.onclick = () => { S.tab = b.dataset.tab; render(); window.scrollTo(0, 0); });
 
 /* ---------------- Laden ---------------- */
 async function reloadData() {
-  const [players, tips] = await Promise.all([DB.get("players"), DB.get(`tips/${S.key}`)]);
-  S.players = players || {}; S.tips = tips || {};
+  const [players, tips, tv, tipKeys] = await Promise.all([DB.get("players"), DB.get(`tips/${S.key}`), DB.get(`tv/${S.key}`).catch(() => null), DB.keys("tips").catch(() => [])]);
+  S.players = players || {}; S.tips = tips || {}; S.tv = tv || {};
+  S.firstKey = tipKeys.sort((a, b) => weekOrder(a) - weekOrder(b))[0] || null;
   if (S.me && !S.players[S.me]) { S.me = null; localStorage.removeItem("tip-me"); }
   if (!S.dirty) resetDraft();
 }
 async function selectWeek(key) {
   if (S.dirty && !confirm("Ungespeicherte Tipps verwerfen?")) return render();
-  S.dirty = false; S.key = key;
-  $("#view").innerHTML = `<div class="loading">Lade ${weekLabel(key)} …</div>`;
+  S.dirty = false; S.key = key; updateHeader();
+  $("#view").innerHTML = `<div class="loading">LADE ${weekLabel(key).toUpperCase()} …</div>`;
   try {
     S.week = await loadWeek(key, !sbCache[key]?.done);
     await reloadData();
-  } catch (e) { $("#view").innerHTML = `<div class="card">Fehler: ${esc(e.message)}</div>`; return; }
-  if (S.tab === "tabelle") S.tab = "tippen";
+  } catch (e) { $("#view").innerHTML = `<div class="panel card">Fehler: ${esc(e.message)}</div>`; return; }
+  if (S.tab === "tabelle" || S.tab === "setup") S.tab = "tippen";
   render();
 }
 
@@ -636,22 +964,19 @@ async function init() {
     S.curKey = t === 2 ? `2-${w}` : t === 3 ? (w === 4 ? "3-5" : `3-${w}`) : t === 1 ? "2-1" : "3-5";
     if (!WEEKS.some(x => x.key === S.curKey)) S.curKey = "2-1";
   } catch (e) {
-    $("#view").innerHTML = `<div class="card">ESPN-Daten konnten nicht geladen werden: ${esc(e.message)}</div>`; return;
+    $("#view").innerHTML = `<div class="panel card">ESPN-Daten konnten nicht geladen werden: ${esc(e.message)}</div>`; return;
   }
-  updateHeader();
   await selectWeek(S.curKey);
   updateHeader();
 
-  // Countdown & Sperre live
   setInterval(() => {
     if (!S.week || S.week.lock === null) return;
     const el = $("#cd"); const left = S.week.lock - Date.now();
     if (el) el.textContent = countdown(left);
     if (left <= 0 && left > -1500 && S.tab === "tippen") render();
   }, 1000);
-  // Live-Ergebnisse & neue Tipps
   setInterval(async () => {
-    if (!S.week || S.week.done || document.hidden || S.tab === "setup") return;
+    if (!S.week || S.week.done || document.hidden || S.tab === "setup" || S.tab === "tabelle") return;
     try { S.week = await loadWeek(S.key, true); await reloadData(); if (!S.dirty || S.tab !== "tippen") render(); } catch {}
   }, CONFIG.REFRESH_SECONDS * 1000);
 }
