@@ -295,6 +295,7 @@ body.printing .rp-pb { break-before: page; page-break-before: always; }
   <!-- ================= HEUTE ================= -->
   <div class="tab" id="tabHeute">
     <section id="eingabe">
+      <div id="invBanner1"></div>
       <h2>Eintragen</h2>
       <div class="card">
         <h3>🪵 Holz nachgelegt <span class="sub" id="holzInfo"></span></h3>
@@ -399,6 +400,7 @@ body.printing .rp-pb { break-before: page; page-break-before: always; }
   <!-- ================= LAGER ================= -->
   <div class="tab" id="tabLager">
     <section id="lgInput">
+      <div id="invBanner2"></div>
       <h2>Eintragen</h2>
       <div class="ntrow">Datum <input type="date" id="lgDate" style="width:170px">
         <button class="chip" id="lgToday" style="flex:none;padding:8px 14px">Heute</button></div>
@@ -422,8 +424,8 @@ body.printing .rp-pb { break-before: page; page-break-before: always; }
       </div>
       <div class="btngrid">
         <button id="lgBuy">🌲 Holzkauf</button><button id="lgHol">🚜 Holz geholt</button>
-        <button id="lgCost">💶 Kosten</button><button id="lgInv">📋 Kisten zählen</button>
-        <button id="lgGift">🎁 Kisten abgegeben</button><button id="lgStand">🔎 Bestand Bunker/Pellets</button>
+        <button id="lgCost">💶 Kosten</button><button id="lgInvent">📋 Inventur</button>
+        <button id="lgGift" style="grid-column:1 / -1">🎁 Kisten abgegeben (z. B. an Oma)</button>
       </div>
       <div class="card" style="margin-top:12px">
         <h3>Lager-Einträge <span class="sub">antippen zum Ändern</span></h3>
@@ -489,7 +491,7 @@ const CONFIG = {
   HAUS: "eta-twin"               // gleicher Code auf allen Geräten = gleiche Daten
 };
 const DEFAULT_CFG = { kgFuell: 60, kwhHolz: 4.1, kwhPellet: 4.8, sackKg: 15, kgRm: 480,
-                      kistenG: 64, volG: 1.584, kistenK: 28, volK: 1.287, srmRm: 1.4, rmFm: 1.4, traktor: 0, trocken: 18, bunkerG: 3, sackPreis: 9, pelBunkerS: 15, kesselL: 60, pelDichte: 0.65, reserve: 1, tractors: [{ name: "LS", lh: 2.83 }, { name: "International", lh: 3.2 }],
+                      kistenG: 64, volG: 1.584, kistenK: 28, volK: 1.287, srmRm: 1.4, rmFm: 1.4, traktor: 0, trocken: 18, bunkerG: 3, sackPreis: 9, pelBunkerS: 15, kesselL: 60, pelDichte: 0.65, reserve: 1, invMonat: 6, invOn: true, tractors: [{ name: "LS", lh: 2.83 }, { name: "International", lh: 3.2 }],
                       jahr: "heiz", hjStart: 8, saegVon: 7, saegBis: 8,
                       ort: "Großrußbach (A-2114)", lat: 48.47412, lon: 16.41649 };
 const FILLS = [[0.25, "¼"], [0.5, "½"], [0.75, "¾"], [1, "voll"]];
@@ -932,7 +934,7 @@ function eventText0(e) {
   if (e.k === "buy") return `Holzkauf ${e.name || ""} · ${num(e.menge || 0, 1)} ${e.einheit || "fm"} ${e.art || ""} · ${eur((+e.preis || 0) + (+e.neben || 0))}`;
   if (e.k === "hol") return `Holz geholt (${losName(e.los)})${e.rm ? ` · ${num(e.rm, 1)} rm` : ""}${e.h ? ` · ${e.tr || tractorList()[0]?.name || "Traktor"} ${num(e.h, 1)} h ≈ ${num(e.h * tractorLh(e.tr), 1)} l Diesel` : ""}${e.mk ? ` · ${eur(e.mk)}` : ""}`;
   if (e.k === "saeg") return `Sägetag (${losName(e.los)}): ${kistenTxt(e.g, e.kl)} gefüllt${e.res ? ` – reserviert für ${e.res}` : ""}`;
-  if (e.k === "stand") return `Bestand: ${[e.bunker != null && e.bunker !== "" ? `Heizraumbunker ≈ ${num(e.bunker, 1)} Kiste(n)` : "", e.pelS != null ? `Pelletsbunker ≈ ${num(e.pelS, 1)} von ${S.cfg.pelBunkerS} Säcken` : "", e.kesselL != null ? `Behälter am Kessel ${num(e.kesselL)} l` : ""].filter(Boolean).join(" · ")}`;
+  if (e.k === "stand") return `${isInventur(e) ? "Inventur" : "Bestand"}: ${[e.g != null ? `${kistenTxt(e.g, e.kl)} voll` : "", ...(e.stoss || []).filter(x => x.rm > 0).map(x => `Stoß ${losName(x.los)} ${num(x.rm, 1)} rm`),e.bunker != null && e.bunker !== "" ? `Heizraumbunker ≈ ${num(e.bunker, 1)} Kiste(n)` : "", e.pelS != null ? `Pelletsbunker ≈ ${num(e.pelS, 1)} von ${S.cfg.pelBunkerS} Säcken` : "", e.kesselL != null ? `Behälter am Kessel ${num(e.kesselL)} l` : ""].filter(Boolean).join(" · ")}`;
   if (e.k === "bunk") return `Bunker befüllt: ${kistenTxt(e.g, e.kl)}`;
   if (e.k === "cost") return `Kosten ${eur(e.eur)} · ${e.txt || ""}${e.los ? ` (${losName(e.los)})` : ""}`;
   if (e.k === "inv") return `Bestand gezählt: ${kistenTxt(e.g, e.kl)} voll`;
@@ -955,6 +957,8 @@ function render() {
   $("wx").title = `${S.cfg.ort}${tt ? ` · heute ${num(tt[1], 0)}° bis ${num(tt[2], 0)}°` : ""}`;
   $("subtitle").textContent = `ETA Twin 40 kW · ${S.cfg.ort}`;
   sackHtml();
+  const due = invDue();
+  ["invBanner1", "invBanner2"].forEach(id => { const el = $(id); if (el) el.innerHTML = due ? invBannerHtml() : ""; });
   if (S.tab === "heute") renderHeute();
   else if (S.tab === "nachtrag") renderNachtrag();
   else if (S.tab === "lager") renderLager();
@@ -1513,9 +1517,9 @@ $("lgSaeg").onclick = () => {
 $("lgBuy").onclick = () => lagerForm("buy");
 $("lgHol").onclick = () => lagerForm("hol");
 $("lgCost").onclick = () => lagerForm("cost");
-$("lgInv").onclick = () => lagerForm("inv");
+$("lgInvent").onclick = () => inventurForm();
 $("lgGift").onclick = () => lagerForm("gift");
-$("lgStand").onclick = () => lagerForm("stand");
+
 document.addEventListener("click", ev => {
   const b = ev.target.closest("[data-st]"); if (!b) return;
   const [k, d] = b.dataset.st.split(":");
@@ -1854,6 +1858,116 @@ function messForm(id) {
   setTimeout(() => $("mRm").focus(), 50);
 }
 
+/* ================= Inventur: zählen → Abgleich mit der App → anpassen ================= */
+const isInventur = s => s.k === "stand" && (s.inv || s.g != null);
+function invDue() {
+  const c = S.cfg; if (c.invOn === false) return false;
+  const now = new Date(), m = (+c.invMonat || 6) - 1;
+  const start = +new Date(now.getMonth() >= m ? now.getFullYear() : now.getFullYear() - 1, m, 1);
+  if (lsGet("hb-invsnooze", 0) > Date.now()) return false;
+  const last = list().filter(isInventur).at(-1);
+  return !last || last.t < start;
+}
+function invBannerHtml() {
+  return `<div class="card" style="border-color:var(--pellet);background:color-mix(in srgb, var(--pellet) 14%, var(--card))">
+    <h3>📋 Zeit für die Inventur</h3>
+    <div style="font-size:14px;color:var(--muted);margin-bottom:10px">Die Heizsaison ist vorbei: volle Kisten zählen, Pellets- und Holzbunker ansehen, Holz am Stoß abmessen. Die App gleicht danach alles mit deinen Einträgen ab.</div>
+    <div class="dual"><button class="big b-pellet" data-invgo style="padding:12px;font-size:16px">Inventur starten</button><button class="big b-plain" data-invlater style="padding:12px;font-size:16px">In 1 Woche erinnern</button></div></div>`;
+}
+document.addEventListener("click", ev => {
+  if (ev.target.closest("[data-invgo]")) inventurForm();
+  if (ev.target.closest("[data-invlater]")) { lsSet("hb-invsnooze", Date.now() + 7 * 864e5); render(); }
+});
+
+function inventurForm() {
+  const c = S.cfg, L = lager(), now = Date.now();
+  const r2 = v => Math.round(v * 2) / 2;
+  const expHB = L.bunker ? Math.round(L.bunker.rest / (c.volG * kgSrm()) * 4) / 4 : null;
+  const lastP = L.pellets?.stand;
+  const lots = L.lose.filter(l => !l.done && (l.hol || l.measured || l.stoss > 0.05));
+  const st = { g: L.fullG, k: L.fullK, pel: lastP?.pelS != null ? lastP.pelS / c.pelBunkerS : null, kes: lastP?.kesselL != null ? lastP.kesselL / c.kesselL : null,
+               hb: expHB, stoss: Object.fromEntries(lots.map(l => [l.id, r2(l.stoss)])), neu: [] };
+  const chips = (key, opts, fmt) => `<div class="chips" data-ichips="${key}" style="flex-wrap:wrap">${opts.map(v => `<button class="chip ${st[key] === v ? "on" : ""}" data-v="${v}" style="min-width:52px">${fmt(v)}</button>`).join("")}</div>`;
+  const frac = v => ({ 0: "leer", 0.25: "¼", 0.5: "½", 0.75: "¾", 1: "voll" })[v] ?? num(v * 100) + " %";
+  const step = (key, label, exp) => `<label>${label}</label><div class="stepper"><button data-ist="${key}:-1">−</button><div class="val"><span data-isv="${key}">${st[key]}</span><small>App erwartet ${exp}</small></div><button data-ist="${key}:1">+</button></div>`;
+
+  const page1 = () => {
+    modal(`<h3>📋 Inventur</h3>
+      <div class="hint" style="font-size:13px">Vorausgefüllt mit dem, was die App erwartet. Einfach anpassen, was abweicht.</div>
+      ${step("g", "Volle große Kisten", L.fullG)}
+      ${step("k", "Volle kleine Kisten", `${L.fullK}${L.resK || L.resG ? ` (davon ${kistenTxt(L.resG, L.resK)} reserviert für ${esc(L.resFor)})` : ""}`)}
+      <label>Pelletsbunker (fasst ${c.pelBunkerS} Säcke)</label>${chips("pel", [0, 0.25, 0.5, 0.75, 1], frac)}
+      <label>Pelletsbehälter am Kessel (${c.kesselL} l)</label>${chips("kes", [0, 0.5, 1], frac)}
+      <label>Holzbunker im Heizraum (Kisten geschüttet)${expHB != null ? ` – App erwartet ≈ ${num(expHB, 2)}` : ""}</label>${chips("hb", [0, 0.25, 0.5, 1, 1.5, 2, 3], v => num(v, v % 1 ? 2 : 0))}
+      <label>Holz am Stoß – abgemessen (Raummeter je Holzlos)</label>
+      <div id="iStoss">${lots.length ? lots.map(l => `<div class="ntrow" style="margin:6px 0"><span style="flex:1;color:var(--text)">${esc(losName(l.id))}<br><small style="color:var(--muted)">App erwartet ${num(l.stoss, 1)} rm</small></span>
+        <input data-istoss="${l.id}" type="text" inputmode="decimal" value="${num(st.stoss[l.id], 1)}" style="width:90px;flex:none;text-align:right"> rm</div>`).join("") : `<div class="hint">Laut App liegt kein Holz am Stoß.</div>`}</div>
+      <div id="iNeu"></div>
+      <button class="big b-plain" id="iAddNeu" style="padding:10px;font-size:14px;margin-top:6px">+ Holz am Stoß, das noch nicht eingetragen ist</button>
+      <div class="btns"><button id="iX">Abbrechen</button><button class="pri" id="iNext">Weiter → Abgleich</button></div>`);
+    $("modalBox").onclick = ev => {
+      const b = ev.target.closest("[data-ist]"); if (b) { const [k, d] = b.dataset.ist.split(":"); st[k] = Math.max(0, st[k] + +d); document.querySelector(`[data-isv="${k}"]`).textContent = st[k]; return; }
+      const ch = ev.target.closest("[data-ichips] .chip"); if (ch) { const key = ch.parentElement.dataset.ichips; st[key] = +ch.dataset.v; ch.parentElement.querySelectorAll(".chip").forEach(x => x.classList.toggle("on", x === ch)); }
+    };
+    $("iAddNeu").onclick = () => { const i = st.neu.length; st.neu.push({ name: "", art: "Gemischt", rm: 0 });
+      const d = document.createElement("div"); d.className = "measure"; d.style.display = "block";
+      d.append(Object.assign(document.createElement("div"), { textContent: "Neues Holz am Stoß (wird als Holzlos angelegt, Preis später nachtragen)" }));
+      const row = document.createElement("div"); row.className = "inl"; row.style.marginTop = "6px";
+      const n = Object.assign(document.createElement("input"), { placeholder: "Herkunft, z. B. Auktion …" }); n.oninput = () => st.neu[i].name = n.value;
+      const a = document.createElement("select"); ARTEN.forEach(x => a.append(new Option(x, x, x === "Gemischt", x === "Gemischt"))); a.onchange = () => st.neu[i].art = a.value; a.style.width = "110px"; a.style.flex = "none";
+      const r = Object.assign(document.createElement("input"), { placeholder: "rm", inputMode: "decimal" }); r.style.width = "70px"; r.style.flex = "none"; r.oninput = () => st.neu[i].rm = parseFloat(r.value.replace(",", ".")) || 0;
+      row.append(n, a, r); d.append(row); $("iNeu").append(d); n.focus(); };
+    $("iX").onclick = closeModal;
+    $("iNext").onclick = () => { document.querySelectorAll("[data-istoss]").forEach(i => { const v = parseFloat(i.value.replace(",", ".")); st.stoss[i.dataset.istoss] = isNaN(v) ? 0 : v; }); page2(); };
+  };
+
+  const page2 = () => {
+    const dG = st.g - L.fullG, dK = st.k - L.fullK;
+    const lotOpts = sel => L.lose.slice().sort((a, b) => b.e.t - a.e.t).map(l => `<option value="${l.id}" ${l.id === sel ? "selected" : ""}>${esc(losName(l.id))}</option>`).join("");
+    const lastSaw = list().filter(e => e.k === "saeg" && e.los).at(-1)?.los;
+    const row = (what, exp, got, unit, note) => { const d = got == null || exp == null ? null : got - exp;
+      const f = v => num(v, Math.abs(v % 1) > 0.001 ? (Math.abs((v * 4) % 1) < 0.001 ? 2 : 1) : 0);
+      return `<tr><td style="white-space:normal">${what}</td><td>${exp == null ? "–" : f(exp) + unit}</td><td><b>${got == null ? "–" : f(got) + unit}</b></td><td style="${d && Math.abs(d) > 0.01 ? "color:var(--ofen);font-weight:700" : ""}">${d == null ? "" : Math.abs(d) < 0.01 ? "✓" : (d > 0 ? "+" : "") + f(d)}</td></tr>${note ? `<tr><td colspan="4" style="padding-top:0;white-space:normal">${note}</td></tr>` : ""}`; };
+    const boxNote = (d, typ) => !d ? "" : d < 0
+      ? `<select data-ireason="${typ}" style="width:100%"><option value="bunk">${-d} ${typ === "g" ? "große" : "kleine"} verheizt (Bunker nicht eingetragen)</option><option value="gift">${-d} ${typ === "g" ? "große" : "kleine"} abgegeben (z. B. an Oma)</option></select>`
+      : `<select data-ireason="${typ}" style="width:100%">${`<option value="" disabled>${d} ${typ === "g" ? "große" : "kleine"} mehr – gesägt aus:</option>`}${lotOpts(lastSaw)}</select>`;
+    const expPel = lastP?.pelS != null ? lastP.pelS / c.pelBunkerS : null;
+    modal(`<h3>⚖️ Abgleich mit deinen Einträgen</h3>
+      <div class="tablewrap"><table><thead><tr><th></th><th>App</th><th>gezählt</th><th>Diff.</th></tr></thead><tbody>
+        ${row("Volle große Kisten", L.fullG, st.g, "", boxNote(dG, "g"))}
+        ${row("Volle kleine Kisten", L.fullK, st.k, "", boxNote(dK, "k"))}
+        ${row("Holzbunker (Kisten)", expHB, st.hb, "")}
+        ${row("Pelletsbunker", expPel, st.pel, "", expPel != null ? `<span class="hint">App kennt den Pelletsverbrauch nicht – der neue Stand wird einfach übernommen.</span>` : "")}
+        ${lots.map(l => row(`Stoß: ${esc(losName(l.id))}`, l.stoss, st.stoss[l.id], " rm", Math.abs(st.stoss[l.id] - l.stoss) > 0.05 ? `<span class="hint">Menge des Loses wird angepasst (dann stimmt auch €/rm).</span>` : "")).join("")}
+        ${st.neu.filter(n => n.rm > 0).map(n => row(`Neu am Stoß: ${esc(n.name || "ohne Name")}`, 0, n.rm, " rm", `<span class="hint">Wird als neues Holzlos angelegt (vermessen heute).</span>`)).join("")}
+      </tbody></table></div>
+      <div class="btns"><button id="iBack">← Zurück</button><button class="pri" id="iOk">Übernehmen</button></div>`);
+    $("iBack").onclick = page1;
+    $("iOk").onclick = () => {
+      const ev = {}, put = (e, p) => ev[`inv-${p}-${now.toString(36)}`] = e;
+      const reason = typ => document.querySelector(`[data-ireason="${typ}"]`)?.value;
+      // Kisten-Abweichungen als Korrektur (Herkunft der übrigen Kisten bleibt erhalten)
+      [["g", dG], ["k", dK]].forEach(([typ, d]) => { if (!d) return;
+        const amt = { g: typ === "g" ? Math.abs(d) : 0, kl: typ === "k" ? Math.abs(d) : 0 }, note = "Korrektur lt. Inventur";
+        if (d < 0) put({ t: now - 120e3, k: reason(typ) || "bunk", ...amt, est: 1, note, ...(reason(typ) === "gift" ? { an: "" } : {}) }, "box" + typ);
+        else put({ t: now - 120e3, k: "saeg", los: reason(typ), ...amt, est: 1, note }, "box" + typ); });
+      // Holz am Stoß → Menge der Lose anpassen
+      for (const l of lots) { const m = st.stoss[l.id]; if (Math.abs(m - l.stoss) <= 0.05) continue;
+        const e = S.events[l.id], rmMess = Math.round((m + l.sawnSrm / c.srmRm) * 100) / 100;
+        ev[l.id] = { ...e, done: true, rmMess, tMess: e.tMess || now, note: (e.note ? e.note + " · " : "") + `Stoß lt. Inventur ${fmtD(now)}: ${num(m, 1)} rm` }; }
+      st.neu.filter(n => n.rm > 0).forEach((n, i) => put({ t: now - 60e3, k: "buy", name: n.name || "Holz (Inventur)", art: n.art, menge: n.rm, einheit: "rm", preis: 0, neben: 0, done: true, rmMess: n.rm, tMess: now, note: "bei der Inventur am Stoß erfasst – Preis bitte nachtragen" }, "lot" + i));
+      // Inventur-Eintrag mit allen gezählten Werten
+      const stand = { t: now, k: "stand", inv: 1, g: st.g, kl: st.k, stoss: lots.map(l => ({ los: l.id, rm: st.stoss[l.id] })) };
+      if (st.hb != null) stand.bunker = st.hb; if (st.pel != null) stand.pelS = st.pel * c.pelBunkerS; if (st.kes != null) stand.kesselL = st.kes * c.kesselL;
+      put(stand, "stand");
+      for (const [id, e] of Object.entries(ev)) { S.events[id] = e; S.pending[id] = e; }
+      save(); closeModal(); render(); sync();
+      toast(`📋 Inventur gespeichert${Object.keys(ev).length > 1 ? ` · ${Object.keys(ev).length - 1} Anpassung(en)` : " · alles stimmte"}`, false);
+    };
+  };
+  page1();
+}
+
 /* Formulare für Lager-Einträge (neu + ändern) */
 function lagerForm(kind, id) {
   const e = id ? S.events[id] : null, L = lager();
@@ -1965,6 +2079,9 @@ $("btnSettings").onclick = () => {
     <label>Jahreseinteilung (Jahresansicht, Vergleich, Bericht, Kosten)</label>
     <select id="sJahr">${[["heiz-8", "Heizjahr August – Juli (wie Schuljahr)"], ["heiz-9", "Heizjahr September – August"], ["heiz-7", "Heizjahr Juli – Juni"], ["heiz-10", "Heizjahr Oktober – September"], ["kal", "Kalenderjahr Jänner – Dezember"]]
       .map(([v, l]) => `<option value="${v}" ${v === jv ? "selected" : ""}>${l}</option>`).join("")}</select>
+    <label>Inventur-Erinnerung nach der Heizsaison</label>
+    <div class="inl"><select id="sInvOn" style="flex:1"><option value="1" ${c.invOn !== false ? "selected" : ""}>Ein – erinnern ab</option><option value="0" ${c.invOn === false ? "selected" : ""}>Aus</option></select>
+      <select id="sInvM" style="width:130px;flex:none">${MONATE.map((m, i) => `<option value="${i + 1}" ${(+c.invMonat || 6) === i + 1 ? "selected" : ""}>${m}</option>`).join("")}</select></div>
     <label>Holz pro voller Kesselfüllung (kg)</label><input id="sKg" type="number" min="1" step="1" value="${c.kgFuell}">
     <div class="hint">Am besten einmal eine volle Füllung abwiegen. Der Füllraum des ETA Twin 40 fasst grob 50–90 kg, je nach Holzart und Scheitlänge.</div>
     <label>Gewicht pro Raummeter Holz (kg/rm)</label><input id="sRm" type="number" min="100" step="10" value="${c.kgRm}">
@@ -2027,6 +2144,7 @@ $("btnSettings").onclick = () => {
     const q = s => document.querySelector(s);
     nc.tractors = [0, 1, 2].map(i => ({ name: q(`[data-trn="${i}"]`).value.trim(), lh: parseFloat(q(`[data-trl="${i}"]`).value.replace(",", ".")) || 0 })).filter(t => t.name);
     if (!nc.tractors.length) nc.tractors = DEFAULT_CFG.tractors;
+    nc.invOn = $("sInvOn").value === "1"; nc.invMonat = +$("sInvM").value;
     const jNew = $("sJahr").value;
     nc.jahr = jNew === "kal" ? "kal" : "heiz";
     if (jNew !== "kal") nc.hjStart = +jNew.split("-")[1];
