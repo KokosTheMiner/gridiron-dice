@@ -436,6 +436,7 @@ body.printing .rp-pb { break-before: page; page-break-before: always; }
       <div class="card"><h3>📦 Bunker im Heizraum <span class="sub" id="lgBunkInfo"></span></h3><div id="lgBunker"></div></div>
       <div class="card"><h3>Kisten <span class="sub" id="lgBoxSub"></span></h3><div id="lgBoxes"></div></div>
       <div class="card"><h3>🌲 Holzlose <span class="sub">Kauf → Stoß → Kisten</span></h3><div id="lgLose"></div></div>
+      <div class="card"><h3>🚜 Traktor & Diesel <span class="sub">je Waldfahrt</span></h3><div id="lgTraktor"></div></div>
       <div class="card"><h3>💶 Kosten je Jahr</h3><div class="tablewrap" id="lgCosts"></div></div>
     </section>
   </div>
@@ -487,7 +488,7 @@ const CONFIG = {
   HAUS: "eta-twin"               // gleicher Code auf allen Geräten = gleiche Daten
 };
 const DEFAULT_CFG = { kgFuell: 60, kwhHolz: 4.1, kwhPellet: 4.8, sackKg: 15, kgRm: 480,
-                      kistenG: 64, volG: 1.584, kistenK: 28, volK: 1.287, srmRm: 1.4, rmFm: 1.4, traktor: 25, trocken: 18, bunkerG: 3,
+                      kistenG: 64, volG: 1.584, kistenK: 28, volK: 1.287, srmRm: 1.4, rmFm: 1.4, traktor: 0, trocken: 18, bunkerG: 3, sackPreis: 9, tractors: [{ name: "LS", lh: 2.83 }, { name: "International", lh: 3.2 }],
                       jahr: "heiz", hjStart: 8, saegVon: 7, saegBis: 8,
                       ort: "Großrußbach (A-2114)", lat: 48.47412, lon: 16.41649 };
 const FILLS = [[0.25, "¼"], [0.5, "½"], [0.75, "¾"], [1, "voll"]];
@@ -504,6 +505,21 @@ const PP_DEFAULT = {
   2019: { eur: 3.89, est: true }, 2020: { eur: 3.79, est: true }, 2021: { eur: 3.79, est: true }, 2022: { eur: 6.44, est: true },
   2023: { eur: 6.00, src: "Mai 2023" }, 2024: { eur: 4.94, src: "Juli 2024" }, 2025: { eur: 4.97, src: "Mai 2025" }, 2026: { eur: 6.48, src: "Juli 2026" }
 };
+// Dieselpreis Österreich, Jahresdurchschnitt €/l (ÖAMTC; 2021 aus BMWET-Monatswerten via WKO; est = geschätzt)
+const DIESEL_DEFAULT = {
+  2020: { eur: 1.12, est: true }, 2021: { eur: 1.24 }, 2022: { eur: 1.83, est: true }, 2023: { eur: 1.64 },
+  2024: { eur: 1.596 }, 2025: { eur: 1.537 }, 2026: { eur: 1.90, est: true }
+};
+function dieselPrice(y) {
+  if (S.cfg.dp?.[y] > 0) return { eur: +S.cfg.dp[y], own: true };
+  if (DIESEL_DEFAULT[y]) return { ...DIESEL_DEFAULT[y] };
+  const ys = Object.keys(DIESEL_DEFAULT).map(Number).sort((a, b) => a - b), k = y > ys.at(-1) ? ys.at(-1) : ys[0];
+  return { ...DIESEL_DEFAULT[k], from: k };
+}
+const tractorList = () => (S.cfg.tractors || DEFAULT_CFG.tractors).filter(t => t && t.name);
+const tractorLh = name => (tractorList().find(t => t.name === name) || tractorList()[0] || { lh: 0 }).lh || 0;
+// Kosten einer Fahrt: Stunden × (Liter/h × Dieselpreis des Jahres + Zusatzkosten/h) + Maschinenkosten
+const holCost = e => (+e.h || 0) * (tractorLh(e.tr) * dieselPrice(new Date(e.t).getFullYear()).eur + (+S.cfg.traktor || 0)) + (+e.mk || 0);
 // Preis je 15-kg-Sack für ein Jahr: eigener Wert aus den Einstellungen > Tabelle > letzter bekannter Wert
 function pelletPrice(y) {
   const own = S.cfg.pp?.[y];
@@ -517,7 +533,9 @@ function pelletPrice(y) {
 function savings(from, to, Lall = lager()) {
   const c = S.cfg, T = totals(from, to), y = new Date(from).getFullYear(), pr = pelletPrice(y), perKg = pr.eur / 15;
   const woodKwh = T.kg * c.kwhHolz, eqKg = woodKwh / c.kwhPellet;               // so viele kg Pellets hat das Holz ersetzt
-  const pelletCost = T.pkg * perKg, allPellets = (eqKg + T.pkg) * perKg;
+  // tatsächlich bezahlt: Preis je gekauftem Sack (Eintrag oder Einstellung, Standard 9 €)
+  const pelletCost = T.ev.filter(e => e.k === "sack").reduce((s, e) => s + (+e.n || 0) * (+e.eur || +S.cfg.sackPreis || pr.eur), 0);
+  const allPellets = (eqKg + T.pkg) * perKg;
   // Kosten des verheizten Holzes: aus den Bunker-Kisten und ihren Losen, sonst Ø-Preis der vermessenen Lose
   const measured = Lall.lose.filter(l => l.measured && l.basis > 0);
   const avgKg = measured.length ? measured.reduce((s, l) => s + l.cost, 0) / measured.reduce((s, l) => s + l.basis * c.kgRm, 0) : null;
@@ -911,7 +929,7 @@ function eventText0(e) {
   if (e.k === "off") return "Pelletsofen ausgeschaltet";
   if (e.k === "sack") return `Pellets: ${e.n} ${e.n === 1 ? "Sack" : "Säcke"} · ${num(e.n * S.cfg.sackKg)} kg`;
   if (e.k === "buy") return `Holzkauf ${e.name || ""} · ${num(e.menge || 0, 1)} ${e.einheit || "fm"} ${e.art || ""} · ${eur((+e.preis || 0) + (+e.neben || 0))}`;
-  if (e.k === "hol") return `Holz geholt (${losName(e.los)})${e.rm ? ` · ${num(e.rm, 1)} rm` : ""}${e.h ? ` · Traktor ${num(e.h, 1)} h` : ""}${e.mk ? ` · ${eur(e.mk)}` : ""}`;
+  if (e.k === "hol") return `Holz geholt (${losName(e.los)})${e.rm ? ` · ${num(e.rm, 1)} rm` : ""}${e.h ? ` · ${e.tr || tractorList()[0]?.name || "Traktor"} ${num(e.h, 1)} h ≈ ${num(e.h * tractorLh(e.tr), 1)} l Diesel` : ""}${e.mk ? ` · ${eur(e.mk)}` : ""}`;
   if (e.k === "saeg") return `Sägetag (${losName(e.los)}): ${kistenTxt(e.g, e.kl)} gefüllt`;
   if (e.k === "bunk") return `Bunker befüllt: ${kistenTxt(e.g, e.kl)}`;
   if (e.k === "cost") return `Kosten ${eur(e.eur)} · ${e.txt || ""}${e.los ? ` (${losName(e.los)})` : ""}`;
@@ -1186,7 +1204,7 @@ const LAGER_FIELDS = [
   ["bunkerG", "Bunker fasst (große Kisten)", 1],
   ["srmRm", "Schüttraummeter je Raummeter", 0.05, "1 rm Meterholz ergibt geschnitten (33 cm, lose geworfen) ca. 1,4 srm. Daraus folgt: 1 srm ≈ kg/rm ÷ 1,4."],
   ["rmFm", "Raummeter je Festmeter", 0.05, "1 fm (Auktion) ≈ 1,4 rm geschlichtetes Meterholz."],
-  ["traktor", "Traktor-Kosten je Stunde (€)", 1, "Diesel, Verschleiß, Versicherung – wird mit den Traktorstunden multipliziert."],
+  ["traktor", "Zusatzkosten je Traktorstunde (€)", 1, "Verschleiß, Versicherung usw. – der Diesel wird extra über den Verbrauch je Traktor gerechnet. 0 = nur Diesel."],
   ["trocken", "Trocknungszeit am Meterstoß (Monate)", 1, "Mindestens 1,5 Jahre = 18 Monate, bevor das Holz gesägt und in Kisten kommt."],
   ["saegVon", "Sägezeit von Monat (1–12)", 1, "Gesägt wird nur im Hochsommer: 7 = Juli"],
   ["saegBis", "Sägezeit bis Monat (1–12)", 1, "8 = August. Schnittreif ist das Holz im ersten Sommer nach der Trocknungszeit."]
@@ -1212,7 +1230,7 @@ function lager(until) {   // until = Stichtag (für Jahresbericht), sonst jetzt
   for (const e of src) {
     const L = e.los && lose[e.los];
     if (e.k === "hol") {
-      const k = (+e.h || 0) * c.traktor + (+e.mk || 0), y = Y(e.t); y.mach += k; y.h += +e.h || 0;
+      const k = holCost(e), y = Y(e.t); y.mach += k; y.h += +e.h || 0;
       if (L) { L.holRm += +e.rm || 0; L.hol++; L.h += +e.h || 0; L.cost += k; L.firstHol ??= e.t; }
     } else if (e.k === "cost") {
       Y(e.t).other += +e.eur || 0; if (L) L.cost += +e.eur || 0;
@@ -1363,6 +1381,22 @@ function renderLager() {
       return `<tr><td>${yearLabel(+y)}</td><td>${eur(v.buy)}</td><td>${eur(v.mach)}${v.h ? ` <span style="color:var(--muted);font-size:12px">(${num(v.h, 1)} h)</span>` : ""}</td><td>${eur(v.other)}</td><td><b>${eur(s)}</b></td><td>${v.mrm ? num(v.mrm, 1) + " rm" : "–"}</td><td>${v.mrm ? eur(v.mcost / v.mrm) : "–"}</td></tr>`; }).join("")
   }</tbody></table><div class="hint" style="font-size:12px;color:var(--muted);margin-top:8px">Kosten nach Datum der Ausgabe. „vermessen" und „€/rm" gelten für die in diesem Jahr gekauften Lose, sobald sie vermessen sind (inkl. aller Kosten des Loses).</div>` : `<div class="empty">Noch keine Kosten.</div>`;
 
+  // Traktor: echte Fahrten (selbst eingetragen) gegen Schätzungen vergleichen
+  const hols = list().filter(e => e.k === "hol" && +e.h > 0), real = hols.filter(e => !e.est), estH = hols.filter(e => e.est);
+  const avg = arr => arr.length ? arr.reduce((s, e) => s + +e.h, 0) / arr.length : null;
+  const aR = avg(real), aE = avg(estH), litres = hols.reduce((s, e) => s + e.h * tractorLh(e.tr), 0), cost = hols.reduce((s, e) => s + holCost(e), 0);
+  let th = `<div style="font-size:14px">${hols.length} Fahrten · <b>${num(hols.reduce((s, e) => s + +e.h, 0), 1)} h</b> · ≈ <b>${num(litres)} l Diesel</b> · ${eur(cost)}</div>
+    <div class="meta" style="font-size:13px;color:var(--muted);margin-top:4px">Echt eingetragen: ${real.length ? `${real.length} Fahrten, Ø <b style="color:var(--text)">${num(aR, 1)} h</b>` : "noch keine"} · Geschätzt: ${estH.length ? `${estH.length} Fahrten mit je ${num(aE, 1)} h` : "keine"}</div>`;
+  if (real.length >= 3 && estH.length && Math.abs(aR - aE) >= 0.25) th += `<div class="measure"><span>Deine echten Fahrten dauern im Schnitt ${num(aR, 1)} h statt geschätzt ${num(aE, 1)} h.</span><button id="lgFixH">Schätzungen anpassen</button></div>`;
+  else if (estH.length) th += `<div class="measure">Ab 3 echten Fahrten (mit Traktorstunden) vergleicht die App und bietet an, die ${estH.length} geschätzten Fahrten anzupassen.</div>`;
+  $("lgTraktor").innerHTML = th;
+  if ($("lgFixH")) $("lgFixH").onclick = () => {
+    const h = Math.round(aR * 2) / 2;
+    if (!confirm(`Die ${estH.length} geschätzten Fahrten auf je ${num(h, 1)} h setzen? (bleiben als „geschätzt" markiert)`)) return;
+    for (const e of estH) { const { id, ...rest } = e; putEvent(id, { ...rest, h }); }
+    toast(`🚜 ${estH.length} Fahrten auf ${num(h, 1)} h angepasst`, false);
+  };
+
   const lev = list().filter(e => LAGER_KINDS.has(e.k));
   $("lgList").innerHTML = lev.length ? lev.slice(-30).reverse().map(e => liHtml(e, false)).join("") : `<li class="empty" style="display:block">Noch keine Lager-Einträge.</li>`;
 }
@@ -1501,7 +1535,7 @@ function buildReport(year, mode) {
   const buys = ev.filter(e => e.k === "buy"), hols = ev.filter(e => e.k === "hol"), saegs = ev.filter(e => e.k === "saeg"), bunksP = ev.filter(e => e.k === "bunk"), costsP = ev.filter(e => e.k === "cost");
   const messP = Lall.lose.filter(l => l.measured && l.e.tMess >= P.from && l.e.tMess < P.to);
   const ausgKauf = buys.reduce((s, e) => s + (+e.preis || 0) + (+e.neben || 0), 0);
-  const ausgMasch = hols.reduce((s, e) => s + (+e.h || 0) * c.traktor + (+e.mk || 0), 0);
+  const ausgMasch = hols.reduce((s, e) => s + holCost(e), 0), dieselL = hols.reduce((s, e) => s + (+e.h || 0) * tractorLh(e.tr), 0);
   const ausgSonst = costsP.reduce((s, e) => s + (+e.eur || 0), 0);
   const ausg = ausgKauf + ausgMasch + ausgSonst;
   const traktorH = hols.reduce((s, e) => s + (+e.h || 0), 0);
@@ -1636,7 +1670,7 @@ function buildReport(year, mode) {
         📦 ${bunksP.length}× Bunker befüllt${(() => { const gs = ev.filter(e => e.k === "gift"); const g = gs.reduce((s, e) => s + (+e.g || 0), 0), k = gs.reduce((s, e) => s + (+e.kl || 0), 0); return gs.length ? `<br>🎁 ${kistenTxt(g, k)} abgegeben` : ""; })()}</div>
       <div class="rp-box"><b>Ausgaben im Zeitraum</b><br>
         Holzkauf & Auktion: <b>${eur(ausgKauf)}</b><br>
-        Traktor & Maschinen: <b>${eur(ausgMasch)}</b>${traktorH ? ` <span class="sub">(${num(traktorH, 1)} h × ${eur(c.traktor)})</span>` : ""}<br>
+        Traktor & Maschinen: <b>${eur(ausgMasch)}</b>${traktorH ? ` <span class="sub">(${num(traktorH, 1)} h · ≈ ${num(dieselL)} l Diesel)</span>` : ""}<br>
         Sonstiges: <b>${eur(ausgSonst)}</b><br>
         <span style="font-size:1.25em">Summe: <b>${eur(ausg)}</b></span></div>
     </div>
@@ -1765,7 +1799,8 @@ function lagerForm(kind, id) {
       $("fX").onclick = closeModal; $("fGo").onclick = () => lagerForm("buy"); return; }
     body += `<label>Welches Holzlos</label><select id="fLos">${losOpts(e?.los || L.lose[0].id)}</select>
     ${numIn("fRm", "Meterholz heimgebracht (rm, grob – optional)", e?.rm, 0.1, "Die genaue Menge kommt später beim Vermessen am Stoß.")}
-    ${numIn("fH", "Traktorstunden", e?.h, 0.5, `× ${eur(S.cfg.traktor)}/h (in den Einstellungen änderbar)`)}
+    <label>Traktor</label><select id="fTr">${tractorList().map(t => `<option ${t.name === (e?.tr || lsGet("hb-tr", tractorList()[0]?.name)) ? "selected" : ""}>${esc(t.name)}</option>`).join("")}</select>
+    ${numIn("fH", "Traktorstunden (Betriebsstunden-Zähler)", e?.h, 0.5, `Diesel: Stunden × Verbrauch des Traktors (${tractorList().map(t => `${esc(t.name)} ${num(t.lh, 2)} l/h`).join(", ")}) × Dieselpreis des Jahres`)}
     ${numIn("fMk", "Weitere Maschinenkosten (€)", e?.mk, 1, "z. B. Seilwinde, Spalter-Miete, Sprit Motorsäge")}`;
   }
   if (kind === "cost") body += `<label>Wofür</label><input id="fTxt" value="${esc(e?.txt || "")}" placeholder="z. B. Kettenöl, neue Kette, Spalter-Service">
@@ -1798,7 +1833,7 @@ function lagerForm(kind, id) {
         Object.assign(ne, { done: true, rmMess: n("fRmMess"), tMess: $("fTMess").value === dkey(e.tMess || 0) ? e.tMess : +new Date($("fTMess").value + "T12:00") });
       }
     }
-    if (kind === "hol") Object.assign(ne, { los: $("fLos").value, rm: n("fRm"), h: n("fH"), mk: n("fMk") });
+    if (kind === "hol") { Object.assign(ne, { los: $("fLos").value, rm: n("fRm"), h: n("fH"), mk: n("fMk"), tr: $("fTr").value }); lsSet("hb-tr", ne.tr); }
     if (kind === "cost") { Object.assign(ne, { txt: $("fTxt").value.trim(), eur: n("fEur") }); if ($("fLos").value) ne.los = $("fLos").value; }
     if (kind === "saeg") Object.assign(ne, { los: $("fLos").value, g: n("fG"), kl: n("fK") });
     if (kind === "bunk" || kind === "inv" || kind === "gift") Object.assign(ne, { g: n("fG"), kl: n("fK") });
@@ -1821,7 +1856,8 @@ function editEvent(id) {
   if (LAGER_KINDS.has(e.k)) return lagerForm(e.k, id);
   let amount = "";
   if (e.k === "holz") amount = `<label>Füllmenge</label><select id="mN">${FILLS.map(([f, l]) => `<option value="${f}" ${f === (e.n || 1) ? "selected" : ""}>${l} (≈ ${num(f * S.cfg.kgFuell)} kg)</option>`).join("")}</select>`;
-  if (e.k === "sack") amount = `<label>Anzahl Säcke à ${S.cfg.sackKg} kg</label><input id="mN" type="number" min="1" max="99" value="${e.n}">`;
+  if (e.k === "sack") amount = `<label>Anzahl Säcke à ${S.cfg.sackKg} kg</label><input id="mN" type="number" min="1" max="999" value="${e.n}">
+    <label>Preis je Sack (€)</label><input id="mEur" type="text" inputmode="decimal" placeholder="${num(S.cfg.sackPreis || 9, 2)} (Standard aus den Einstellungen)" value="${e.eur ? num(e.eur, 2) : ""}">`;
   if (e.k === "on" || e.k === "off") amount = `<label>Art</label><select id="mK"><option value="on" ${e.k === "on" ? "selected" : ""}>eingeschaltet</option><option value="off" ${e.k === "off" ? "selected" : ""}>ausgeschaltet</option></select>`;
   modal(`<h3>${KIND[e.k].icon} Eintrag ändern</h3>
     <label>Zeitpunkt</label><input id="mT" type="datetime-local" value="${toLocalInput(e.t)}">
@@ -1832,6 +1868,7 @@ function editEvent(id) {
   $("mSave").onclick = () => {
     const ne = { ...e, t: +new Date($("mT").value) || e.t };
     if ($("mN")) ne.n = Math.max(e.k === "sack" ? 1 : 0.25, +$("mN").value || 1);
+    if ($("mEur")) { const v = parseFloat($("mEur").value.replace(",", ".")); if (v > 0) ne.eur = v; else delete ne.eur; }
     if ($("mK")) ne.k = $("mK").value;
     putEvent(id, ne); closeModal();
   };
@@ -1851,6 +1888,15 @@ $("btnSettings").onclick = () => {
     <label>Heizwert Holz (kWh/kg)</label><input id="sKwhH" type="number" min="1" step="0.1" value="${c.kwhHolz}">
     <label>Heizwert Pellets (kWh/kg)</label><input id="sKwhP" type="number" min="1" step="0.1" value="${c.kwhPellet}">
     <label>Gewicht pro Pelletssack (kg)</label><input id="sSack" type="number" min="1" step="1" value="${c.sackKg}">
+    <label>Preis je gekauftem Pelletssack (€, im Schnitt)</label><input id="sSackEur" type="text" inputmode="decimal" value="${num(c.sackPreis || 9, 2)}">
+    <div class="hint">Damit rechnet die App, was du für Pellets tatsächlich bezahlt hast. Einzelne Einkäufe kannst du beim Eintrag abweichend angeben.</div>
+    <h3 style="margin:22px 0 4px">🚜 Traktoren (Dieselverbrauch)</h3>
+    ${[0, 1, 2].map(i => { const t = (c.tractors || [])[i] || {}; return `<div class="inl" style="margin-top:6px"><input data-trn="${i}" placeholder="Name" value="${esc(t.name || "")}"><input data-trl="${i}" type="text" inputmode="decimal" placeholder="l/h" value="${t.lh ? num(t.lh, 2) : ""}" style="width:90px;flex:none"><span style="align-self:center;color:var(--muted)">l/h</span></div>`; }).join("")}
+    <label>Dieselpreis je Jahr (€/l, Jahresdurchschnitt Österreich)</label>
+    <div class="hint">Vorbelegt mit ÖAMTC-Werten (≈ = geschätzt). Eigenen Wert eintragen, um ihn zu ersetzen.</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px;margin-top:8px">${
+      (() => { let h = ""; for (let y = new Date().getFullYear(); y >= 2020; y--) { const d = DIESEL_DEFAULT[y]; h += `<label style="margin:0;font-size:12px">${y}${d?.est ? " ≈" : ""}<input data-dp="${y}" type="text" inputmode="decimal" autocomplete="off" placeholder="${num(dieselPrice(y).eur, 3)}" value="${c.dp?.[y] ?? ""}" style="padding:8px"></label>`; } return h; })()
+    }</div>
     <h3 style="margin:22px 0 4px">💶 Pelletspreise (Sack 15 kg, günstigster Sommerpreis)</h3>
     <div class="hint">Für die Ersparnis-Rechnung. Vorbelegt mit den Werten von proPellets Austria (≈ = aus dem Jahresdurchschnitt geschätzt). Eigenen Preis eintragen, um ihn zu ersetzen – z. B. was du wirklich bezahlt hast.</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px;margin-top:8px">${
@@ -1892,6 +1938,11 @@ $("btnSettings").onclick = () => {
                  kwhPellet: +$("sKwhP").value || c.kwhPellet, sackKg: +$("sSack").value || c.sackKg, ...loc };
     $$("[data-cfg]").forEach(i => { const v = parseFloat(i.value); nc[i.dataset.cfg] = isNaN(v) ? c[i.dataset.cfg] : v; });
     nc.pp = {}; $$("[data-pp]").forEach(i => { const v = parseFloat(String(i.value).replace(",", ".")); if (v > 0) nc.pp[i.dataset.pp] = v; });
+    nc.dp = {}; $$("[data-dp]").forEach(i => { const v = parseFloat(String(i.value).replace(",", ".")); if (v > 0) nc.dp[i.dataset.dp] = v; });
+    const se = parseFloat($("sSackEur").value.replace(",", ".")); if (se > 0) nc.sackPreis = se;
+    const q = s => document.querySelector(s);
+    nc.tractors = [0, 1, 2].map(i => ({ name: q(`[data-trn="${i}"]`).value.trim(), lh: parseFloat(q(`[data-trl="${i}"]`).value.replace(",", ".")) || 0 })).filter(t => t.name);
+    if (!nc.tractors.length) nc.tractors = DEFAULT_CFG.tractors;
     const jNew = $("sJahr").value;
     nc.jahr = jNew === "kal" ? "kal" : "heiz";
     if (jNew !== "kal") nc.hjStart = +jNew.split("-")[1];
