@@ -1,0 +1,1882 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Heizbuch ETA Twin</title>
+<meta name="theme-color" content="#1c1612">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Heizbuch">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+:root {
+  --bg: #1c1612; --card: #2a211b; --card2: #342920; --line: #4a3a2e;
+  --text: #f4ebe1; --muted: #b9a593; --holz: #e08a3c; --pellet: #d9b44a; --ofen: #e4573d;
+  --ok: #7cbf6b; --kalt: #5fa8d3; --radius: 14px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+body { padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+button { font: inherit; color: inherit; cursor: pointer; border: 0; }
+input, select { font: inherit; color: var(--text); background: var(--card2); border: 1px solid var(--line);
+  border-radius: 10px; padding: 10px 12px; width: 100%; }
+header { position: sticky; top: 0; background: var(--bg); z-index: 5; border-bottom: 1px solid var(--line); }
+.hrow { display: flex; align-items: center; gap: 10px; padding: 12px 16px 8px; max-width: 1200px; margin: 0 auto; }
+header h1 { font-size: 19px; margin: 0; flex: 1; letter-spacing: .3px; min-width: 0; }
+header h1 small { color: var(--muted); font-weight: 400; font-size: 13px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chipinfo { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap; }
+.chipinfo b { color: var(--text); font-size: 15px; }
+.sync { display: flex; align-items: center; gap: 5px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.dot.ok { background: var(--ok); } .dot.wait { background: var(--pellet); } .dot.err { background: var(--ofen); }
+.iconbtn { background: var(--card); width: 40px; height: 40px; border-radius: 12px; font-size: 20px; flex: none; }
+.tabs { display: flex; gap: 4px; padding: 0 16px 10px; max-width: 1200px; margin: 0 auto; }
+.tabs button { flex: 1; background: var(--card); border: 1px solid var(--line); padding: 9px 4px; border-radius: 10px; font-weight: 600; color: var(--muted); font-size: 14px; }
+.tabs button.on { background: var(--holz); color: #1c1612; border-color: var(--holz); }
+main { max-width: 1200px; margin: 0 auto; padding: 16px; }
+.tab { display: none; }
+.tab.on { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+.tab > section { min-width: 0; }
+@media (min-width: 900px) {
+  #tabHeute.on { grid-template-columns: 380px 1fr; align-items: start; }
+  #eingabe { position: sticky; top: 130px; }
+  #tabNachtrag.on { grid-template-columns: 1fr 400px; align-items: start; }
+  #ntPanel { position: sticky; top: 130px; }
+  #tabLager.on { grid-template-columns: 380px 1fr; align-items: start; }
+  #lgInput { position: sticky; top: 130px; }
+}
+/* Lager */
+.dual { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dual .stepper { gap: 6px; }
+.dual .stepper button { width: 44px; height: 44px; font-size: 22px; }
+.dual .stepper .val { font-size: 24px; }
+.stepcap { font-size: 12px; color: var(--muted); text-align: center; margin-bottom: 4px; }
+.btngrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.btngrid button { padding: 14px 6px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); font-weight: 700; font-size: 15px; }
+.btngrid button:active { transform: scale(.97); }
+.boxrow { display: flex; flex-wrap: wrap; gap: 3px; margin: 4px 0 12px; }
+.bx { width: 15px; height: 15px; border-radius: 3px; border: 1px solid var(--line); background: var(--card2); }
+.bx.k { width: 15px; height: 11px; margin-top: 4px; }
+.bx.v { background: var(--holz); border-color: var(--holz); }
+.bx.o { background: var(--ofen); border-color: var(--ofen); }
+.bar { height: 14px; background: var(--card2); border-radius: 7px; overflow: hidden; border: 1px solid var(--line); margin: 8px 0; }
+.bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--ofen), var(--holz)); }
+.los { border-top: 1px solid var(--line); padding: 12px 0; }
+.los:first-child { border-top: 0; padding-top: 0; }
+.los .hd { display: flex; gap: 6px; align-items: center; font-weight: 700; flex-wrap: wrap; }
+.los .hd button { margin-left: auto; background: none; color: var(--muted); padding: 2px 8px; border-radius: 8px; }
+.los .meta { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.los .meta b { color: var(--text); font-weight: 600; }
+.pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 8px; background: var(--card2); border: 1px solid var(--line); color: var(--muted); }
+.pill.ok { background: var(--ok); color: #1c1612; border-color: var(--ok); }
+.pill.wait { background: var(--pellet); color: #1c1612; border-color: var(--pellet); }
+.pill.blue { background: var(--kalt); color: #1c1612; border-color: var(--kalt); }
+.fifo { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.fifo li { padding: 4px 0; color: var(--muted); display: flex; gap: 8px; }
+.fifo li b { color: var(--text); }
+.measure { margin-top: 10px; padding: 10px; border-radius: 10px; background: var(--card2); font-size: 13px; color: var(--muted); display: flex; gap: 10px; align-items: center; }
+.measure button { background: var(--holz); color: #1c1612; font-weight: 700; padding: 8px 12px; border-radius: 9px; flex: none; }
+.modal .inl select { width: 90px; flex: none; }
+.modal .chips { margin-bottom: 0; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin: 4px 2px 10px; }
+.card { background: var(--card); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; border: 1px solid var(--line); }
+.card h3 { margin: 0 0 10px; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.card h3 .sub { margin-left: auto; font-size: 13px; font-weight: 400; color: var(--muted); text-align: right; }
+.big { width: 100%; padding: 16px; border-radius: 12px; font-size: 18px; font-weight: 700; color: #1c1612; }
+.big:active, .chip:active { transform: scale(.97); }
+.b-holz { background: var(--holz); } .b-pellet { background: var(--pellet); }
+.b-on { background: var(--ok); } .b-off { background: var(--ofen); color: #fff; }
+.b-plain { background: var(--card2); color: var(--text); border: 1px solid var(--line); }
+.chips { display: flex; gap: 6px; margin-bottom: 10px; }
+.chip { flex: 1; padding: 10px 0; border-radius: 10px; background: var(--card2); border: 1px solid var(--line); font-weight: 600; }
+.chip.on { background: var(--holz); color: #1c1612; border-color: var(--holz); }
+.chips.add .chip { padding: 16px 0; font-size: 18px; background: var(--holz); color: #1c1612; border-color: var(--holz); }
+.stepper { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.stepper button { width: 52px; height: 52px; border-radius: 12px; background: var(--card2); font-size: 26px; border: 1px solid var(--line); }
+.stepper .val { flex: 1; text-align: center; font-size: 26px; font-weight: 700; }
+.stepper .val small { display: block; font-size: 13px; color: var(--muted); font-weight: 400; }
+.status { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; color: var(--muted); font-size: 14px; }
+.lamp { width: 14px; height: 14px; border-radius: 50%; background: #5a4a3e; flex: none; }
+.lamp.on { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+.when { font-size: 14px; color: var(--muted); }
+.when summary { cursor: pointer; padding: 4px 2px; }
+.when .row { display: flex; gap: 8px; margin-top: 8px; }
+.when button { background: var(--card2); border-radius: 10px; padding: 0 12px; border: 1px solid var(--line); white-space: nowrap; }
+.when.active summary { color: var(--pellet); font-weight: 600; }
+.recent { list-style: none; margin: 0; padding: 0; }
+.recent li { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.recent li:first-child { border-top: 0; }
+.recent .t { color: var(--muted); width: 92px; flex: none; font-variant-numeric: tabular-nums; }
+.recent .x { flex: 1; }
+.recent .tp { color: var(--kalt); font-size: 12px; white-space: nowrap; }
+.recent button { background: none; color: var(--muted); padding: 4px 8px; border-radius: 8px; }
+.recent button:hover { background: var(--card2); }
+.seg { display: flex; background: var(--card); border-radius: 12px; padding: 4px; border: 1px solid var(--line); gap: 2px; }
+.seg button { flex: 1; background: none; padding: 9px 2px; border-radius: 9px; font-weight: 600; color: var(--muted); font-size: 14px; }
+.seg button.on { background: var(--card2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); }
+.seg.small button { padding: 6px 2px; font-size: 13px; }
+.nav { display: flex; align-items: center; gap: 6px; margin: 12px 0; }
+.nav button { background: var(--card); min-width: 42px; height: 44px; border-radius: 12px; font-size: 20px; border: 1px solid var(--line); }
+.nav button:disabled { opacity: .35; }
+.nav .lbl { flex: 1; text-align: center; font-weight: 700; font-size: 17px; cursor: pointer; }
+.nav .lbl small { display: block; color: var(--muted); font-weight: 400; font-size: 12px; }
+.tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
+@media (min-width: 600px) { .tiles { grid-template-columns: repeat(3, 1fr); } }
+.tile { background: var(--card); border-radius: var(--radius); padding: 12px; border: 1px solid var(--line); border-top: 3px solid var(--c); }
+.tile .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+.tile .v { font-size: 24px; font-weight: 800; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.tile .v small { font-size: 14px; font-weight: 500; color: var(--muted); }
+.tile .s { font-size: 12px; color: var(--muted); }
+.chart svg { width: 100%; height: auto; display: block; }
+.legend { display: flex; gap: 6px 14px; font-size: 13px; color: var(--muted); margin-bottom: 8px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.legend button { background: none; color: var(--text); padding: 4px 6px; border-radius: 8px; font-size: 14px; }
+.legend button.off { opacity: .35; text-decoration: line-through; }
+.empty { text-align: center; color: var(--muted); padding: 18px 0; font-size: 14px; }
+.list li { cursor: pointer; }
+/* Kalender */
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal .wd { text-align: center; font-size: 12px; color: var(--muted); padding: 2px 0 4px; }
+.cell { position: relative; aspect-ratio: 1 / 1.05; min-height: 46px; border-radius: 9px; padding: 3px 4px; border: 1px solid var(--line); text-align: left;
+  background: color-mix(in srgb, var(--holz) var(--heat, 0%), var(--card2)); display: flex; flex-direction: column; overflow: hidden; }
+.cell .d { font-weight: 700; font-size: 13px; line-height: 1; }
+.cell .tp { position: absolute; top: 3px; right: 4px; font-size: 10px; color: var(--muted); line-height: 1; }
+.cell .tp.k { color: #9fd0ef; }
+.cell .mid { flex: 1; display: flex; align-items: center; justify-content: center; gap: 3px; flex-wrap: wrap; }
+.cell .hz { font-weight: 800; font-size: 14px; }
+.cell .sk { background: var(--pellet); color: #1c1612; font-size: 10px; font-weight: 800; border-radius: 6px; padding: 0 4px; }
+.cell .of { position: absolute; left: 0; bottom: 0; height: 4px; background: var(--ok); }
+.cell.today { box-shadow: inset 0 0 0 2px var(--text); }
+.cell.sel { box-shadow: inset 0 0 0 3px var(--pellet); }
+.cell.future { opacity: .3; pointer-events: none; }
+.cell.blank { visibility: hidden; }
+@media (min-width: 600px) { .cell { min-height: 64px; padding: 5px 7px; } .cell .d { font-size: 15px; } .cell .tp { font-size: 12px; top: 5px; right: 7px; } .cell .hz { font-size: 18px; } .cell .sk { font-size: 12px; } }
+.callegend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); margin-top: 10px; }
+.months { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+@media (min-width: 600px) { .months { grid-template-columns: repeat(4, 1fr); } }
+.mon { border-radius: 12px; padding: 10px; border: 1px solid var(--line); text-align: left; background: color-mix(in srgb, var(--holz) var(--heat, 0%), var(--card2)); }
+.mon .n { font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; }
+.mon .n span { font-weight: 400; color: var(--muted); font-size: 12px; }
+.mon .v { font-size: 20px; font-weight: 800; margin: 2px 0; }
+.mon .v small { font-size: 12px; font-weight: 500; color: var(--muted); }
+.mon .s { font-size: 11px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 0 8px; }
+.mon .s span { white-space: nowrap; }
+.mon.future { opacity: .3; pointer-events: none; }
+/* Nachtragen */
+.ntday { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.ntday button { background: var(--card2); min-width: 44px; height: 44px; border-radius: 12px; font-size: 20px; border: 1px solid var(--line); }
+.ntday button:disabled { opacity: .3; }
+.ntday .lbl { flex: 1; text-align: center; font-weight: 800; font-size: 17px; }
+.ntday .lbl small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; }
+.ntrow { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; font-size: 14px; color: var(--muted); }
+.ntrow input[type=time] { width: 120px; }
+.ntrow label { display: flex; align-items: center; gap: 6px; margin-left: auto; cursor: pointer; }
+.ntrow input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--holz); }
+.sect { font-size: 13px; color: var(--muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: 1px; }
+@media (max-width: 899px) { #ntHint { display: none; } #tabNachtrag.hasday #ntCal { display: none; } #tabNachtrag:not(.hasday) #ntPanel { display: none; } }
+@media (min-width: 900px) { #tabNachtrag:not(.hasday) #ntPanelBody { display: none; } #tabNachtrag.hasday #ntHint { display: none; } }
+/* Vergleich */
+.controls { display: grid; gap: 8px; margin-bottom: 12px; }
+@media (min-width: 900px) { .controls { grid-template-columns: 2fr 1fr 1fr; } }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { padding: 8px 6px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 600; font-size: 12px; }
+th:first-child, td:first-child { text-align: left; }
+td i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
+/* Jahresbericht (hell, druckbar) */
+#report { display: none; position: fixed; inset: 0; z-index: 50; overflow: auto; background: #d9d3cc; color: #222;
+  --bg: #fff; --card: #fff; --card2: #f3efea; --line: #d8cfc5; --text: #222; --muted: #6b6058;
+  --holz: #d4772a; --pellet: #b98f12; --ofen: #c4432d; --ok: #46923a; --kalt: #2d7cbd; }
+#report.show { display: block; }
+.rp-bar { position: sticky; top: 0; z-index: 2; display: flex; gap: 8px; justify-content: center; padding: 10px; background: #2a211b; }
+.rp-bar button { padding: 11px 18px; border-radius: 10px; font-weight: 700; background: #e08a3c; color: #1c1612; }
+.rp-bar button.sec { background: #4a3a2e; color: #f4ebe1; }
+.rp-page { max-width: 840px; margin: 16px auto; background: #fff; padding: 30px 34px; box-shadow: 0 2px 14px rgba(0,0,0,.25); font-size: 13px; line-height: 1.45; }
+.rp-page h1 { font-size: 24px; margin: 0 0 2px; }
+.rp-page .sub { color: var(--muted); font-size: 12px; }
+.rp-page h2 { font-size: 16px; color: #222; text-transform: none; letter-spacing: 0; border-bottom: 2px solid var(--holz); padding-bottom: 4px; margin: 24px 0 10px; }
+.rp-page h4 { margin: 14px 0 6px; font-size: 13px; }
+.rp-sec { break-inside: avoid; page-break-inside: avoid; }
+.rp-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.rp-kpi { border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; border-top: 3px solid var(--c); }
+.rp-kpi .k { font-size: 10px; text-transform: uppercase; color: var(--muted); letter-spacing: .6px; }
+.rp-kpi .v { font-size: 19px; font-weight: 800; white-space: nowrap; }
+.rp-kpi .v small { font-size: 11px; font-weight: 500; color: var(--muted); }
+.rp-kpi .s { font-size: 11px; color: var(--muted); }
+.rp-page table { font-size: 12px; }
+.rp-page th, .rp-page td { padding: 4px 6px; border-bottom: 1px solid var(--line); white-space: normal; }
+.rp-page tfoot td { font-weight: 800; border-top: 2px solid #888; }
+.rp-page .up { color: var(--ofen); font-weight: 700; } .rp-page .down { color: var(--ok); font-weight: 700; }
+.rp-note { font-size: 11px; color: var(--muted); margin-top: 6px; }
+.rp-box { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: #faf6f1; margin: 8px 0; }
+.rp-box.warn { border-color: var(--ofen); background: #fdf0ec; }
+.rp-box.good { border-color: var(--ok); background: #f0f8ee; }
+.rp-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rp-page .ok { color: var(--ok); font-weight: 700; } .rp-page .bad { color: var(--ofen); font-weight: 700; }
+@media (max-width: 640px) { .rp-page { padding: 16px; margin: 8px; } .rp-kpis { grid-template-columns: repeat(2, 1fr); } .rp-two { grid-template-columns: 1fr; } }
+.rp-three { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: start; }
+.rp-three > .tablewrap { grid-column: 1 / -1; }
+body.printing .rp-three > .tablewrap { grid-column: auto; }
+.rp-three .rp-box { margin: 0; }
+@media (max-width: 640px) { .rp-three { grid-template-columns: 1fr; } }
+/* Kompakte Druckfassung: genau 2 A4-Seiten (body.printing wird beim Drucken gesetzt) */
+body.printing .rp-page { box-shadow: none; margin: 0; max-width: none; width: 186mm; padding: 0; font-size: 10.6px; line-height: 1.35; }
+body.printing .rp-page h1 { font-size: 17px; }
+body.printing .rp-page .sub { font-size: 9px; }
+body.printing .rp-page h2 { font-size: 13px; margin: 11px 0 5px; padding-bottom: 2px; border-bottom-width: 1.5px; }
+body.printing .rp-page h4 { margin: 6px 0 3px; font-size: 10px; }
+body.printing .rp-kpis { grid-template-columns: repeat(4, 1fr) !important; gap: 5px; }
+body.printing .rp-kpi { padding: 4px 6px; border-radius: 6px; border-top-width: 2.5px; }
+body.printing .rp-kpi .k { font-size: 8px; }
+body.printing .rp-kpi .v { font-size: 16px; }
+body.printing .rp-kpi .s { font-size: 9.2px; }
+body.printing .rp-page table { font-size: 10px; }
+body.printing .rp-page th { font-size: 9.2px; }
+body.printing .rp-page th, body.printing .rp-page td { padding: 2px 4px; }
+body.printing .rp-box { padding: 4px 7px; margin: 4px 0; border-radius: 6px; }
+body.printing .rp-note { font-size: 8.8px; margin-top: 3px; line-height: 1.25; }
+body.printing .rp-two { grid-template-columns: 1fr 1fr !important; gap: 6px; }
+body.printing .rp-three { grid-template-columns: 1.4fr 1fr 1fr !important; gap: 6px; }
+body.printing .rp-page .legend { font-size: 9px; margin-bottom: 2px; gap: 2px 10px; }
+body.printing .rp-page .legend i { width: 8px; height: 8px; }
+body.printing .rp-chart svg { width: 100%; }
+body.printing .rp-gantt svg { max-height: 62mm; }
+body.printing .rp-sec { break-inside: auto; page-break-inside: auto; }
+body.printing .rp-page tr, body.printing .rp-box, body.printing .rp-kpi { break-inside: avoid; page-break-inside: avoid; }
+body.printing .tablewrap { overflow: visible !important; }
+body.printing .rp-pb { break-before: page; page-break-before: always; }
+@media print {
+  @page { size: A4; margin: 11mm 12mm; }
+  html, body { background: #fff !important; padding: 0 !important; }
+  header, main, .toast, .modal, .rp-bar { display: none !important; }
+  #report { display: block !important; position: static; overflow: visible; background: #fff; }
+  .rp-page { box-shadow: none; margin: 0; max-width: none; width: auto !important; padding: 0; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+/* Toast & Dialog */
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(200%);
+  background: var(--text); color: var(--bg); padding: 12px 18px; border-radius: 12px; font-weight: 600; transition: transform .25s;
+  z-index: 20; display: flex; gap: 14px; align-items: center; max-width: calc(100% - 32px); }
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast button { background: none; color: #b5541a; font-weight: 800; text-decoration: underline; padding: 0; }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; z-index: 30; padding: 16px; }
+.modal.show { display: flex; }
+.modal .box { background: var(--card); border-radius: var(--radius); padding: 18px; width: 100%; max-width: 420px; border: 1px solid var(--line); max-height: 90vh; overflow: auto; }
+.modal h3 { margin: 0 0 14px; }
+.modal label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+.modal .btns { display: flex; gap: 8px; margin-top: 16px; }
+.modal .btns button, .modal .inl button { flex: 1; padding: 12px; border-radius: 10px; background: var(--card2); font-weight: 600; border: 1px solid var(--line); }
+.modal .btns .pri { background: var(--holz); color: #1c1612; border-color: var(--holz); }
+.modal .btns .del { background: none; color: var(--ofen); border-color: var(--ofen); }
+.modal .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.modal .inl { display: flex; gap: 8px; }
+.modal .inl button { flex: none; padding: 0 14px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <h1>🔥 Heizbuch <small id="subtitle">ETA Twin 40 kW · Holz + Pellets</small></h1>
+    <div class="chipinfo"><b id="wx">🌡 –</b><span class="sync" id="sync"><span class="dot"></span><span></span></span></div>
+    <button class="iconbtn" id="btnSettings" title="Einstellungen">⚙</button>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button data-t="heute">Heute</button><button data-t="nachtrag">Nachtragen</button><button data-t="lager">Lager</button><button data-t="vergleich">Vergleich</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ================= HEUTE ================= -->
+  <div class="tab" id="tabHeute">
+    <section id="eingabe">
+      <h2>Eintragen</h2>
+      <div class="card">
+        <h3>🪵 Holz nachgelegt <span class="sub" id="holzInfo"></span></h3>
+        <div class="chips" id="fillChips"></div>
+        <button class="big b-holz" id="btnHolz">Kessel befüllt</button>
+      </div>
+      <div class="card">
+        <h3>⚡ Pelletsofen</h3>
+        <div class="status"><span class="lamp" id="lamp"></span><span id="ofenStatus"></span></div>
+        <button class="big" id="btnOfen"></button>
+      </div>
+      <div class="card">
+        <h3>🛢️ Pelletsspeicher befüllt</h3>
+        <div class="stepper">
+          <button data-sack="-1">−</button>
+          <div class="val"><span class="sackN"></span><small class="sackKg"></small></div>
+          <button data-sack="1">+</button>
+        </div>
+        <button class="big b-pellet" id="btnSack">Speicher befüllt</button>
+      </div>
+      <details class="when" id="when">
+        <summary id="whenSum"></summary>
+        <div class="row"><input type="datetime-local" id="whenInput"><button id="whenReset">Jetzt</button></div>
+      </details>
+      <div class="card" style="margin-top:12px">
+        <h3>Zuletzt eingetragen</h3>
+        <ul class="recent" id="recent"></ul>
+      </div>
+    </section>
+
+    <section id="uebersicht">
+      <h2>Übersicht</h2>
+      <div class="seg" id="seg">
+        <button data-v="tag">Tag</button><button data-v="woche">Woche</button>
+        <button data-v="monat">Monat</button><button data-v="jahr">Jahr</button>
+      </div>
+      <div class="nav">
+        <button id="prev">‹</button>
+        <div class="lbl" id="periodLbl" title="Zurück zu heute"></div>
+        <button id="next">›</button>
+      </div>
+      <div class="seg small" id="modeSeg" style="margin-bottom:12px">
+        <button data-m="kachel">▦ Kacheln</button><button data-m="diagramm">📊 Diagramm</button>
+      </div>
+      <div class="tiles" id="tiles"></div>
+      <div class="card" id="kachelCard"><h3 id="kachelTitle"></h3><div id="kachel"></div></div>
+      <div id="charts">
+        <div class="card chart"><h3>🪵 Holz <span class="sub" id="holzChartSub">kg (geschätzt)</span></h3><div id="chartHolz"></div></div>
+        <div class="card chart"><h3>⚡ Pelletsofen-Laufzeit <span class="sub">Stunden</span></h3><div id="chartOfen"></div></div>
+        <div class="card chart"><h3>🛢️ Pellets nachgefüllt <span class="sub">Säcke</span></h3><div id="chartSack"></div></div>
+      </div>
+      <div class="card">
+        <h3>Einträge im Zeitraum <span class="sub">antippen zum Ändern</span></h3>
+        <ul class="recent list" id="periodList"></ul>
+      </div>
+    </section>
+  </div>
+
+  <!-- ================= NACHTRAGEN ================= -->
+  <div class="tab" id="tabNachtrag">
+    <section id="ntCal">
+      <h2>Nachtragen – Tag antippen</h2>
+      <div class="nav">
+        <button id="ntPrevY" title="Ein Jahr zurück">«</button><button id="ntPrev">‹</button>
+        <div class="lbl" id="ntLbl"></div>
+        <button id="ntNext">›</button><button id="ntNextY" title="Ein Jahr vor">»</button>
+      </div>
+      <div class="card" id="ntSum" style="font-size:14px;color:var(--muted)"></div>
+      <div class="card"><div id="ntGrid"></div>
+        <div class="callegend"><span>🪵 Zahl = Kesselfüllungen</span><span><i style="display:inline-block;width:14px;height:4px;background:var(--ok);vertical-align:middle"></i> Pelletsofen lief</span><span><b style="background:var(--pellet);color:#1c1612;border-radius:5px;padding:0 4px;font-size:11px">4</b> Säcke</span><span>oben rechts: Ø °C</span></div>
+      </div>
+    </section>
+    <section id="ntPanel">
+      <div class="card" id="ntHint" style="color:var(--muted)">👈 Tag im Kalender antippen, um Einträge nachzutragen.</div>
+      <div class="card" id="ntPanelBody">
+        <div class="ntday">
+          <button id="ntDayPrev">‹</button>
+          <div class="lbl" id="ntDayLbl"></div>
+          <button id="ntDayNext">›</button>
+        </div>
+        <div class="ntrow">Uhrzeit <input type="time" id="ntTime">
+          <label><input type="checkbox" id="ntAuto"> danach zurück</label></div>
+        <div class="sect">🪵 Holz nachgelegt – antippen trägt sofort ein</div>
+        <div class="chips add" id="ntFill"></div>
+        <div class="sect">⚡ Pelletsofen</div>
+        <div class="status"><span class="lamp" id="ntLamp"></span><span id="ntOfenStatus"></span></div>
+        <button class="big" id="ntOfen"></button>
+        <div class="sect">🛢️ Pelletsspeicher befüllt</div>
+        <div class="stepper">
+          <button data-sack="-1">−</button>
+          <div class="val"><span class="sackN"></span><small class="sackKg"></small></div>
+          <button data-sack="1">+</button>
+        </div>
+        <button class="big b-pellet" id="ntSack">Speicher befüllt</button>
+        <div class="sect">Einträge an diesem Tag</div>
+        <ul class="recent list" id="ntList"></ul>
+        <button class="big b-plain" id="ntBack" style="margin-top:12px">📅 Zurück zum Kalender</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ================= LAGER ================= -->
+  <div class="tab" id="tabLager">
+    <section id="lgInput">
+      <h2>Eintragen</h2>
+      <div class="ntrow">Datum <input type="date" id="lgDate" style="width:170px">
+        <button class="chip" id="lgToday" style="flex:none;padding:8px 14px">Heute</button></div>
+      <div class="card">
+        <h3>📦 Bunker befüllt <span class="sub" id="lgBunkSub"></span></h3>
+        <div class="dual">
+          <div><div class="stepcap">große Kisten</div><div class="stepper"><button data-st="bg:-1">−</button><div class="val" data-sv="bg"></div><button data-st="bg:1">+</button></div></div>
+          <div><div class="stepcap">kleine Kisten</div><div class="stepper"><button data-st="bk:-1">−</button><div class="val" data-sv="bk"></div><button data-st="bk:1">+</button></div></div>
+        </div>
+        <button class="big b-holz" id="lgBunk">Bunker befüllt</button>
+      </div>
+      <div class="card">
+        <h3>🪚 Sägetag – Kisten gefüllt <span class="sub" id="lgSaegSub"></span></h3>
+        <div class="stepcap" style="text-align:left">aus welchem Holzlos</div>
+        <select id="lgLos" style="margin-bottom:10px"></select>
+        <div class="dual">
+          <div><div class="stepcap">große Kisten</div><div class="stepper"><button data-st="sg:-1">−</button><div class="val" data-sv="sg"></div><button data-st="sg:1">+</button></div></div>
+          <div><div class="stepcap">kleine Kisten</div><div class="stepper"><button data-st="sk:-1">−</button><div class="val" data-sv="sk"></div><button data-st="sk:1">+</button></div></div>
+        </div>
+        <button class="big b-pellet" id="lgSaeg">Kisten gefüllt</button>
+      </div>
+      <div class="btngrid">
+        <button id="lgBuy">🌲 Holzkauf</button><button id="lgHol">🚜 Holz geholt</button>
+        <button id="lgCost">💶 Kosten</button><button id="lgInv">📋 Kisten zählen</button>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h3>Lager-Einträge <span class="sub">antippen zum Ändern</span></h3>
+        <ul class="recent list" id="lgList"></ul>
+      </div>
+    </section>
+    <section>
+      <h2>Holzlager</h2>
+      <div class="tiles" id="lgTiles"></div>
+      <div class="card"><h3>📦 Bunker im Heizraum <span class="sub" id="lgBunkInfo"></span></h3><div id="lgBunker"></div></div>
+      <div class="card"><h3>Kisten <span class="sub" id="lgBoxSub"></span></h3><div id="lgBoxes"></div></div>
+      <div class="card"><h3>🌲 Holzlose <span class="sub">Kauf → Stoß → Kisten</span></h3><div id="lgLose"></div></div>
+      <div class="card"><h3>💶 Kosten je Jahr</h3><div class="tablewrap" id="lgCosts"></div></div>
+    </section>
+  </div>
+
+  <!-- ================= VERGLEICH ================= -->
+  <div class="tab" id="tabVergleich">
+    <section>
+      <div class="card">
+        <h3>🖨 Jahresbericht <span class="sub">zum Ausdrucken oder als PDF</span></h3>
+        <div class="ntrow" style="margin:0;flex-wrap:wrap">
+          <select id="rpYear" style="width:auto;min-width:110px"></select>
+          <div class="seg small" id="rpMode" style="flex:1;min-width:210px"><button data-r="jahr">Kalenderjahr</button><button data-r="saison">Heizjahr</button></div>
+          <button class="big b-holz" id="rpGo" style="width:auto;padding:10px 18px;font-size:15px">Bericht öffnen</button>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="seg small" id="cmpMetric">
+          <button data-c="kg">🪵 Holz</button><button data-c="h">⚡ Ofen</button><button data-c="pkg">🛢️ Pellets</button><button data-c="kwh">Energie</button><button data-c="temp">🌡 Temp.</button>
+        </div>
+        <div class="seg small" id="cmpStyle"><button data-s="welle">〰 Welle</button><button data-s="balken">▮ Balken</button></div>
+        <div class="seg small" id="cmpSeason"><button data-y="jahr">Kalenderjahr</button><button data-y="saison">Heizjahr</button></div>
+      </div>
+      <div class="card chart">
+        <h3 id="cmpTitle"></h3>
+        <div class="legend" id="cmpLegend"></div>
+        <div id="cmpChart"></div>
+      </div>
+      <div class="card chart" id="cmpTempCard">
+        <h3>🌡 Außentemperatur <span class="sub">Ø je Monat, °C</span></h3>
+        <div id="cmpTemp"></div>
+      </div>
+      <div class="card">
+        <h3>Jahre im Überblick <span class="sub">HGT = Heizgradtage (20/12)</span></h3>
+        <div class="tablewrap" id="cmpTable"></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div id="report"><div class="rp-bar"><button id="rpPrint">🖨 Drucken / als PDF</button><button class="sec" id="rpClose">✕ Schließen</button></div><div class="rp-page" id="rpPage"></div></div>
+<div class="toast" id="toast"><span></span><button>Rückgängig</button></div>
+<div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
+
+<script>
+/* ================= Konfiguration ================= */
+const CONFIG = {
+  FIREBASE_URL: "https://nfl-tippspiel-df32c-default-rtdb.europe-west1.firebasedatabase.app",
+  BASE: "tippspiel/heizung",     // Pfad in der Datenbank (liegt im freigegebenen Bereich)
+  HAUS: "eta-twin"               // gleicher Code auf allen Geräten = gleiche Daten
+};
+const DEFAULT_CFG = { kgFuell: 60, kwhHolz: 4.1, kwhPellet: 4.8, sackKg: 15, kgRm: 480,
+                      kistenG: 64, volG: 1.584, kistenK: 28, volK: 1.287, srmRm: 1.4, rmFm: 1.4, traktor: 25, trocken: 18, bunkerG: 3,
+                      jahr: "heiz", hjStart: 8, saegVon: 7, saegBis: 8,
+                      ort: "Großrußbach (A-2114)", lat: 48.47412, lon: 16.41649 };
+const FILLS = [[0.25, "¼"], [0.5, "½"], [0.75, "¾"], [1, "voll"]];
+const KIND = { holz: { icon: "🪵" }, on: { icon: "⚡" }, off: { icon: "⏻" }, sack: { icon: "🛢️" },
+               buy: { icon: "🌲" }, hol: { icon: "🚜" }, saeg: { icon: "🪚" }, bunk: { icon: "📦" }, cost: { icon: "💶" }, inv: { icon: "📋" } };
+const HEAT_KINDS = new Set(["holz", "on", "off", "sack"]);
+const LAGER_KINDS = new Set(["buy", "hol", "saeg", "bunk", "cost", "inv"]);
+const ARTEN = ["Buche", "Eiche", "Robinie", "Gemischt"];
+const YEAR_COLORS = ["#e08a3c", "#5fa8d3", "#7cbf6b", "#c678dd", "#d9b44a", "#e4573d", "#56b6c2", "#f4ebe1", "#a3785a", "#98c379"];
+
+/* ================= Hilfen ================= */
+const $ = id => document.getElementById(id);
+const $$ = s => document.querySelectorAll(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const num = (v, d = 0) => (+v).toLocaleString("de-DE", { minimumFractionDigits: d, maximumFractionDigits: d });
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const pad = n => String(n).padStart(2, "0");
+const dkey = t => { const d = new Date(t); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const fmtTime = new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit" });
+const fmtDayTime = new Intl.DateTimeFormat("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+const fmtDay = new Intl.DateTimeFormat("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+const fmtDayShort = new Intl.DateTimeFormat("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" });
+const fmtShortDay = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit" });
+const MONATE = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+const WT = ["Mo","Di","Mi","Do","Fr","Sa","So"];
+const toLocalInput = t => { const d = new Date(t - new Date(t).getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); };
+const fmtDur = h => h < 1 ? `${Math.round(h * 60)} min` : `${num(h, h < 10 ? 1 : 0)} h`;
+const fillLabel = f => (FILLS.find(x => x[0] === f) || [0, num(f * 100) + " %"])[1];
+const fmtFills = f => { const i = Math.floor(f), r = Math.round((f - i) * 4); return (i || !r ? String(i) : "") + ["", "¼", "½", "¾"][r % 4]; };
+const fmtTemp = (v, d = 1) => v == null ? "–" : `${num(v, d)} °C`;
+const startOfDay = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d; };
+const addDays = (t, n) => { const d = new Date(t); d.setDate(d.getDate() + n); return +d; };
+// Heizjahr (Standard August–Juli, wie ein Schuljahr) oder Kalenderjahr
+const heizOn = () => S.cfg.jahr !== "kal" && (+S.cfg.hjStart || 8) !== 1;
+const hjM = () => (+S.cfg.hjStart || 8) - 1;
+const hjYear = t => { const d = new Date(t); return d.getMonth() >= hjM() ? d.getFullYear() : d.getFullYear() - 1; };
+const hjLabel = y => `${y}/${String(y + 1).slice(2)}`;
+const yearKey = t => heizOn() ? hjYear(t) : new Date(t).getFullYear();
+const yearLabel = y => heizOn() ? hjLabel(y) : String(y);
+// Schnittreif: gesägt wird nur im Hochsommer (Standard Juli–August)
+function sawReady(t) {
+  const v = (+S.cfg.saegVon || 7) - 1, b = +S.cfg.saegBis || 8, y = new Date(t).getFullYear();
+  const s = +new Date(y, v, 1), e = +new Date(y, b, 1);
+  return t < s ? s : t < e ? t : +new Date(y + 1, v, 1);
+}
+const sawWindowEnd = t => +new Date(new Date(t).getFullYear(), +S.cfg.saegBis || 8, 1);
+
+/* ================= Zustand ================= */
+const S = {
+  events: lsGet("hb-events", {}),
+  pending: lsGet("hb-pending", {}),
+  cfg: { ...DEFAULT_CFG, ...lsGet("hb-cfg", {}) },
+  haus: lsGet("hb-haus", CONFIG.HAUS),
+  fill: lsGet("hb-fill", 1),
+  sacks: lsGet("hb-sacks", 4),
+  view: lsGet("hb-view", "woche"),
+  mode: lsGet("hb-mode", "kachel"),
+  tab: lsGet("hb-tab", "heute"),
+  anchor: Date.now(),
+  when: null,
+  nt: { month: Date.now(), day: null, auto: lsGet("hb-ntauto", true) },
+  cmp: { metric: "kg", style: lsGet("hb-cmpstyle", "welle"), season: lsGet("hb-cmpseason", null), hidden: {} },
+  nowTemp: null
+};
+S.cmp.season ??= heizOn() ? "saison" : "jahr";
+let listCache = null;
+const save = () => { lsSet("hb-events", S.events); lsSet("hb-pending", S.pending); listCache = null; };
+const list = () => listCache ||= Object.entries(S.events).map(([id, e]) => ({ id, ...e })).sort((a, b) => a.t - b.t);
+
+/* ================= Datenbank (Firebase REST, offline-fähig) ================= */
+const DB = {
+  url: p => `${CONFIG.FIREBASE_URL}/${CONFIG.BASE}/${encodeURIComponent(S.haus)}/${p}.json`,
+  async pull() {
+    const r = await fetch(DB.url("e"), { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    const remote = (await r.json()) || {};
+    for (const [id, e] of Object.entries(S.pending)) { if (e) remote[id] = e; else delete remote[id]; }
+    S.events = remote;
+    const c = await (await fetch(DB.url("cfg"), { cache: "no-store" })).json();
+    if (c) { const old = tempLocKey(); S.cfg = { ...DEFAULT_CFG, ...c }; lsSet("hb-cfg", S.cfg); if (old !== tempLocKey()) resetTemps(); }
+  },
+  async flush() {
+    for (const [id, e] of Object.entries(S.pending)) {
+      const r = await fetch(DB.url("e/" + id), { method: "PUT", body: JSON.stringify(e) });
+      if (!r.ok) throw new Error(r.status);
+      if (S.pending[id] === e) delete S.pending[id];
+      save();
+    }
+  }
+};
+let syncing = false, syncAgain = false;
+async function sync() {
+  if (syncing) { syncAgain = true; return; }
+  syncing = true; syncAgain = false;
+  setSync("wait");
+  try { await DB.flush(); if (!syncAgain) await DB.pull(); save(); setSync("ok"); }
+  catch { setSync(Object.keys(S.pending).length ? "err" : "off"); }
+  syncing = false;
+  if (syncAgain) return sync();
+  render();
+}
+function setSync(s) {
+  const n = Object.keys(S.pending).length;
+  const txt = { ok: "synchron", wait: "speichert…", err: `offline · ${n} wartet`, off: "offline" }[s];
+  $("sync").innerHTML = `<span class="dot ${s === "ok" ? "ok" : s === "wait" ? "wait" : "err"}"></span><span>${txt}</span>`;
+}
+function putEvent(id, e) {
+  if (e) S.events[id] = e; else delete S.events[id];
+  S.pending[id] = e;
+  save(); render(); sync();
+}
+
+/* ================= Temperaturen (Open-Meteo, kostenlos) ================= */
+const TEMP = { d: lsGet("hb-temp", {}), years: lsGet("hb-tempy", {}), busy: {}, fail: {} };
+const tempLocKey = () => `${(+S.cfg.lat).toFixed(3)},${(+S.cfg.lon).toFixed(3)}`;
+function resetTemps() { TEMP.d = {}; TEMP.years = {}; saveTemps(); lsSet("hb-temploc", tempLocKey()); }
+function saveTemps() { lsSet("hb-temp", TEMP.d); lsSet("hb-tempy", TEMP.years); }
+if (lsGet("hb-temploc", null) !== tempLocKey()) resetTemps();
+function storeDaily(daily) {
+  daily.time.forEach((k, i) => {
+    const m = daily.temperature_2m_mean[i];
+    if (m != null) TEMP.d[k] = [m, daily.temperature_2m_min[i], daily.temperature_2m_max[i]];
+  });
+}
+const OM_DAILY = "daily=temperature_2m_mean,temperature_2m_min,temperature_2m_max&timezone=Europe%2FVienna";
+async function loadRecentTemps() {
+  try {
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${S.cfg.lat}&longitude=${S.cfg.lon}&current=temperature_2m&past_days=92&forecast_days=1&${OM_DAILY}`);
+    const j = await r.json();
+    S.nowTemp = j.current?.temperature_2m ?? null;
+    // Vergangene Tage aus der Vorhersage nur eintragen, wo das Archiv noch nichts hat
+    const today = dkey(Date.now());
+    j.daily.time.forEach((k, i) => { if (k <= today && (k === today || !TEMP.d[k])) {
+      const m = j.daily.temperature_2m_mean[i]; if (m != null) TEMP.d[k] = [m, j.daily.temperature_2m_min[i], j.daily.temperature_2m_max[i]]; } });
+    saveTemps(); render();
+  } catch {}
+}
+async function loadYear(y) {
+  const cur = new Date().getFullYear();
+  if (y > cur || y < 1950 || TEMP.busy[y]) return;
+  if (TEMP.years[y] === "fertig") return;
+  if (TEMP.years[y] && Date.now() - TEMP.years[y] < 12 * 36e5) return;
+  if (TEMP.fail[y] && Date.now() - TEMP.fail[y] < 5 * 60e3) return;
+  const end = y < cur ? `${y}-12-31` : dkey(addDays(Date.now(), -2));
+  if (end < `${y}-01-01`) return;
+  TEMP.busy[y] = true;
+  try {
+    const r = await fetch(`https://archive-api.open-meteo.com/v1/archive?latitude=${S.cfg.lat}&longitude=${S.cfg.lon}&start_date=${y}-01-01&end_date=${end}&${OM_DAILY}`);
+    if (!r.ok) throw new Error(r.status);
+    storeDaily((await r.json()).daily);
+    TEMP.years[y] = y < cur ? "fertig" : Date.now();
+    saveTemps(); render();
+  } catch { TEMP.fail[y] = Date.now(); }
+  TEMP.busy[y] = false;
+}
+function needTemps(from, to) {
+  const a = new Date(from).getFullYear(), b = new Date(Math.min(to - 1, Date.now())).getFullYear();
+  for (let y = a; y <= b; y++) loadYear(y);
+}
+const tempOf = t => TEMP.d[dkey(t)] || null;
+function tempStats(from, to) {
+  let sum = 0, n = 0, min = null, max = null, hgt = 0, days = 0;
+  const end = Math.min(to, Date.now());
+  for (let t = from; t < end; t = addDays(t, 1)) {
+    days++;
+    const v = TEMP.d[dkey(t)]; if (!v) continue;
+    sum += v[0]; n++;
+    if (min == null || v[1] < min) min = v[1];
+    if (max == null || v[2] > max) max = v[2];
+    if (v[0] < 12) hgt += 20 - v[0];
+  }
+  return { mean: n ? sum / n : null, min, max, hgt: n ? hgt : null, complete: n && n >= days };
+}
+
+/* ================= Berechnungen ================= */
+function ofenOnAt(t) {
+  let on = false, since = null;
+  for (const e of list()) {
+    if (e.t > t) break;
+    if (e.k === "on" && !on) { on = true; since = e.t; }
+    if (e.k === "off") { on = false; since = e.t; }
+  }
+  return { on, since };
+}
+const overlap = (a, b, c, d) => Math.max(0, Math.min(b, d) - Math.max(a, c));
+let intervalCache = null;
+function intervals() {
+  if (intervalCache && intervalCache.src === list()) return intervalCache.iv;
+  const iv = []; let on = false, start = 0;
+  for (const e of list()) {
+    if (e.k === "on" && !on) { on = true; start = e.t; }
+    else if (e.k === "off" && on) { on = false; iv.push([start, e.t]); }
+  }
+  if (on) iv.push([start, null]);
+  intervalCache = { src: list(), iv };
+  return iv;
+}
+function laufzeit(from, to) {
+  const now = Date.now(); let ms = 0;
+  for (const [a, b] of intervals()) ms += overlap(a, b ?? now, from, to);
+  return ms / 36e5;
+}
+function totals(from, to) {
+  const ev = list().filter(e => e.t >= from && e.t < to);
+  let fills = 0, n = 0, sacks = 0;
+  for (const e of ev) { if (e.k === "holz") { fills += e.n || 1; n++; } else if (e.k === "sack") sacks += e.n || 0; }
+  const kg = fills * S.cfg.kgFuell, pkg = sacks * S.cfg.sackKg;
+  return { ev, n, fills, kg, sacks, pkg, h: laufzeit(from, to), kwh: kg * S.cfg.kwhHolz + pkg * S.cfg.kwhPellet };
+}
+
+/* ================= Zeiträume ================= */
+function period(view, anchor) {
+  const d = startOfDay(anchor);
+  let from, to, label, sub = "", buckets = [];
+  if (view === "tag") {
+    from = +d; to = addDays(d, 1); label = fmtDay.format(d);
+    for (let h = 0; h < 24; h++) { const a = new Date(d); a.setHours(h); const b = new Date(d); b.setHours(h + 1);
+      buckets.push({ from: +a, to: +b, lbl: h % 3 === 0 ? String(h) : "", title: `${h} Uhr` }); }
+  } else if (view === "woche") {
+    const s = new Date(d); s.setDate(s.getDate() - ((s.getDay() + 6) % 7));
+    from = +s; to = addDays(s, 7);
+    label = `KW ${isoWeek(s)} · ${s.getFullYear()}`;
+    sub = `${fmtShortDay.format(s)} – ${fmtShortDay.format(addDays(s, 6))}`;
+    for (let i = 0; i < 7; i++) { const a = addDays(s, i); buckets.push({ from: a, to: addDays(a, 1), lbl: WT[i], title: fmtShortDay.format(a), day: true }); }
+  } else if (view === "monat") {
+    const s = new Date(d.getFullYear(), d.getMonth(), 1), e = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    from = +s; to = +e; label = `${MONATE[s.getMonth()]} ${s.getFullYear()}`;
+    for (let a = +s; a < +e; a = addDays(a, 1)) { const day = new Date(a).getDate();
+      buckets.push({ from: a, to: addDays(a, 1), lbl: day === 1 || day % 5 === 0 ? String(day) : "", title: fmtShortDay.format(a), day: true }); }
+  } else {
+    const m0 = heizOn() ? hjM() : 0, y = heizOn() ? hjYear(d) : d.getFullYear();
+    from = +new Date(y, m0, 1); to = +new Date(y + 1, m0, 1); label = heizOn() ? `Heizjahr ${hjLabel(y)}` : String(y);
+    if (heizOn()) sub = `${MONATE[m0]} ${y} – ${MONATE[(m0 + 11) % 12]} ${m0 ? y + 1 : y}`;
+    for (let i = 0; i < 12; i++) { const m = (m0 + i) % 12; buckets.push({ from: +new Date(y, m0 + i, 1), to: +new Date(y, m0 + i + 1, 1), lbl: MONATE[m].slice(0, 3), title: MONATE[m] }); }
+  }
+  return { from, to, label, sub, buckets };
+}
+function isoWeek(dt) {
+  const d = new Date(Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  return Math.ceil(((d - Date.UTC(d.getUTCFullYear(), 0, 1)) / 864e5 + 1) / 7);
+}
+function shift(dir) {
+  const d = new Date(S.anchor);
+  if (S.view === "tag") d.setDate(d.getDate() + dir);
+  else if (S.view === "woche") d.setDate(d.getDate() + 7 * dir);
+  else if (S.view === "monat") { d.setDate(1); d.setMonth(d.getMonth() + dir); }
+  else d.setFullYear(d.getFullYear() + dir);
+  S.anchor = +d; render();
+}
+
+/* ================= Diagramme ================= */
+const narrow = () => innerWidth < 600;
+function niceMax(v) { if (v <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))); for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return m * p; return 10 * p; }
+function barChart(buckets, values, color, fmt, line, wide) {
+  const nar = !wide && narrow(), W = nar ? 380 : 640, H = nar ? 150 : (typeof wide === "number" ? wide : 170), pl = 34, pr = line ? 34 : 6, pb = 22, pt = 14, n = buckets.length;
+  const max = Math.max(...values, 0);
+  const hasLine = line && line.some(v => v != null);
+  if (!max && !hasLine) return `<div class="empty">Keine Daten in diesem Zeitraum</div>`;
+  const nice = niceMax(max), cw = (W - pl - pr) / n, bw = Math.max(2, cw * 0.7), ih = H - pb - pt;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img">`;
+  for (let i = 0; i <= 2; i++) {
+    const y = H - pb - ih * i / 2;
+    s += `<line x1="${pl}" x2="${W - pr}" y1="${y}" y2="${y}" stroke="var(--line)" ${i ? 'stroke-dasharray="3 4"' : ""}/>`;
+    s += `<text x="${pl - 6}" y="${y + 4}" fill="var(--muted)" font-size="11" text-anchor="end">${fmt(nice * i / 2)}</text>`;
+  }
+  buckets.forEach((b, i) => {
+    const v = values[i], h = ih * v / nice, x = pl + i * cw + (cw - bw) / 2;
+    if (v > 0) s += `<rect x="${x}" y="${H - pb - h}" width="${bw}" height="${h}" rx="${Math.min(4, bw / 3)}" fill="${color}"><title>${esc(b.title || b.lbl)}: ${fmt(v)}</title></rect>`;
+    if (b.lbl) s += `<text x="${pl + i * cw + cw / 2}" y="${H - 6}" fill="var(--muted)" font-size="11" text-anchor="middle">${b.lbl}</text>`;
+  });
+  if (hasLine) {
+    const vs = line.filter(v => v != null);
+    let lo = Math.floor(Math.min(...vs) / 5) * 5, hi = Math.ceil(Math.max(...vs) / 5) * 5; if (hi === lo) hi = lo + 5;
+    const Y = v => H - pb - ih * (v - lo) / (hi - lo);
+    const pts = line.map((v, i) => v == null ? null : [pl + i * cw + cw / 2, Y(v)]);
+    s += `<path d="${smoothPath(pts)}" fill="none" stroke="var(--kalt)" stroke-width="2"/>`;
+    pts.forEach((p, i) => { if (p) s += `<circle cx="${p[0]}" cy="${p[1]}" r="${n > 20 ? 1.5 : 3}" fill="var(--kalt)"><title>${esc(buckets[i].title)}: ${fmtTemp(line[i])}</title></circle>`; });
+    s += `<text x="${W - pr + 6}" y="${pt + 4}" fill="var(--kalt)" font-size="11">${hi}°</text><text x="${W - pr + 6}" y="${H - pb + 4}" fill="var(--kalt)" font-size="11">${lo}°</text>`;
+    if (lo < 0 && hi > 0) s += `<line x1="${pl}" x2="${W - pr}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--kalt)" stroke-opacity=".35" stroke-dasharray="2 3"/><text x="${W - pr + 6}" y="${Y(0) + 4}" fill="var(--kalt)" font-size="11">0°</text>`;
+  }
+  return s + `</svg>`;
+}
+function smoothPath(pts) {   // weiche Kurve, Lücken bei null
+  let d = "", seg = [];
+  const flush = () => {
+    if (seg.length === 1) d += `M${seg[0][0]},${seg[0][1]}h0.1`;
+    else if (seg.length > 1) {
+      d += `M${seg[0][0]},${seg[0][1]}`;
+      for (let i = 0; i < seg.length - 1; i++) {
+        const p0 = seg[i - 1] || seg[i], p1 = seg[i], p2 = seg[i + 1], p3 = seg[i + 2] || p2;
+        const lo = Math.min(p1[1], p2[1]), hi = Math.max(p1[1], p2[1]), cl = v => Math.max(lo, Math.min(hi, v)); // kein Überschwingen
+        const c1 = [p1[0] + (p2[0] - p0[0]) / 6, cl(p1[1] + (p2[1] - p0[1]) / 6)];
+        const c2 = [p2[0] - (p3[0] - p1[0]) / 6, cl(p2[1] - (p3[1] - p1[1]) / 6)];
+        d += `C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+      }
+    }
+    seg = [];
+  };
+  for (const p of pts) { if (p) seg.push(p); else flush(); }
+  flush();
+  return d;
+}
+function multiChart(labels, series, style, fmt, signed) {
+  const W = narrow() ? 380 : 760, H = narrow() ? 210 : 260, pl = 40, pr = 8, pb = 22, pt = 12, n = labels.length;
+  const all = series.flatMap(s => s.vals).filter(v => v != null);
+  if (!all.length || (!signed && !Math.max(...all))) return `<div class="empty">Noch keine Daten zum Vergleichen</div>`;
+  let lo = 0, hi = niceMax(Math.max(...all, 0));
+  if (signed) { lo = Math.floor(Math.min(...all, 0) / 5) * 5; hi = Math.ceil(Math.max(...all, 1) / 5) * 5; }
+  const ih = H - pb - pt, cw = (W - pl - pr) / n, Y = v => H - pb - ih * (v - lo) / (hi - lo);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img">`;
+  const steps = 4;
+  for (let i = 0; i <= steps; i++) {
+    const v = lo + (hi - lo) * i / steps, y = Y(v);
+    s += `<line x1="${pl}" x2="${W - pr}" y1="${y}" y2="${y}" stroke="var(--line)" ${v ? 'stroke-dasharray="3 4"' : ""}/>`;
+    s += `<text x="${pl - 6}" y="${y + 4}" fill="var(--muted)" font-size="11" text-anchor="end">${fmt(v)}</text>`;
+  }
+  labels.forEach((l, i) => s += `<text x="${pl + i * cw + cw / 2}" y="${H - 6}" fill="var(--muted)" font-size="11" text-anchor="middle">${l}</text>`);
+  if (style === "balken") {
+    const g = cw * 0.84, bw = g / series.length;
+    series.forEach((sr, k) => sr.vals.forEach((v, i) => {
+      if (v == null || v === 0) return;
+      const x = pl + i * cw + (cw - g) / 2 + k * bw, y0 = Y(Math.max(lo, 0)), y = Y(v);
+      s += `<rect x="${x.toFixed(1)}" y="${Math.min(y, y0).toFixed(1)}" width="${Math.max(1, bw - 1).toFixed(1)}" height="${Math.abs(y0 - y).toFixed(1)}" rx="2" fill="${sr.color}"><title>${esc(sr.name)} · ${labels[i]}: ${fmt(v)}</title></rect>`;
+    }));
+  } else {
+    series.forEach(sr => {
+      const pts = sr.vals.map((v, i) => v == null ? null : [pl + i * cw + cw / 2, Y(v)]);
+      s += `<path d="${smoothPath(pts)}" fill="none" stroke="${sr.color}" stroke-width="${sr.bold ? 3.5 : 2.2}" stroke-linecap="round"/>`;
+      pts.forEach((p, i) => { if (p) s += `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${sr.bold ? 4 : 3}" fill="${sr.color}"><title>${esc(sr.name)} · ${labels[i]}: ${fmt(sr.vals[i])}</title></circle>`; });
+    });
+  }
+  return s + `</svg>`;
+}
+
+/* ================= Kalender & Monatskacheln ================= */
+function calendarHtml(monthAnchor, selDay) {
+  const d = new Date(monthAnchor), y = d.getFullYear(), m = d.getMonth();
+  const first = +new Date(y, m, 1), last = +new Date(y, m + 1, 1), offset = (new Date(first).getDay() + 6) % 7;
+  needTemps(first, last);
+  const days = [];
+  for (let t = first; t < last; t = addDays(t, 1)) days.push({ t, T: totals(t, addDays(t, 1)), tp: tempOf(t) });
+  const maxKg = Math.max(...days.map(x => x.T.kg), 1), today = +startOfDay(Date.now());
+  let h = `<div class="cal">${WT.map(w => `<div class="wd">${w}</div>`).join("")}`;
+  for (let i = 0; i < offset; i++) h += `<div class="cell blank"></div>`;
+  for (const { t, T, tp } of days) {
+    const heat = T.kg ? Math.round(18 + 50 * T.kg / maxKg) : 0;
+    const cls = ["cell", t === today ? "today" : "", t === selDay ? "sel" : "", t > Date.now() ? "future" : ""].join(" ");
+    const title = `${fmtDayShort.format(t)}: ${num(T.kg)} kg Holz, Ofen ${fmtDur(T.h)}, ${T.sacks} Säcke${tp ? `, Ø ${fmtTemp(tp[0])}` : ""}`;
+    h += `<button class="${cls}" data-day="${t}" style="--heat:${heat}%" title="${esc(title)}">
+      <span class="d">${new Date(t).getDate()}</span>${tp ? `<span class="tp ${tp[0] < 0 ? "k" : ""}">${Math.round(tp[0]) || 0}°</span>` : ""}
+      <span class="mid">${T.fills ? `<span class="hz">${fmtFills(T.fills)}</span>` : ""}${T.sacks ? `<span class="sk">${T.sacks}</span>` : ""}</span>
+      ${T.h > 0 ? `<span class="of" style="width:${Math.max(12, Math.min(100, T.h / 24 * 100))}%"></span>` : ""}</button>`;
+  }
+  return h + `</div>`;
+}
+function monthsHtml(start) {
+  const ms = [], s = new Date(start);
+  for (let i = 0; i < 12; i++) { const f = +new Date(s.getFullYear(), s.getMonth() + i, 1), t = +new Date(s.getFullYear(), s.getMonth() + i + 1, 1); ms.push({ m: new Date(f).getMonth(), f, T: totals(f, t), tp: tempStats(f, t) }); }
+  const maxKg = Math.max(...ms.map(x => x.T.kg), 1);
+  return `<div class="months">${ms.map(({ m, f, T, tp }) => `
+    <button class="mon ${f > Date.now() ? "future" : ""}" data-month="${f}" style="--heat:${T.kg ? Math.round(15 + 50 * T.kg / maxKg) : 0}%">
+      <div class="n">${MONATE[m].slice(0, 3)} <span>${tp.mean != null ? `Ø ${num(tp.mean, 1)}°` : ""}</span></div>
+      <div class="v">${num(T.kg)} <small>kg</small></div>
+      <div class="s">${T.h ? `<span>⚡ ${fmtDur(T.h)}</span> ` : ""}${T.sacks ? `<span>🛢️ ${T.sacks} S.</span>` : ""}${!T.h && !T.sacks ? "&nbsp;" : ""}</div>
+    </button>`).join("")}</div>`;
+}
+
+/* ================= Anzeige ================= */
+function eventText(e) {
+  if (e.k === "holz") return `Holz nachgelegt (${fillLabel(e.n || 1)}) · ~${num((e.n || 1) * S.cfg.kgFuell)} kg`;
+  if (e.k === "on") return "Pelletsofen eingeschaltet";
+  if (e.k === "off") return "Pelletsofen ausgeschaltet";
+  if (e.k === "sack") return `Pellets: ${e.n} ${e.n === 1 ? "Sack" : "Säcke"} · ${num(e.n * S.cfg.sackKg)} kg`;
+  if (e.k === "buy") return `Holzkauf ${e.name || ""} · ${num(e.menge || 0, 1)} ${e.einheit || "fm"} ${e.art || ""} · ${eur((+e.preis || 0) + (+e.neben || 0))}`;
+  if (e.k === "hol") return `Holz geholt (${losName(e.los)})${e.rm ? ` · ${num(e.rm, 1)} rm` : ""}${e.h ? ` · Traktor ${num(e.h, 1)} h` : ""}${e.mk ? ` · ${eur(e.mk)}` : ""}`;
+  if (e.k === "saeg") return `Sägetag (${losName(e.los)}): ${kistenTxt(e.g, e.kl)} gefüllt`;
+  if (e.k === "bunk") return `Bunker befüllt: ${kistenTxt(e.g, e.kl)}`;
+  if (e.k === "cost") return `Kosten ${eur(e.eur)} · ${e.txt || ""}${e.los ? ` (${losName(e.los)})` : ""}`;
+  if (e.k === "inv") return `Bestand gezählt: ${kistenTxt(e.g, e.kl)} voll`;
+  return e.k;
+}
+function liHtml(e, withEdit, timeOnly) {
+  return `<li data-id="${e.id}"><span class="t" ${timeOnly ? 'style="width:46px"' : ""}>${(timeOnly ? fmtTime : fmtDayTime).format(e.t)}</span><span>${KIND[e.k]?.icon || ""}</span>
+    <span class="x">${eventText(e)}</span>${e.temp != null ? `<span class="tp">${num(e.temp, 1)}°</span>` : ""}${withEdit ? `<button data-edit="${e.id}" title="Ändern">✎</button>` : ""}</li>`;
+}
+function sackHtml() {
+  $$(".sackN").forEach(el => el.textContent = `${S.sacks} ${S.sacks === 1 ? "Sack" : "Säcke"}`);
+  $$(".sackKg").forEach(el => el.textContent = `${num(S.sacks * S.cfg.sackKg)} kg`);
+}
+
+function render() {
+  $$("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.t === S.tab));
+  $$(".tab").forEach(el => el.classList.toggle("on", el.id === "tab" + S.tab[0].toUpperCase() + S.tab.slice(1)));
+  const tt = tempOf(Date.now());
+  $("wx").textContent = S.nowTemp != null ? `🌡 ${num(S.nowTemp, 1)} °C` : "🌡 –";
+  $("wx").title = `${S.cfg.ort}${tt ? ` · heute ${num(tt[1], 0)}° bis ${num(tt[2], 0)}°` : ""}`;
+  $("subtitle").textContent = `ETA Twin 40 kW · ${S.cfg.ort}`;
+  sackHtml();
+  if (S.tab === "heute") renderHeute();
+  else if (S.tab === "nachtrag") renderNachtrag();
+  else if (S.tab === "lager") renderLager();
+  else renderVergleich();
+}
+
+function renderHeute() {
+  $("fillChips").innerHTML = FILLS.map(([f, l]) => `<button class="chip ${S.fill === f ? "on" : ""}" data-f="${f}">${l}</button>`).join("");
+  const today = totals(+startOfDay(Date.now()), Date.now() + 1);
+  $("holzInfo").textContent = `heute ${fmtFills(today.fills)}× · ≈ ${num(S.fill * S.cfg.kgFuell)} kg`;
+
+  const st = ofenOnAt(Date.now());
+  $("lamp").className = "lamp" + (st.on ? " on" : "");
+  $("ofenStatus").textContent = st.since
+    ? (st.on ? `läuft seit ${fmtDayTime.format(st.since)} (${fmtDur((Date.now() - st.since) / 36e5)})` : `aus seit ${fmtDayTime.format(st.since)}`)
+    : "noch kein Eintrag – Ofen gilt als aus";
+  $("btnOfen").textContent = st.on ? "Pelletsofen ausschalten" : "Pelletsofen einschalten";
+  $("btnOfen").className = "big " + (st.on ? "b-off" : "b-on");
+
+  $("when").classList.toggle("active", !!S.when);
+  $("whenSum").textContent = S.when ? `🕓 Nächster Eintrag: ${fmtDayTime.format(S.when)}` : "🕓 Eintrag für einen anderen Zeitpunkt";
+
+  const all = list().filter(e => HEAT_KINDS.has(e.k));
+  $("recent").innerHTML = all.length ? all.slice(-4).reverse().map(e => liHtml(e, true)).join("")
+    : `<li class="empty" style="display:block">Noch nichts eingetragen.</li>`;
+
+  $$("#seg button").forEach(b => b.classList.toggle("on", b.dataset.v === S.view));
+  const p = period(S.view, S.anchor);
+  needTemps(p.from, p.to);
+  $("periodLbl").innerHTML = `${esc(p.label)}${p.sub ? `<small>${p.sub}</small>` : ""}`;
+  $("next").disabled = p.to > Date.now();
+  const T = totals(p.from, p.to), tp = tempStats(p.from, p.to);
+  const kwhHgt = tp.hgt ? T.kwh / tp.hgt : null;
+  $("tiles").innerHTML = [
+    ["Holz", `${num(T.kg)} <small>kg</small>`, `${fmtFills(T.fills)} ${T.fills === 1 ? "Füllung" : "Füllungen"} · ${num(T.kg / S.cfg.kgRm, 1)} rm`, "var(--holz)"],
+    ["Pelletsofen", fmtDur(T.h).replace(/ (\w+)$/, " <small>$1</small>"), "Laufzeit", "var(--ok)"],
+    ["Pellets", `${num(T.sacks)} <small>${T.sacks === 1 ? "Sack" : "Säcke"}</small>`, `${num(T.pkg)} kg nachgefüllt`, "var(--pellet)"],
+    ["Energie", `${num(T.kwh)} <small>kWh</small>`, "geschätzt (Holz + Pellets)", "var(--ofen)"],
+    ["Außentemperatur", tp.mean != null ? `${num(tp.mean, 1)} <small>°C Ø</small>` : "–", tp.min != null ? `min ${num(tp.min, 1)}° · max ${num(tp.max, 1)}°` : "wird geladen…", "var(--kalt)"],
+    ["Heizgradtage", tp.hgt != null ? `${num(tp.hgt)} <small>HGT</small>` : "–", kwhHgt != null ? `${num(kwhHgt, 1)} kWh je Heizgradtag` : "Maß für die Kälte", "var(--kalt)"]
+  ].map(([k, v, s, c]) => `<div class="tile" style="--c:${c}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join("");
+
+  const kachelOk = S.view === "monat" || S.view === "jahr";
+  $("modeSeg").style.display = kachelOk ? "" : "none";
+  $$("#modeSeg button").forEach(b => b.classList.toggle("on", b.dataset.m === S.mode));
+  const showK = kachelOk && S.mode === "kachel";
+  $("kachelCard").style.display = showK ? "" : "none";
+  $("charts").style.display = showK ? "none" : "";
+  if (showK) {
+    if (S.view === "monat") { $("kachelTitle").innerHTML = `📅 ${MONATE[new Date(p.from).getMonth()]} <span class="sub">Tag antippen = Tagesansicht</span>`; $("kachel").innerHTML = calendarHtml(p.from); }
+    else { $("kachelTitle").innerHTML = `📅 ${p.label} <span class="sub">Monat antippen = Monatsansicht</span>`; $("kachel").innerHTML = monthsHtml(p.from); }
+  } else {
+    const bt = p.buckets.map(b => totals(b.from, b.to));
+    const temps = S.view === "tag" ? null : p.buckets.map(b => b.day ? (tempOf(b.from)?.[0] ?? null) : tempStats(b.from, b.to).mean);
+    $("holzChartSub").innerHTML = temps ? `kg · <span style="color:var(--kalt)">— Ø Temp.</span>` : "kg (geschätzt)";
+    $("chartHolz").innerHTML = barChart(p.buckets, bt.map(x => x.kg), "var(--holz)", v => num(v), temps);
+    $("chartOfen").innerHTML = barChart(p.buckets, bt.map(x => x.h), "var(--ok)", v => num(v, v && v < 3 ? 1 : 0));
+    $("chartSack").innerHTML = barChart(p.buckets, bt.map(x => x.sacks), "var(--pellet)", v => num(v, v % 1 ? 1 : 0));
+  }
+  T.ev = T.ev.filter(e => HEAT_KINDS.has(e.k));
+  $("periodList").innerHTML = T.ev.length ? T.ev.slice().reverse().slice(0, 300).map(e => liHtml(e, false)).join("")
+    : `<li class="empty" style="display:block">Keine Einträge.</li>`;
+}
+
+/* ---------- Nachtragen ---------- */
+function ntDefaultTime(day) {
+  const ev = totals(day, addDays(day, 1)).ev;
+  if (!ev.length) return "08:00";
+  const d = new Date(Math.min(ev.at(-1).t + 4 * 36e5, addDays(day, 1) - 60e3));
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function ntTimeValue() {
+  const [h, m] = ($("ntTime").value || "08:00").split(":").map(Number);
+  const d = new Date(S.nt.day); d.setHours(h, m, 0, 0); return +d;
+}
+function renderNachtrag() {
+  const d = new Date(S.nt.month), y = d.getFullYear(), m = d.getMonth();
+  const first = +new Date(y, m, 1), last = +new Date(y, m + 1, 1);
+  $("ntLbl").textContent = `${MONATE[m]} ${y}`;
+  $("ntNext").disabled = last > Date.now();
+  $("ntNextY").disabled = +new Date(y + 1, m, 1) > Date.now();
+  const T = totals(first, last), tp = tempStats(first, last);
+  $("ntSum").innerHTML = `Monat: <b style="color:var(--text)">${fmtFills(T.fills)}</b> Füllungen (${num(T.kg)} kg) · Ofen <b style="color:var(--text)">${fmtDur(T.h)}</b> · <b style="color:var(--text)">${T.sacks}</b> Säcke${tp.mean != null ? ` · Ø ${fmtTemp(tp.mean)}` : ""}`;
+  $("ntGrid").innerHTML = calendarHtml(S.nt.month, S.nt.day);
+  $("ntAuto").checked = S.nt.auto;
+  $("tabNachtrag").classList.toggle("hasday", S.nt.day != null);
+  if (S.nt.day == null) return;
+
+  const day = S.nt.day, tpd = tempOf(day);
+  $("ntDayLbl").innerHTML = `${fmtDayShort.format(day)}<small>${tpd ? `🌡 Ø ${fmtTemp(tpd[0])} · ${num(tpd[1], 0)}° bis ${num(tpd[2], 0)}°` : "Temperatur wird geladen…"}</small>`;
+  $("ntDayNext").disabled = addDays(day, 1) > Date.now();
+  if (!$("ntTime").dataset.touched) $("ntTime").value = ntDefaultTime(day);
+  $("ntFill").innerHTML = FILLS.map(([f, l]) => `<button class="chip" data-ntf="${f}">+ ${l}</button>`).join("");
+  const st = ofenOnAt(ntTimeValue());
+  $("ntLamp").className = "lamp" + (st.on ? " on" : "");
+  const hDay = laufzeit(day, addDays(day, 1));
+  $("ntOfenStatus").textContent = (st.on ? `lief zu dieser Uhrzeit (seit ${fmtDayTime.format(st.since)})` : st.since ? `war aus (seit ${fmtDayTime.format(st.since)})` : "war aus") + (hDay ? ` · an diesem Tag ${fmtDur(hDay)}` : "");
+  $("ntOfen").textContent = st.on ? `Ofen um ${$("ntTime").value} ausgeschaltet` : `Ofen um ${$("ntTime").value} eingeschaltet`;
+  $("ntOfen").className = "big " + (st.on ? "b-off" : "b-on");
+  let ev = totals(day, addDays(day, 1)).ev;
+  ev = ev.filter(e => HEAT_KINDS.has(e.k));
+  $("ntList").innerHTML = ev.length ? ev.map(e => liHtml(e, false, true)).join("") : `<li class="empty" style="display:block">Noch keine Einträge an diesem Tag.</li>`;
+}
+function ntAdd(k, n) {
+  const t = ntTimeValue();
+  const id = uid(), e = { t, k }; if (n != null) e.n = n;
+  delete $("ntTime").dataset.touched;
+  if (S.nt.auto) S.nt.day = null;
+  putEvent(id, e);
+  lastAdded = id;
+  toast(`${KIND[k].icon} ${fmtDayShort.format(t)}: ${eventText(e)}`);
+  if (S.nt.auto) window.scrollTo({ top: 0 });
+}
+function ntSelect(day) {
+  S.nt.day = day; delete $("ntTime").dataset.touched;
+  render();
+  if (narrow()) window.scrollTo({ top: 0 });
+}
+
+/* ---------- Jahresvergleich ---------- */
+function cmpRanges() {
+  const evs = list(), now = new Date();
+  const firstT = evs.length ? evs[0].t : Date.now();
+  const f = new Date(firstT), saison = S.cmp.season === "saison";
+  const out = [];
+  if (saison) {
+    let y0 = hjYear(f);
+    const y1 = hjYear(now);
+    for (let y = y0; y <= y1; y++) out.push({ name: `${y}/${String(y + 1).slice(2)}`, start: +new Date(y, hjM(), 1), months: Array.from({ length: 12 }, (_, i) => +new Date(y, hjM() + i, 1)), cur: y === y1 });
+  } else {
+    for (let y = f.getFullYear(); y <= now.getFullYear(); y++) out.push({ name: String(y), start: +new Date(y, 0, 1), months: Array.from({ length: 12 }, (_, i) => +new Date(y, i, 1)), cur: y === now.getFullYear() });
+  }
+  return out;
+}
+const METRICS = {
+  kg:   { t: "🪵 Holzverbrauch", u: "kg", f: v => num(v) },
+  h:    { t: "⚡ Pelletsofen-Laufzeit", u: "Stunden", f: v => num(v) },
+  pkg:  { t: "🛢️ Pellets nachgefüllt", u: "kg", f: v => num(v) },
+  kwh:  { t: "Energie (Holz + Pellets)", u: "kWh", f: v => num(v) },
+  temp: { t: "🌡 Außentemperatur", u: "°C Ø", f: v => num(v, 0) + "°" }
+};
+function renderVergleich() {
+  renderRpControls();
+  $$("#cmpMetric button").forEach(b => b.classList.toggle("on", b.dataset.c === S.cmp.metric));
+  $$("#cmpStyle button").forEach(b => b.classList.toggle("on", b.dataset.s === S.cmp.style));
+  $$("#cmpSeason button").forEach(b => b.classList.toggle("on", b.dataset.y === S.cmp.season));
+  const R = cmpRanges(), M = METRICS[S.cmp.metric], now = Date.now();
+  if (R.length) needTemps(R[0].start, now);
+  const labels = R[0].months.map(t => MONATE[new Date(t).getMonth()].slice(0, narrow() ? 1 : 3));
+  const rows = R.map((r, i) => {
+    const color = YEAR_COLORS[(R.length - 1 - i) % YEAR_COLORS.length];
+    const mt = r.months.map(m => { const e = addDays(new Date(m).setMonth(new Date(m).getMonth() + 1), 0); return m > now ? null : { T: totals(m, e), tp: tempStats(m, e) }; });
+    const val = x => x == null ? null : S.cmp.metric === "temp" ? x.tp.mean : x.T[S.cmp.metric];
+    const end = r.months.at(-1), endT = +new Date(new Date(end).getFullYear(), new Date(end).getMonth() + 1, 1);
+    return { ...r, color, vals: mt.map(val), temps: mt.map(x => x?.tp.mean ?? null), Y: totals(r.start, endT), tp: tempStats(r.start, endT) };
+  });
+  const visible = rows.filter(r => !S.cmp.hidden[r.name]);
+  $("cmpTitle").innerHTML = `${M.t} <span class="sub">${M.u} je Monat</span>`;
+  $("cmpLegend").innerHTML = rows.slice().reverse().map(r => `<button data-yr="${esc(r.name)}" class="${S.cmp.hidden[r.name] ? "off" : ""}"><i style="background:${r.color}"></i>${r.name}${r.cur ? " (läuft)" : ""}</button>`).join("");
+  $("cmpChart").innerHTML = multiChart(labels, visible.map(r => ({ name: r.name, color: r.color, vals: r.vals, bold: r.cur })), S.cmp.style, M.f, S.cmp.metric === "temp");
+  $("cmpTempCard").style.display = S.cmp.metric === "temp" ? "none" : "";
+  if (S.cmp.metric !== "temp") $("cmpTemp").innerHTML = multiChart(labels, visible.map(r => ({ name: r.name, color: r.color, vals: r.temps, bold: r.cur })), "welle", v => num(v, 0) + "°", true);
+  $("cmpTable").innerHTML = `<table><thead><tr><th>${S.cmp.season === "saison" ? "Heizjahr" : "Jahr"}</th><th>Holz kg</th><th>rm</th><th>Füllungen</th><th>Ofen h</th><th>Pellets kg</th><th>kWh</th><th>Ø °C</th><th>HGT</th><th>kWh/HGT</th></tr></thead><tbody>${
+    rows.slice().reverse().map(r => `<tr><td><i style="background:${r.color}"></i>${r.name}${r.cur ? " *" : ""}</td><td>${num(r.Y.kg)}</td><td>${num(r.Y.kg / S.cfg.kgRm, 1)}</td><td>${fmtFills(r.Y.fills)}</td><td>${num(r.Y.h)}</td><td>${num(r.Y.pkg)}</td><td>${num(r.Y.kwh)}</td><td>${r.tp.mean != null ? num(r.tp.mean, 1) : "–"}</td><td>${r.tp.hgt != null ? num(r.tp.hgt) : "–"}</td><td>${r.tp.hgt ? num(r.Y.kwh / r.tp.hgt, 1) : "–"}</td></tr>`).join("")
+  }</tbody></table><div class="hint" style="font-size:12px;color:var(--muted);margin-top:8px">* läuft noch. kWh je Heizgradtag macht Jahre mit unterschiedlich kalten Wintern vergleichbar – kleiner ist sparsamer.</div>`;
+}
+
+/* ================= Aktionen ================= */
+let lastAdded = null, toastTimer;
+function add(k, n) {
+  const live = !S.when, t = S.when || Date.now();
+  const id = uid(), e = { t, k }; if (n != null) e.n = n;
+  if (live && S.nowTemp != null) e.temp = S.nowTemp;
+  putEvent(id, e);
+  lastAdded = id;
+  if (S.when) { S.when = null; $("when").open = false; }
+  toast(`${KIND[k].icon} ${eventText(e)}`);
+  try { navigator.vibrate?.(30); } catch {}
+}
+function toast(msg, undo = true) {
+  const el = $("toast"); el.querySelector("span").textContent = msg;
+  el.querySelector("button").style.display = undo ? "" : "none";
+  if (!undo) lastAdded = null;
+  el.classList.add("show"); clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 5000);
+}
+$("toast").querySelector("button").onclick = () => {
+  if (lastAdded && S.events[lastAdded]) putEvent(lastAdded, null);
+  lastAdded = null; $("toast").classList.remove("show");
+};
+
+$("tabs").onclick = ev => { const b = ev.target.closest("[data-t]"); if (!b) return; S.tab = b.dataset.t; lsSet("hb-tab", S.tab); render(); window.scrollTo({ top: 0 }); };
+$("fillChips").onclick = ev => { const b = ev.target.closest("[data-f]"); if (!b) return; S.fill = +b.dataset.f; lsSet("hb-fill", S.fill); render(); };
+$("btnHolz").onclick = () => add("holz", S.fill);
+$("btnOfen").onclick = () => add(ofenOnAt(S.when || Date.now()).on ? "off" : "on");
+$("btnSack").onclick = () => add("sack", S.sacks);
+document.addEventListener("click", ev => {
+  const sb = ev.target.closest("[data-sack]");
+  if (sb) { S.sacks = Math.min(99, Math.max(1, S.sacks + +sb.dataset.sack)); lsSet("hb-sacks", S.sacks); sackHtml(); return; }
+  const ed = ev.target.closest("[data-edit]") || ev.target.closest(".list li[data-id]");
+  if (ed) { editEvent(ed.dataset.edit || ed.dataset.id); return; }
+  const day = ev.target.closest("[data-day]");
+  if (day) {
+    if (S.tab === "nachtrag") ntSelect(+day.dataset.day);
+    else { S.view = "tag"; S.anchor = +day.dataset.day; lsSet("hb-view", S.view); render(); }
+    return;
+  }
+  const mon = ev.target.closest("[data-month]");
+  if (mon) { S.view = "monat"; S.anchor = +mon.dataset.month; lsSet("hb-view", S.view); render(); }
+});
+
+$("when").addEventListener("toggle", () => { if ($("when").open && !$("whenInput").value) $("whenInput").value = toLocalInput(Date.now()); });
+$("whenInput").onchange = () => { const v = $("whenInput").value; S.when = v ? +new Date(v) : null; render(); };
+$("whenReset").onclick = () => { S.when = null; $("whenInput").value = ""; $("when").open = false; render(); };
+
+$("seg").onclick = ev => { const b = ev.target.closest("[data-v]"); if (!b) return; S.view = b.dataset.v; lsSet("hb-view", S.view); render(); };
+$("modeSeg").onclick = ev => { const b = ev.target.closest("[data-m]"); if (!b) return; S.mode = b.dataset.m; lsSet("hb-mode", S.mode); render(); };
+$("prev").onclick = () => shift(-1);
+$("next").onclick = () => shift(1);
+$("periodLbl").onclick = () => { S.anchor = Date.now(); render(); };
+
+// Nachtragen
+const ntMonth = n => { const d = new Date(S.nt.month); d.setDate(1); d.setMonth(d.getMonth() + n); S.nt.month = Math.min(+d, Date.now()); S.nt.day = null; render(); };
+$("ntPrev").onclick = () => ntMonth(-1);
+$("ntNext").onclick = () => ntMonth(1);
+$("ntPrevY").onclick = () => ntMonth(-12);
+$("ntNextY").onclick = () => ntMonth(12);
+$("ntLbl").onclick = () => { S.nt.month = Date.now(); S.nt.day = null; render(); };
+$("ntFill").onclick = ev => { const b = ev.target.closest("[data-ntf]"); if (b) ntAdd("holz", +b.dataset.ntf); };
+$("ntOfen").onclick = () => ntAdd(ofenOnAt(ntTimeValue()).on ? "off" : "on");
+$("ntSack").onclick = () => ntAdd("sack", S.sacks);
+$("ntBack").onclick = () => { S.nt.day = null; render(); };
+$("ntAuto").onchange = () => { S.nt.auto = $("ntAuto").checked; lsSet("hb-ntauto", S.nt.auto); };
+$("ntTime").oninput = () => { $("ntTime").dataset.touched = "1"; render(); };
+const ntDay = n => { const t = addDays(S.nt.day, n); if (t > Date.now()) return; S.nt.month = t; ntSelect(t); };
+$("ntDayPrev").onclick = () => ntDay(-1);
+$("ntDayNext").onclick = () => ntDay(1);
+
+// Vergleich
+$("cmpMetric").onclick = ev => { const b = ev.target.closest("[data-c]"); if (b) { S.cmp.metric = b.dataset.c; render(); } };
+$("cmpStyle").onclick = ev => { const b = ev.target.closest("[data-s]"); if (b) { S.cmp.style = b.dataset.s; lsSet("hb-cmpstyle", S.cmp.style); render(); } };
+$("cmpSeason").onclick = ev => { const b = ev.target.closest("[data-y]"); if (b) { S.cmp.season = b.dataset.y; S.cmp.hidden = {}; lsSet("hb-cmpseason", S.cmp.season); render(); } };
+$("cmpLegend").onclick = ev => { const b = ev.target.closest("[data-yr]"); if (b) { S.cmp.hidden[b.dataset.yr] = !S.cmp.hidden[b.dataset.yr]; render(); } };
+
+/* ================= Holzlager ================= */
+const LAGER_FIELDS = [
+  ["kistenG", "Anzahl große Kisten", 1], ["volG", "Volumen große Kiste (m³ = srm)", 0.001, "110 × 120 × 120 cm = 1,584 m³"],
+  ["kistenK", "Anzahl kleine Kisten", 1], ["volK", "Volumen kleine Kiste (m³ = srm)", 0.001, "110 × 130 × 90 cm = 1,287 m³"],
+  ["bunkerG", "Bunker fasst (große Kisten)", 1],
+  ["srmRm", "Schüttraummeter je Raummeter", 0.05, "1 rm Meterholz ergibt geschnitten (33 cm, lose geworfen) ca. 1,4 srm. Daraus folgt: 1 srm ≈ kg/rm ÷ 1,4."],
+  ["rmFm", "Raummeter je Festmeter", 0.05, "1 fm (Auktion) ≈ 1,4 rm geschlichtetes Meterholz."],
+  ["traktor", "Traktor-Kosten je Stunde (€)", 1, "Diesel, Verschleiß, Versicherung – wird mit den Traktorstunden multipliziert."],
+  ["trocken", "Trocknungszeit am Meterstoß (Monate)", 1, "Mindestens 1,5 Jahre = 18 Monate, bevor das Holz gesägt und in Kisten kommt."],
+  ["saegVon", "Sägezeit von Monat (1–12)", 1, "Gesägt wird nur im Hochsommer: 7 = Juli"],
+  ["saegBis", "Sägezeit bis Monat (1–12)", 1, "8 = August. Schnittreif ist das Holz im ersten Sommer nach der Trocknungszeit."]
+];
+S.lg = { bg: 3, bk: 0, sg: 4, sk: 0, los: null, ...lsGet("hb-lg", {}) };
+const eur = v => (+v || 0).toLocaleString("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+const kistenTxt = (g, kl) => [g ? `${g} ${g == 1 ? "große" : "große"}` : "", kl ? `${kl} kleine` : ""].filter(Boolean).join(" + ") + " " + ((+g || 0) + (+kl || 0) === 1 ? "Kiste" : "Kisten");
+const losName = id => { const b = S.events[id]; return b ? (b.name || `Los ${fmtShortDay.format(b.t)}`) : "ohne Los"; };
+const kgSrm = () => S.cfg.kgRm / S.cfg.srmRm;
+const kistenSrm = (g, kl) => (+g || 0) * S.cfg.volG + (+kl || 0) * S.cfg.volK;
+const addMonths = (t, m) => { const d = new Date(t); d.setMonth(d.getMonth() + (+m || 0)); return +d; };
+const fmtMonYear = t => `${pad(new Date(t).getMonth() + 1)}/${new Date(t).getFullYear()}`;
+
+function lager(until) {   // until = Stichtag (für Jahresbericht), sonst jetzt
+  const c = S.cfg, lose = {}, years = {}, queue = [], bunks = [], burned = [];
+  const src = until ? list().filter(e => e.t < until) : list();
+  const Y = t => (years[yearKey(t)] ||= { buy: 0, mach: 0, other: 0, rm: 0, h: 0, mrm: 0, mcost: 0 });
+  for (const e of src) if (e.k === "buy") {
+    const rm = e.einheit === "rm" ? (+e.menge || 0) : (+e.menge || 0) * c.rmFm, k = (+e.preis || 0) + (+e.neben || 0);
+    lose[e.id] = { id: e.id, e, rmKauf: rm, holRm: 0, hol: 0, h: 0, sawnSrm: 0, g: 0, kl: 0, cost: k, firstHol: null };
+    const y = Y(e.t); y.buy += k; y.rm += rm;
+  }
+  for (const e of src) {
+    const L = e.los && lose[e.los];
+    if (e.k === "hol") {
+      const k = (+e.h || 0) * c.traktor + (+e.mk || 0), y = Y(e.t); y.mach += k; y.h += +e.h || 0;
+      if (L) { L.holRm += +e.rm || 0; L.hol++; L.h += +e.h || 0; L.cost += k; L.firstHol ??= e.t; }
+    } else if (e.k === "cost") {
+      Y(e.t).other += +e.eur || 0; if (L) L.cost += +e.eur || 0;
+    } else if (e.k === "saeg") {
+      if (L) { L.sawnSrm += kistenSrm(e.g, e.kl); L.g += +e.g || 0; L.kl += +e.kl || 0; }
+      queue.push({ t: e.t, los: e.los, g: +e.g || 0, kl: +e.kl || 0 });
+    } else if (e.k === "inv") {
+      queue.length = 0; queue.push({ t: e.t, los: null, g: +e.g || 0, kl: +e.kl || 0, inv: true });
+    } else if (e.k === "bunk") {
+      bunks.push(e);
+      let g = +e.g || 0, kl = +e.kl || 0;
+      for (const q of queue) {
+        const a = Math.min(q.g, g); q.g -= a; g -= a; const b = Math.min(q.kl, kl); q.kl -= b; kl -= b;
+        if (a || b) burned.push({ t: e.t, los: q.los, inv: !!q.inv, sawT: q.t, g: a, kl: b });   // Herkunft der verheizten Kisten
+        if (!g && !kl) break;
+      }
+      if (g || kl) burned.push({ t: e.t, los: null, unknown: true, g, kl });
+    }
+  }
+  const full = queue.filter(q => q.g || q.kl);
+  const fullG = full.reduce((s, q) => s + q.g, 0), fullK = full.reduce((s, q) => s + q.kl, 0);
+  const srm = kistenSrm(fullG, fullK), kg = srm * kgSrm();
+  const L = Object.values(lose).sort((a, b) => b.e.t - a.e.t);
+  for (const l of L) {
+    l.measured = !!l.e.done && +l.e.rmMess > 0 && (!until || (l.e.tMess || 0) < until);   // aufgearbeitet & am Stoß abgemessen
+    l.basis = l.measured ? +l.e.rmMess : (l.holRm || l.rmKauf);         // sonst nur Schätzung
+    l.stoss = l.hol || l.measured ? Math.max(0, l.basis - l.sawnSrm / c.srmRm) : 0;
+    l.wald = l.hol || l.measured ? 0 : l.rmKauf;
+    l.dryAt = addMonths(l.measured && l.e.tMess ? l.e.tMess : (l.firstHol || l.e.t), c.trocken);
+    l.cutAt = sawReady(l.dryAt);                                         // erster Sommer nach der Trocknung
+    l.done = l.measured && l.sawnSrm > 0 && l.stoss <= l.basis * 0.03;
+    l.yield = l.measured && l.e.einheit !== "rm" && +l.e.menge ? l.basis / +l.e.menge : null;   // rm je gekauftem fm
+    if (l.measured) { const y = years[yearKey(l.e.t)]; y.mrm += l.basis; y.mcost += l.cost; }
+  }
+  // Verbrauch: Ø Kesselfüllungen pro Tag (letzte 60 Tage, sonst letztes Jahr)
+  const now = until ? Math.min(until, Date.now()) : Date.now();
+  const f60 = totals(now - 60 * 864e5, now).fills, f365 = totals(now - 365 * 864e5, now).fills;
+  const perDay = f60 ? f60 / 60 : f365 / 365;
+  // Bunker
+  const last = bunks.at(-1);
+  let bunker = null;
+  if (last) {
+    const addKg = kistenSrm(last.g, last.kl) * kgSrm(), fillsSince = totals(last.t, now + 1).fills, used = fillsSince * c.kgFuell;
+    bunker = { last, addKg, fillsSince, used, rest: Math.max(0, addKg - used), pct: Math.max(0, Math.min(1, 1 - used / addKg)) };
+  }
+  // Gemessene kg je Kesselfüllung aus den Bunker-Befüllungen
+  let measured = null;
+  if (bunks.length >= 2) {
+    const kgIn = bunks.slice(0, -1).reduce((s, b) => s + kistenSrm(b.g, b.kl) * kgSrm(), 0);
+    const fills = totals(bunks[0].t, bunks.at(-1).t).fills;
+    if (fills >= 3) measured = { kg: kgIn / fills, fills, n: bunks.length - 1 };
+  }
+  return { lose: L, years, full, fullG, fullK, emptyG: c.kistenG - fullG, emptyK: c.kistenK - fullK, srm, kg, perDay, bunker, measured, burned, bunks };
+}
+
+function losCosts(l) {
+  const c = S.cfg, perRm = l.basis ? l.cost / l.basis : 0, perKg = perRm / c.kgRm;
+  return { perRm, perFill: perKg * c.kgFuell, ctKwh: perKg / c.kwhHolz * 100 };
+}
+
+function lgTime() {
+  const v = $("lgDate").value;
+  return !v || v === dkey(Date.now()) ? Date.now() : +new Date(v + "T12:00");
+}
+
+function renderLager() {
+  const c = S.cfg, L = lager();
+  if (!$("lgDate").value) $("lgDate").value = dkey(Date.now());
+  $("lgToday").style.visibility = $("lgDate").value === dkey(Date.now()) ? "hidden" : "visible";
+  $$("[data-sv]").forEach(el => el.textContent = S.lg[el.dataset.sv]);
+  $("lgBunkSub").textContent = `${L.fullG} große · ${L.fullK} kleine voll`;
+  $("lgSaegSub").textContent = `leer: ${L.emptyG} große · ${L.emptyK} kleine`;
+
+  // Los-Auswahl: Standard = ältestes Los mit Holz am Stoß
+  const choosable = L.lose.slice().sort((a, b) => a.e.t - b.e.t);
+  if (!S.lg.los || !S.events[S.lg.los]) S.lg.los = (choosable.find(l => l.stoss > 0) || choosable.at(-1))?.id || null;
+  $("lgLos").innerHTML = choosable.length
+    ? choosable.slice().reverse().map(l => `<option value="${l.id}" ${l.id === S.lg.los ? "selected" : ""}>${esc(losName(l.id))} · ${esc(l.e.art || "")} · ${l.hol ? `Stoß ${num(l.stoss, 1)} rm` : "im Wald"}</option>`).join("")
+    : `<option value="">– zuerst Holzkauf eintragen –</option>`;
+
+  // Kacheln
+  const stoss = L.lose.reduce((s, l) => s + l.stoss, 0), wald = L.lose.reduce((s, l) => s + l.wald, 0);
+  const fillsAvail = L.kg / c.kgFuell, days = L.perDay ? fillsAvail / L.perDay : null;
+  const yNow = yearKey(Date.now()), yc = L.years[yNow] || { buy: 0, mach: 0, other: 0 };
+  const yCost = yc.buy + yc.mach + yc.other;
+  const openLose = L.lose.filter(l => !l.measured);
+  $("lgTiles").innerHTML = [
+    ["Volle Kisten", `${L.fullG} <small>gr.</small> ${L.fullK} <small>kl.</small>`, `${num(L.srm, 1)} srm · ≈ ${num(L.kg)} kg`, "var(--holz)"],
+    ["Leere Kisten", `${L.emptyG} <small>gr.</small> ${L.emptyK} <small>kl.</small>`, `von ${c.kistenG} großen / ${c.kistenK} kleinen`, "var(--line)"],
+    ["Reichweite", days != null ? (days > 70 ? `${num(days / 30.4, 1)} <small>Monate</small>` : `${num(days / 7, 1)} <small>Wochen</small>`) : "–", L.perDay ? `≈ ${num(fillsAvail)} Füllungen · Ø ${num(L.perDay, 1)}/Tag` : `≈ ${num(fillsAvail)} Kesselfüllungen`, "var(--ok)"],
+    ["Am Meterstoß", `${num(stoss, 1)} <small>rm</small>`, `≈ ${num(stoss * c.srmRm / c.volG, 0)} große Kisten`, "var(--pellet)"],
+    ["Noch nicht vermessen", `${openLose.length} <small>${openLose.length === 1 ? "Los" : "Lose"}</small>`, openLose.length ? `≈ ${num(openLose.reduce((s, l) => s + l.rmKauf, 0), 1)} rm geschätzt${wald ? ` · ${num(wald, 1)} rm im Wald` : ""}` : "alles vermessen", "var(--kalt)"],
+    [`Kosten ${yearLabel(yNow)}`, eur(yCost), `Kauf ${eur(yc.buy)} · Traktor/Masch. ${eur(yc.mach)}`, "var(--ofen)"]
+  ].map(([k, v, s, col]) => `<div class="tile" style="--c:${col}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join("");
+
+  // Bunker
+  const B = L.bunker;
+  $("lgBunkInfo").textContent = `fasst ${c.bunkerG} große Kisten`;
+  let bh = B ? `<div class="bar"><i style="width:${Math.round(B.pct * 100)}%"></i></div>
+    <div style="font-size:14px">Noch ca. <b>${num(B.rest)} kg</b> (≈ ${num(B.rest / c.kgFuell)} Kesselfüllungen)</div>
+    <div class="los"><div class="meta">Befüllt am ${fmtDayShort.format(B.last.t)} mit ${kistenTxt(B.last.g, B.last.kl)} (≈ ${num(B.addKg)} kg). Seither ${fmtFills(B.fillsSince)} Kesselfüllungen ≈ ${num(B.used)} kg.</div></div>`
+    : `<div class="empty">Noch keine Bunker-Befüllung eingetragen.</div>`;
+  if (L.measured) bh += `<div class="measure"><span>📏 Gemessen aus ${L.measured.n} Bunker-Befüllungen: <b style="color:var(--text)">Ø ${num(L.measured.kg)} kg</b> je Kesselfüllung (eingestellt: ${num(c.kgFuell)} kg)</span>${Math.abs(L.measured.kg - c.kgFuell) >= 1 ? `<button id="lgTakeKg">Übernehmen</button>` : ""}</div>`;
+  else bh += `<div class="measure">📏 Ab der 2. Bunker-Befüllung rechnet die App aus, wie viel kg eine Kesselfüllung wirklich hat (statt geschätzt ${num(c.kgFuell)} kg).</div>`;
+  $("lgBunker").innerHTML = bh;
+  if ($("lgTakeKg")) $("lgTakeKg").onclick = async () => {
+    S.cfg.kgFuell = Math.round(L.measured.kg); lsSet("hb-cfg", S.cfg); render(); toast(`Kesselfüllung = ${S.cfg.kgFuell} kg übernommen`, false);
+    try { await fetch(DB.url("cfg"), { method: "PUT", body: JSON.stringify(S.cfg) }); } catch {}
+  };
+
+  // Kisten-Übersicht
+  const boxes = (n, full, cls) => Array.from({ length: Math.max(n, full) }, (_, i) => `<span class="bx ${cls} ${i < full ? (i >= n ? "o" : "v") : ""}"></span>`).join("");
+  $("lgBoxSub").innerHTML = `<span class="bx v" style="display:inline-block;vertical-align:-2px"></span> voll · <span class="bx" style="display:inline-block;vertical-align:-2px"></span> leer`;
+  let kh = `<div class="stepcap" style="text-align:left">Große Kisten: <b style="color:var(--text)">${L.fullG}</b> voll · ${L.emptyG} leer</div><div class="boxrow">${boxes(c.kistenG, L.fullG, "")}</div>
+    <div class="stepcap" style="text-align:left">Kleine Kisten: <b style="color:var(--text)">${L.fullK}</b> voll · ${L.emptyK} leer</div><div class="boxrow">${boxes(c.kistenK, L.fullK, "k")}</div>`;
+  if (L.emptyG < 0 || L.emptyK < 0) kh += `<div class="measure" style="color:var(--ofen)">⚠ Mehr volle Kisten eingetragen als vorhanden – bitte mit „📋 Kisten zählen" korrigieren.</div>`;
+  if (L.full.length) kh += `<div class="sect">Volle Kisten – werden in dieser Reihenfolge verheizt</div><ul class="fifo">${L.full.map(q => `<li><b>${kistenTxt(q.g, q.kl)}</b> ${q.inv ? `gezählt am ${fmtDayShort.format(q.t)}` : `${esc(losName(q.los))} · gesägt ${fmtDayShort.format(q.t)}`}</li>`).join("")}</ul>`;
+  else kh += `<div class="empty">Keine vollen Kisten eingetragen. Zum Start einmal „📋 Kisten zählen".</div>`;
+  $("lgBoxes").innerHTML = kh;
+
+  // Holzlose
+  $("lgLose").innerHTML = L.lose.length ? L.lose.map(l => {
+    const e = l.e, lc = losCosts(l), now = Date.now();
+    const status = !l.measured ? (!l.hol ? `<span class="pill blue">im Wald</span>` : `<span class="pill blue">in Aufarbeitung</span>`)
+      : l.done ? `<span class="pill">verbraucht</span>`
+      : now >= l.cutAt ? `<span class="pill ok">✂ schnittreif</span>`
+      : now >= l.dryAt ? `<span class="pill ok">trocken ✓</span> <span class="pill">✂ ab Sommer ${new Date(l.cutAt).getFullYear()}</span>`
+      : `<span class="pill wait">trocknet bis ${fmtMonYear(l.dryAt)}</span> <span class="pill">✂ ab Sommer ${new Date(l.cutAt).getFullYear()}</span>`;
+    return `<div class="los"><div class="hd">🌲 ${esc(losName(l.id))} ${e.art ? `<span class="pill">${esc(e.art)}</span>` : ""} ${status}<button data-edit="${l.id}" title="Ändern">✎</button></div>
+      <div class="meta">Gekauft ${fmtDayShort.format(e.t)} · <b>${num(e.menge || 0, 1)} ${e.einheit || "fm"}</b> · Kauf ${eur(e.preis)}${+e.neben ? ` + ${eur(e.neben)} Nebenkosten` : ""}</div>
+      ${l.hol ? `<div class="meta">Geholt: ${l.hol}× ab ${fmtDayShort.format(l.firstHol)}${l.h ? ` · Traktor ${num(l.h, 1)} h` : ""}</div>` : ""}
+      ${l.measured
+        ? `<div class="meta">📏 Vermessen ${e.tMess ? fmtDayShort.format(e.tMess) : ""}: <b>${num(l.basis, 1)} rm</b> am Stoß${l.yield ? ` · Ausbeute ${num(l.yield, 2)} rm je fm` : ""}</div>
+           <div class="meta">Am Meterstoß noch: <b>${num(l.stoss, 1)} rm</b>${l.g || l.kl ? ` · gesägt: ${kistenTxt(l.g, l.kl)}` : ""}</div>
+           <div class="meta">Kosten gesamt <b>${eur(l.cost)}</b> · <b style="color:var(--holz)">${eur(lc.perRm)}/rm</b> · ≈ ${num(lc.perFill, 2)} € je Kesselfüllung · ${num(lc.ctKwh, 1)} ct/kWh</div>`
+        : `<div class="meta">Kosten bisher <b>${eur(l.cost)}</b> · Preis je rm erst nach dem Vermessen (geschätzt ≈ ${num(l.rmKauf, 1)} rm)</div>
+           ${l.g || l.kl ? `<div class="meta">gesägt: ${kistenTxt(l.g, l.kl)}</div>` : ""}
+           <button class="big b-plain" data-mess="${l.id}" style="margin-top:8px;padding:12px;font-size:15px">📏 Fertig aufgearbeitet – jetzt vermessen</button>`}
+      </div>`;
+  }).join("") : `<div class="empty">Noch kein Holzkauf eingetragen. Tipp auf „🌲 Holzkauf".</div>`;
+
+  // Kosten je Jahr
+  const ys = Object.keys(L.years).sort().reverse();
+  $("lgCosts").innerHTML = ys.length ? `<table><thead><tr><th>${heizOn() ? "Heizjahr" : "Jahr"}</th><th>Holzkauf</th><th>Traktor/Masch.</th><th>Sonstiges</th><th>Summe</th><th>vermessen</th><th>€/rm</th></tr></thead><tbody>${
+    ys.map(y => { const v = L.years[y], s = v.buy + v.mach + v.other;
+      return `<tr><td>${yearLabel(+y)}</td><td>${eur(v.buy)}</td><td>${eur(v.mach)}${v.h ? ` <span style="color:var(--muted);font-size:12px">(${num(v.h, 1)} h)</span>` : ""}</td><td>${eur(v.other)}</td><td><b>${eur(s)}</b></td><td>${v.mrm ? num(v.mrm, 1) + " rm" : "–"}</td><td>${v.mrm ? eur(v.mcost / v.mrm) : "–"}</td></tr>`; }).join("")
+  }</tbody></table><div class="hint" style="font-size:12px;color:var(--muted);margin-top:8px">Kosten nach Datum der Ausgabe. „vermessen" und „€/rm" gelten für die in diesem Jahr gekauften Lose, sobald sie vermessen sind (inkl. aller Kosten des Loses).</div>` : `<div class="empty">Noch keine Kosten.</div>`;
+
+  const lev = list().filter(e => LAGER_KINDS.has(e.k));
+  $("lgList").innerHTML = lev.length ? lev.slice(-30).reverse().map(e => liHtml(e, false)).join("") : `<li class="empty" style="display:block">Noch keine Lager-Einträge.</li>`;
+}
+
+function lgAdd(e) {
+  const id = uid();
+  putEvent(id, e);
+  lastAdded = id;
+  toast(`${KIND[e.k].icon} ${eventText(e)}`);
+  try { navigator.vibrate?.(30); } catch {}
+}
+$("lgDate").onchange = () => render();
+$("lgToday").onclick = () => { $("lgDate").value = dkey(Date.now()); render(); };
+$("lgLos").onchange = () => { S.lg.los = $("lgLos").value || null; lsSet("hb-lg", S.lg); };
+$("lgBunk").onclick = () => {
+  const g = S.lg.bg, kl = S.lg.bk, L = lager();
+  if (!g && !kl) return toast("Bitte Anzahl Kisten wählen", false);
+  if ((g > L.fullG || kl > L.fullK) && !confirm(`Laut Lager sind nur ${L.fullG} große und ${L.fullK} kleine Kisten voll.\nTrotzdem eintragen? (Tipp: Bestand mit „Kisten zählen" korrigieren)`)) return;
+  lgAdd({ t: lgTime(), k: "bunk", g, kl });
+};
+$("lgSaeg").onclick = () => {
+  const g = S.lg.sg, kl = S.lg.sk, L = lager();
+  if (!S.lg.los) { toast("Bitte zuerst einen Holzkauf eintragen", false); return lagerForm("buy"); }
+  if (!g && !kl) return toast("Bitte Anzahl Kisten wählen", false);
+  if ((g > L.emptyG || kl > L.emptyK) && !confirm(`Es sind nur ${L.emptyG} große und ${L.emptyK} kleine Kisten leer.\nTrotzdem eintragen?`)) return;
+  const los = L.lose.find(l => l.id === S.lg.los), t = lgTime();
+  if (los && t < los.dryAt && !confirm(`„${losName(los.id)}" ist erst ab ${fmtMonYear(los.dryAt)} trocken (${S.cfg.trocken} Monate am Stoß).\nTrotzdem jetzt sägen?`)) return;
+  lgAdd({ t, k: "saeg", los: S.lg.los, g, kl });
+};
+$("lgBuy").onclick = () => lagerForm("buy");
+$("lgHol").onclick = () => lagerForm("hol");
+$("lgCost").onclick = () => lagerForm("cost");
+$("lgInv").onclick = () => lagerForm("inv");
+document.addEventListener("click", ev => {
+  const b = ev.target.closest("[data-st]"); if (!b) return;
+  const [k, d] = b.dataset.st.split(":");
+  S.lg[k] = Math.max(0, Math.min(99, (S.lg[k] || 0) + +d)); lsSet("hb-lg", S.lg);
+  $$(`[data-sv="${k}"]`).forEach(el => el.textContent = S.lg[k]);
+});
+
+/* ================= Jahresbericht ================= */
+S.rp = { mode: lsGet("hb-rpmode", null) ?? (heizOn() ? "saison" : "jahr"), year: null };
+const MONTH_MS = 30.44 * 864e5;
+const fmtD = t => new Date(t).toLocaleDateString("de-DE");
+function rpPeriod(year, mode) {
+  const from = mode === "saison" ? +new Date(year, hjM(), 1) : +new Date(year, 0, 1);
+  const to = mode === "saison" ? +new Date(year + 1, hjM(), 1) : +new Date(year + 1, 0, 1);
+  return { from, to, label: mode === "saison" ? `Heizjahr ${year}/${String(year + 1).slice(2)}` : `Jahr ${year}` };
+}
+function renderRpControls() {
+  const evs = list(), now = new Date(), saison = S.rp.mode === "saison";
+  const first = evs.length ? new Date(evs[0].t) : now;
+  const y0 = saison ? hjYear(first) : first.getFullYear();
+  const y1 = saison ? hjYear(now) : now.getFullYear();
+  if (S.rp.year == null || S.rp.year < y0 || S.rp.year > y1) S.rp.year = y1 > y0 ? y1 - 1 : y1;   // Standard: letztes abgeschlossenes
+  let o = "";
+  for (let y = y1; y >= y0; y--) o += `<option value="${y}" ${y === S.rp.year ? "selected" : ""}>${saison ? `${y}/${String(y + 1).slice(2)}` : y}${y === y1 ? " (läuft)" : ""}</option>`;
+  $("rpYear").innerHTML = o;
+  $$("#rpMode button").forEach(b => b.classList.toggle("on", b.dataset.r === S.rp.mode));
+}
+$("rpYear").onchange = () => { S.rp.year = +$("rpYear").value; };
+$("rpMode").onclick = ev => { const b = ev.target.closest("[data-r]"); if (!b) return; S.rp.mode = b.dataset.r; S.rp.year = null; lsSet("hb-rpmode", S.rp.mode); render(); };
+$("rpGo").onclick = () => openReport(S.rp.year, S.rp.mode);
+$("rpClose").onclick = () => { $("report").classList.remove("show"); document.title = "Heizbuch ETA Twin"; };
+$("rpPrint").onclick = () => { document.body.classList.add("printing"); window.print(); };
+// Auch bei Strg+P bzw. Drucken über das Browser-Menü die kompakte Fassung verwenden
+window.addEventListener("beforeprint", () => { if ($("report").classList.contains("show")) document.body.classList.add("printing"); });
+window.addEventListener("afterprint", () => document.body.classList.remove("printing"));
+
+function openReport(year, mode) {
+  const P = rpPeriod(year, mode), PP = rpPeriod(year - 1, mode);
+  // Temperaturen für beide Zeiträume nachladen, dann Bericht (neu) aufbauen
+  needTemps(PP.from, P.to);
+  $("rpPage").innerHTML = buildReport(year, mode);
+  $("report").classList.add("show"); $("report").scrollTop = 0;
+  document.title = `Heizbuch ${P.label}`;
+  setTimeout(() => { if ($("report").classList.contains("show")) $("rpPage").innerHTML = buildReport(year, mode); }, 2500);
+}
+
+function buildReport(year, mode) {
+  const c = S.cfg, P = rpPeriod(year, mode), PP = rpPeriod(year - 1, mode), now = Date.now();
+  const stand = Math.min(P.to, now), laufend = P.to > now;
+  const T = totals(P.from, P.to), TP = totals(PP.from, PP.to);
+  const tp = tempStats(P.from, P.to), tpp = tempStats(PP.from, PP.to);
+  const Lall = lager(), L0 = lager(P.from), L1 = lager(stand);
+  const losById = Object.fromEntries(Lall.lose.map(l => [l.id, l]));
+  const srmPrice = l => l && l.basis ? l.cost / (l.basis * c.srmRm) : null;
+  const measuredLose = Lall.lose.filter(l => l.measured);
+  const avgSrm = measuredLose.length ? measuredLose.reduce((s, l) => s + l.cost, 0) / measuredLose.reduce((s, l) => s + l.basis * c.srmRm, 0) : null;
+  const dl = (a, b, invert) => { if (!b || a == null) return ""; const p = (a / b - 1) * 100; if (Math.abs(p) < 0.5) return `<span>±0 %</span>`;
+    const up = p > 0; return `<span class="${up !== !!invert ? "up" : "down"}">${up ? "+" : "−"}${num(Math.abs(p))} %</span>`; };
+  const kpi = (k, v, s, col) => `<div class="rp-kpi" style="--c:${col}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+
+  // --- Verheizte Kisten & Herkunft ---
+  const burned = Lall.burned.filter(b => b.t >= P.from && b.t < P.to);
+  const bG = burned.reduce((s, b) => s + b.g, 0), bK = burned.reduce((s, b) => s + b.kl, 0);
+  const bSrm = kistenSrm(bG, bK), bKg = bSrm * kgSrm();
+  let burnCost = 0, burnCostEst = false;
+  const groups = {};
+  // Damit der Bericht auf 2 Seiten passt: bei vielen Partien nur eine Zeile pro Holzlos
+  const perLos = new Set(burned.map(b => `${b.los || (b.inv ? "inv" : "unk")}|${b.sawT || 0}`)).size > 8;
+  for (const b of burned) {
+    const key = `${b.los || (b.inv ? "inv" : "unk")}|${perLos ? 0 : (b.sawT || 0)}`;
+    const g = groups[key] ||= { los: b.los, inv: b.inv, unknown: b.unknown, sawT: b.sawT, g: 0, kl: 0, firstT: b.t, lastT: b.t };
+    g.g += b.g; g.kl += b.kl; g.lastT = b.t;
+    const l = losById[b.los], price = l ? srmPrice(l) : avgSrm;
+    if (price != null) burnCost += kistenSrm(b.g, b.kl) * price;
+    if (!l || !l.measured) burnCostEst = true;
+  }
+  const herkunft = Object.values(groups).sort((a, b) => (a.sawT || 0) - (b.sawT || 0));
+  let dryOk = 0, dryBad = 0, sumStoss = 0, sumBox = 0, nAge = 0;
+  const herkRows = herkunft.map(g => {
+    const l = losById[g.los];
+    const dryStart = l ? (l.measured && l.e.tMess ? l.e.tMess : (l.firstHol || l.e.t)) : null;
+    const mStoss = dryStart && g.sawT ? (g.sawT - dryStart) / MONTH_MS : null;
+    const mBox = g.sawT ? (g.firstT - g.sawT) / MONTH_MS : null;
+    if (mStoss != null) { nAge++; sumStoss += mStoss; sumBox += mBox; if (mStoss >= c.trocken - 0.5) dryOk++; else dryBad++; }
+    const price = l ? srmPrice(l) : avgSrm, cost = price != null ? kistenSrm(g.g, g.kl) * price : null;
+    const name = l ? `${esc(losName(l.id))}${l.e.art ? ` <span class="sub">(${esc(l.e.art)})</span>` : ""}` : g.inv ? "Bestand (gezählt)" : "nicht zuordenbar (mehr verheizt als gesägt eingetragen)";
+    return `<tr><td>${name}</td><td>${dryStart ? fmtMonYear(dryStart) : "–"}</td><td>${g.sawT ? fmtD(g.sawT) : "–"}</td>
+      <td>${mStoss != null ? `<span class="${mStoss >= c.trocken - 0.5 ? "ok" : "bad"}">${num(mStoss, 0)} Mon. ${mStoss >= c.trocken - 0.5 ? "✓" : "⚠"}</span>` : "–"}</td>
+      <td>${mBox != null ? `${num(mBox, 0)} Mon.` : "–"}</td><td>${kistenTxt(g.g, g.kl)}</td><td>${cost != null ? (l && l.measured ? "" : "≈ ") + eur(cost) : "–"}</td></tr>`;
+  }).join("");
+
+  // --- Monate ---
+  const months = Array.from({ length: 12 }, (_, i) => { const f = +new Date(new Date(P.from).getFullYear(), new Date(P.from).getMonth() + i, 1); const t = +new Date(new Date(f).getFullYear(), new Date(f).getMonth() + 1, 1); return { f, t, lbl: MONATE[new Date(f).getMonth()].slice(0, 3), title: MONATE[new Date(f).getMonth()] }; });
+  const mT = months.map(m => m.f > now ? null : { T: totals(m.f, m.t), tp: tempStats(m.f, m.t) });
+  const chart = barChart(months, mT.map(x => x ? x.T.kg : 0), "var(--holz)", v => num(v), mT.map(x => x?.tp.mean ?? null), 130);
+  const monthRows = months.map((m, i) => { const x = mT[i]; if (!x) return `<tr><td>${m.title}</td><td colspan="7" class="sub">–</td></tr>`;
+    return `<tr><td>${m.title}</td><td>${fmtFills(x.T.fills)}</td><td>${num(x.T.kg)}</td><td>${num(x.T.h)}</td><td>${num(x.T.pkg)}</td><td>${num(x.T.kwh)}</td><td>${x.tp.mean != null ? num(x.tp.mean, 1) : "–"}</td><td>${x.tp.hgt != null ? num(x.tp.hgt) : "–"}</td></tr>`; }).join("");
+
+  // --- Lager-Aktivitäten im Zeitraum ---
+  const inP = e => e.t >= P.from && e.t < P.to;
+  const ev = list().filter(inP);
+  const buys = ev.filter(e => e.k === "buy"), hols = ev.filter(e => e.k === "hol"), saegs = ev.filter(e => e.k === "saeg"), bunksP = ev.filter(e => e.k === "bunk"), costsP = ev.filter(e => e.k === "cost");
+  const messP = Lall.lose.filter(l => l.measured && l.e.tMess >= P.from && l.e.tMess < P.to);
+  const ausgKauf = buys.reduce((s, e) => s + (+e.preis || 0) + (+e.neben || 0), 0);
+  const ausgMasch = hols.reduce((s, e) => s + (+e.h || 0) * c.traktor + (+e.mk || 0), 0);
+  const ausgSonst = costsP.reduce((s, e) => s + (+e.eur || 0), 0);
+  const ausg = ausgKauf + ausgMasch + ausgSonst;
+  const traktorH = hols.reduce((s, e) => s + (+e.h || 0), 0);
+  const sG = saegs.reduce((s, e) => s + (+e.g || 0), 0), sK = saegs.reduce((s, e) => s + (+e.kl || 0), 0);
+  const stossOf = Lx => Lx.lose.reduce((s, l) => s + l.stoss, 0);
+  const offenOf = Lx => Lx.lose.filter(l => !l.measured).reduce((s, l) => s + (l.hol ? l.basis - l.sawnSrm / c.srmRm : l.rmKauf), 0);
+
+  // --- Vorausplanung (ab Stichtag) ---
+  const yearKg = totals(stand - 365 * 864e5, stand).kg || T.kg;
+  const yields = measuredLose.map(l => l.yield).filter(Boolean);
+  const avgYield = yields.length ? yields.reduce((a, b) => a + b, 0) / yields.length : c.rmFm;
+  const yearRm = yearKg / c.kgRm, yearFm = yearRm / avgYield;
+  // Monatsprofil aus allen Daten (Winter braucht mehr)
+  const prof = Array(12).fill(0); let profSum = 0;
+  for (const e of list()) if (e.k === "holz") { prof[new Date(e.t).getMonth()] += e.n || 1; profSum += e.n || 1; }
+  const share = m => profSum ? prof[m] / profSum : 1 / 12;
+  const stock = [];
+  for (const l of L1.lose) {
+    if (l.stoss > 0.05) stock.push({ name: losName(l.id), art: l.e.art, rm: l.stoss, kg: l.stoss * c.kgRm, ready: l.cutAt, est: !l.measured, state: l.measured ? (stand >= l.dryAt ? "trocken am Stoß" : "trocknet am Stoß") : "in Aufarbeitung (geschätzt)" });
+    else if (l.wald > 0) stock.push({ name: losName(l.id), art: l.e.art, rm: l.wald, kg: l.wald * c.kgRm, ready: sawReady(addMonths(l.e.t, 6 + c.trocken)), est: true, state: "im Wald (geschätzt)" });
+  }
+  stock.sort((a, b) => a.ready - b.ready);
+  let pool = L1.kg, gap = null; const pend = stock.slice();
+  const totalKg = L1.kg + stock.reduce((s, x) => s + x.kg, 0);
+  if (yearKg > 0) {
+    const d = new Date(stand); d.setDate(1);
+    for (let i = 0; i < 96 && !gap; i++) {
+      const mStart = +d;
+      while (pend.length && pend[0].ready <= mStart + MONTH_MS) pool += pend.shift().kg;
+      const need = yearKg * share(d.getMonth());
+      if (pool + 1 < need) gap = mStart; else pool -= need;
+      d.setMonth(d.getMonth() + 1);
+    }
+  }
+  const reachTotal = yearKg > 0 ? addMonths(stand, totalKg / yearKg * 12) : null;
+  let plan = "";
+  if (!yearKg) plan = `<div class="rp-box">Noch zu wenig Verbrauchsdaten für eine Vorausplanung.</div>`;
+  else if (!gap) plan = `<div class="rp-box good">✓ Trockenes Holz reicht beim jetzigen Verbrauch für mehr als 8 Jahre.</div>`;
+  else {
+    // letztes Sägefenster (Hochsommer) vor der Lücke – bis dahin muss das Holz trocken sein
+    let wEnd = +new Date(new Date(gap).getFullYear(), +c.saegBis || 8, 1);
+    if (wEnd > gap) wEnd = +new Date(new Date(gap).getFullYear() - 1, +c.saegBis || 8, 1);
+    const stackBy = addDays(addMonths(wEnd, -c.trocken), -1), late = stackBy < now;
+    plan = `<div class="rp-box ${late ? "warn" : "good"}">
+      <b>Trockenes Holz reicht voraussichtlich bis ${MONATE[new Date(gap).getMonth()]} ${new Date(gap).getFullYear()}.</b><br>
+      Damit im Sommer ${new Date(wEnd).getFullYear()} rechtzeitig gesägt werden kann, müssen bis spätestens <b>${MONATE[new Date(stackBy).getMonth()]} ${new Date(stackBy).getFullYear()}</b>
+      etwa <b>${num(yearRm, 1)} rm</b> (≈ ${num(yearFm, 1)} fm bei Ø ${num(avgYield, 2)} rm/fm) gespalten am Stoß liegen (${c.trocken} Monate Trocknung).
+      ${late ? `<br>⚠ Dieser Termin ist schon vorbei – es wird knapp. Eventuell trockenes Holz zukaufen oder Pellets einplanen.` : ""}</div>`;
+  }
+
+  // --- Zeitleiste (Gantt) der Holzlose ---
+  const gantt = ganttSvg(Lall, P);
+
+  const nP = laufend ? ` <b style="color:var(--ofen)">(laufend – Stand ${fmtD(now)})</b>` : "";
+  const fillsKg = T.fills ? bKg / T.fills : null;
+  return `
+  <div class="rp-sec">
+    <h1>🔥 Heizbuch – ${P.label}</h1>
+    <div class="sub">ETA Twin 40 kW · ${esc(c.ort)} · Zeitraum ${fmtD(P.from)} – ${fmtD(P.to - 1)}${nP} · erstellt am ${fmtD(now)}</div>
+  </div>
+
+  <div class="rp-sec"><h2>Auf einen Blick <span class="sub" style="font-weight:400">· Vergleich zu ${PP.label.replace(/^Jahr /, "")}</span></h2>
+    <div class="rp-kpis">
+      ${kpi("Holz verheizt", `${num(T.kg)} <small>kg</small>`, `${fmtFills(T.fills)} Füllungen · ${num(T.kg / c.kgRm, 1)} rm · ${dl(T.kg, TP.kg)}`, "var(--holz)")}
+      ${kpi("Pelletsofen", `${num(T.h)} <small>h</small>`, `Laufzeit · ${dl(T.h, TP.h)}`, "var(--ok)")}
+      ${kpi("Pellets", `${num(T.pkg)} <small>kg</small>`, `${T.sacks} Säcke nachgefüllt · ${dl(T.pkg, TP.pkg)}`, "var(--pellet)")}
+      ${kpi("Energie", `${num(T.kwh)} <small>kWh</small>`, `geschätzt · ${dl(T.kwh, TP.kwh)}`, "var(--ofen)")}
+      ${kpi("Außentemperatur", tp.mean != null ? `${num(tp.mean, 1)} <small>°C Ø</small>` : "–", tpp.mean != null ? `Vorjahr ${num(tpp.mean, 1)} °C` : "", "var(--kalt)")}
+      ${kpi("Heizgradtage", tp.hgt != null ? num(tp.hgt) : "–", `Kälte-Maß · ${dl(tp.hgt, tpp.hgt)}`, "var(--kalt)")}
+      ${kpi("kWh je Heizgradtag", tp.hgt ? num(T.kwh / tp.hgt, 1) : "–", tpp.hgt && TP.kwh ? `Vorjahr ${num(TP.kwh / tpp.hgt, 1)} · ${dl(T.kwh / tp.hgt, TP.kwh / tpp.hgt)}` : "kleiner = sparsamer", "var(--ok)")}
+      ${kpi("Kosten verheiztes Holz", burned.length ? `${burnCostEst ? "≈ " : ""}${eur(burnCost)}` : "–", burned.length && bKg ? `${num(burnCost / bKg * 100 / c.kwhHolz * 1, 1)} ct/kWh` : "aus den Bunker-Befüllungen", "var(--holz)")}
+    </div>
+  </div>
+
+  <div class="rp-sec"><h2>Verlauf nach Monaten</h2>
+    <div class="legend"><span><i style="background:var(--holz)"></i>Holz kg</span><span><i style="background:var(--kalt)"></i>Ø Außentemperatur</span></div>
+    <div class="rp-month"><div class="rp-chart">${chart}</div>
+    <div class="tablewrap"><table><thead><tr><th>Monat</th><th>Füllungen</th><th>Holz kg</th><th>Ofen h</th><th>Pellets kg</th><th>kWh</th><th>Ø °C</th><th>HGT</th></tr></thead>
+      <tbody>${monthRows}</tbody>
+      <tfoot><tr><td>Summe</td><td>${fmtFills(T.fills)}</td><td>${num(T.kg)}</td><td>${num(T.h)}</td><td>${num(T.pkg)}</td><td>${num(T.kwh)}</td><td>${tp.mean != null ? num(tp.mean, 1) : "–"}</td><td>${tp.hgt != null ? num(tp.hgt) : "–"}</td></tr></tfoot></table></div></div>
+  </div>
+
+  <div class="rp-sec"><h2>Woher kam das verheizte Holz? – Trocknung & Lagerung</h2>
+    ${burned.length ? `
+    <div>Im Zeitraum ${bunksP.length}× Bunker befüllt: <b>${kistenTxt(bG, bK)}</b> = ${num(bSrm, 1)} srm ≈ <b>${num(bKg)} kg</b>.
+      ${fillsKg ? ` Das ergibt <b>${num(fillsKg)} kg je Kesselfüllung</b> (eingestellt: ${num(c.kgFuell)} kg).` : ""}</div>
+    <div class="tablewrap"><table><thead><tr><th>Holzlos</th><th>aufgeschlichtet</th><th>gesägt</th><th>Trocknung am Stoß</th><th>in Kisten gelagert</th><th>verheizt</th><th>Kosten</th></tr></thead><tbody>${herkRows}</tbody></table></div>
+    ${nAge ? `<div class="rp-box ${dryBad ? "warn" : "good"}">${dryBad ? `⚠ ${dryBad} von ${dryOk + dryBad} Partien wurden vor Ablauf von ${c.trocken} Monaten gesägt.` : `✓ Alle Partien sind mindestens ${c.trocken} Monate am Stoß getrocknet.`}
+      Ø Trocknung am Stoß <b>${num(sumStoss / nAge, 0)} Monate</b> · Ø danach in Kisten <b>${num(sumBox / nAge, 0)} Monate</b> · Ø Gesamtalter beim Verheizen <b>${num((sumStoss + sumBox) / nAge / 12, 1)} Jahre</b>.</div>` : ""}
+    ` : `<div class="rp-box">Im Zeitraum keine Bunker-Befüllung eingetragen – Herkunft und Kosten des verheizten Holzes lassen sich daher nicht zuordnen.</div>`}
+    <div class="rp-note">Regel: Holz trocknet mindestens ${c.trocken} Monate gespalten am Meterstoß (ab dem Vermessen), dann wird es gesägt und lagert beliebig lange in den Kisten. Die Kisten werden in der Reihenfolge verheizt, in der sie gefüllt wurden.</div>
+  </div>
+
+  <div class="rp-sec rp-pb"><h2>Holzlager & Ausgaben</h2>
+    <div class="rp-three">
+    <div class="tablewrap"><table><thead><tr><th></th><th>Anfang (${fmtD(P.from)})</th><th>${laufend ? "Heute" : "Ende"} (${fmtD(stand - (laufend ? 0 : 1))})</th></tr></thead><tbody>
+      <tr><td>Volle große Kisten</td><td>${L0.fullG}</td><td>${L1.fullG}</td></tr>
+      <tr><td>Volle kleine Kisten</td><td>${L0.fullK}</td><td>${L1.fullK}</td></tr>
+      <tr><td>Holz in Kisten</td><td>${num(L0.srm, 1)} srm ≈ ${num(L0.kg)} kg</td><td>${num(L1.srm, 1)} srm ≈ ${num(L1.kg)} kg</td></tr>
+      <tr><td>Am Meterstoß (vermessen)</td><td>${num(L0.lose.filter(l => l.measured).reduce((s, l) => s + l.stoss, 0), 1)} rm</td><td>${num(L1.lose.filter(l => l.measured).reduce((s, l) => s + l.stoss, 0), 1)} rm</td></tr>
+      <tr><td>Aufarbeitung / Wald (≈)</td><td>≈ ${num(offenOf(L0), 1)} rm</td><td>≈ ${num(offenOf(L1), 1)} rm</td></tr>
+    </tbody></table></div>
+      <div class="rp-box"><b>Arbeit im Zeitraum</b><br>
+        🌲 ${buys.length} Holzkauf${buys.length === 1 ? "" : "e"}<br>
+        🚜 ${hols.length}× Holz geholt${traktorH ? ` · ${num(traktorH, 1)} Traktorstunden` : ""}<br>
+        📏 ${messP.length} Los${messP.length === 1 ? "" : "e"} vermessen${messP.length ? `: ${num(messP.reduce((s, l) => s + l.basis, 0), 1)} rm` : ""}<br>
+        🪚 ${saegs.length} Sägetag${saegs.length === 1 ? "" : "e"}${saegs.length ? `: ${kistenTxt(sG, sK)} gefüllt` : ""}<br>
+        📦 ${bunksP.length}× Bunker befüllt</div>
+      <div class="rp-box"><b>Ausgaben im Zeitraum</b><br>
+        Holzkauf & Auktion: <b>${eur(ausgKauf)}</b><br>
+        Traktor & Maschinen: <b>${eur(ausgMasch)}</b>${traktorH ? ` <span class="sub">(${num(traktorH, 1)} h × ${eur(c.traktor)})</span>` : ""}<br>
+        Sonstiges: <b>${eur(ausgSonst)}</b><br>
+        <span style="font-size:1.25em">Summe: <b>${eur(ausg)}</b></span></div>
+    </div>
+    ${buys.length || messP.length ? `<h4>Holzkäufe und Vermessungen</h4><div class="tablewrap"><table><thead><tr><th>Holzlos</th><th>Art</th><th>gekauft</th><th>Menge</th><th>Kosten gesamt</th><th>vermessen</th><th>€/rm</th><th>Ausbeute</th></tr></thead><tbody>${
+      [...new Set([...buys.map(e => e.id), ...messP.map(l => l.id)])].map(id => losById[id]).filter(Boolean).map(l => `<tr><td>${esc(losName(l.id))}</td><td>${esc(l.e.art || "")}</td><td>${fmtD(l.e.t)}</td><td>${num(l.e.menge || 0, 1)} ${l.e.einheit || "fm"}</td><td>${eur(l.cost)}</td><td>${l.measured ? `${num(l.basis, 1)} rm` : "noch nicht"}</td><td>${l.measured ? eur(l.cost / l.basis) : "–"}</td><td>${l.yield ? `${num(l.yield, 2)} rm/fm` : "–"}</td></tr>`).join("")
+    }</tbody></table></div>` : ""}
+    <div class="rp-note">Ausgaben fließen meist in Holz, das erst in 2–3 Jahren verheizt wird. Die echten Heizkosten dieses Zeitraums zeigt „Kosten verheiztes Holz" oben (Kosten der jeweiligen Lose${burnCostEst ? "; ≈ = Los noch nicht vermessen oder Herkunft unbekannt, mit Durchschnittspreis geschätzt" : ""}). Pellets sind ohne Preis erfasst.</div>
+  </div>
+
+  <div class="rp-sec rp-gantt"><h2>Zeitleiste der Holzlose</h2>${gantt}</div>
+
+  <div class="rp-sec"><h2>Vorausplanung <span class="sub" style="font-weight:400">· Stand ${fmtD(stand)}</span></h2>
+    <div class="rp-two">
+      <div class="rp-box">Ø Verbrauch (letzte 12 Monate)<br><b style="font-size:16px">${num(yearKg)} kg</b> ≈ ${num(yearRm, 1)} rm ≈ ${num(yearFm, 1)} fm pro Jahr</div>
+      <div class="rp-box">Vorrat gesamt (inkl. noch nicht trocken)<br><b style="font-size:16px">${num(totalKg)} kg</b>${reachTotal ? ` · reicht bis ca. ${fmtMonYear(reachTotal)}` : ""}</div>
+    </div>
+    ${plan}
+    ${stock.length || L1.kg ? `<div class="tablewrap"><table><thead><tr><th>Vorrat</th><th>Menge</th><th>≈ kg</th><th>schnittreif ab</th><th>Zustand</th></tr></thead><tbody>
+      ${L1.kg ? `<tr><td>Volle Kisten</td><td>${kistenTxt(L1.fullG, L1.fullK)}</td><td>${num(L1.kg)}</td><td>sofort</td><td>in Kisten</td></tr>` : ""}
+      ${stock.map(s => `<tr><td>${esc(s.name)}${s.art ? ` <span class="sub">(${esc(s.art)})</span>` : ""}</td><td>${s.est ? "≈ " : ""}${num(s.rm, 1)} rm</td><td>${num(s.kg)}</td><td>${fmtMonYear(s.ready)}${s.ready <= stand ? " ✓" : ""}</td><td>${s.state}</td></tr>`).join("")}
+    </tbody></table></div>` : ""}
+    <div class="rp-note">Annahmen: ${num(c.kgRm)} kg je rm (Buche/Eiche/Robinie), ${num(c.srmRm, 2)} srm je rm, ${num(c.kgFuell)} kg je Kesselfüllung, ${c.trocken} Monate Trocknung, gesägt nur ${MONATE[(+c.saegVon || 7) - 1]}–${MONATE[(+c.saegBis || 8) - 1]}, Aufarbeitung ca. 6 Monate nach dem Kauf. Der Verbrauch ist nach Monaten gewichtet (im Winter mehr).</div>
+  </div>`;
+}
+
+function ganttSvg(Lall, P) {
+  const now = Date.now(), c = S.cfg;
+  const lose = Lall.lose.filter(l => l.e.t < P.to + 365 * 864e5 && (!l.done || Lall.burned.some(b => b.los === l.id && b.t >= P.from - 365 * 864e5))).sort((a, b) => a.e.t - b.e.t);
+  if (!lose.length) return `<div class="rp-box">Noch keine Holzlose eingetragen.</div>`;
+  const ends = lose.map(l => Math.max(sawWindowEnd(l.cutAt), ...Lall.burned.filter(b => b.los === l.id).map(b => b.t), now));
+  const x0 = +new Date(new Date(Math.min(...lose.map(l => l.e.t))).getFullYear(), 0, 1);
+  const x1 = +new Date(new Date(Math.max(P.to, ...ends)).getFullYear() + 1, 0, 1);
+  const W = 780, lw = 150, rh = 26, top = 24, H = top + lose.length * rh + 8, X = t => lw + (W - lw - 8) * (t - x0) / (x1 - x0);
+  let s = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;font-size:11px">`;
+  s += `<rect x="${X(P.from)}" y="${top - 6}" width="${X(P.to) - X(P.from)}" height="${H - top}" fill="#d4772a" opacity=".10"/>`;
+  for (let y = new Date(x0).getFullYear(); y <= new Date(x1).getFullYear(); y++) {
+    const x = X(+new Date(y, 0, 1));
+    s += `<line x1="${x}" x2="${x}" y1="${top - 8}" y2="${H}" stroke="#d8cfc5"/>`;
+    if (y < new Date(x1).getFullYear()) s += `<text x="${x + 4}" y="12" fill="#6b6058">${y}</text>`;
+  }
+  s += `<line x1="${X(now)}" x2="${X(now)}" y1="${top - 8}" y2="${H}" stroke="#c4432d" stroke-dasharray="3 3"/><text x="${X(now) + 3}" y="${H - 2}" fill="#c4432d" font-size="10">heute</text>`;
+  lose.forEach((l, i) => {
+    const y = top + i * rh, mid = y + rh / 2 - 2;
+    const lab = losName(l.id), short = lab.length > 22 ? lab.slice(0, 21) + "…" : lab;
+    s += `<text x="0" y="${mid + 4}" fill="#222">${esc(short)}</text>`;
+    const bar = (a, b, col, title, op = 1) => { if (b <= a) return; s += `<rect x="${X(a)}" y="${mid - 6}" width="${Math.max(1, X(b) - X(a))}" height="12" rx="3" fill="${col}" fill-opacity="${op}"><title>${title}</title></rect>`; };
+    const tm = l.measured && l.e.tMess ? l.e.tMess : null;
+    bar(l.e.t, tm || Math.min(now, l.dryAt), "#9cc4e4", "Kauf → Aufarbeitung");
+    if (tm) bar(tm, l.dryAt, "#f0c75e", `Trocknung bis ${fmtMonYear(l.dryAt)}`);
+    const saws = list().filter(e => e.k === "saeg" && e.los === l.id);
+    const lastUse = l.stoss > 0.05 ? Math.max(now, sawWindowEnd(l.cutAt)) : (saws.at(-1)?.t || l.dryAt);
+    if (tm) {
+      bar(l.dryAt, lastUse, "#7cc46b", "trocken am Stoß", 0.4);
+      // Sägefenster im Hochsommer kräftig hervorheben – das erste davon = schnittreif
+      for (let y = new Date(l.dryAt).getFullYear(); y <= new Date(lastUse).getFullYear(); y++) {
+        const a = Math.max(+new Date(y, (+c.saegVon || 7) - 1, 1), l.dryAt), b = Math.min(+new Date(y, +c.saegBis || 8, 1), lastUse);
+        if (b <= a) continue;
+        bar(a, b, "#3f9a30", `Sägefenster ${MONATE[(+c.saegVon || 7) - 1]}–${MONATE[(+c.saegBis || 8) - 1]} ${y}`);
+        if (Math.abs(a - l.cutAt) < 864e5) s += `<text x="${X(a) + (X(b) - X(a)) / 2}" y="${mid - 8}" text-anchor="middle" font-size="10" fill="#2f7a22">✂</text>`;
+      }
+    }
+    for (const sw of saws) s += `<path d="M${X(sw.t)},${mid - 9} l4,-6 h-8 z" fill="#7a4a24"><title>Sägetag ${fmtD(sw.t)}</title></path>`;
+    for (const b of Lall.burned.filter(b => b.los === l.id)) s += `<circle cx="${X(b.t)}" cy="${mid + 10}" r="2.6" fill="#c4432d"><title>verheizt ${fmtD(b.t)}</title></circle>`;
+  });
+  s += `</svg>`;
+  return s + `<div class="legend" style="margin-top:6px;color:#6b6058"><span><i style="background:#9cc4e4"></i>Kauf / Aufarbeitung</span><span><i style="background:#f0c75e"></i>Trocknung (${c.trocken} Mon.)</span><span><i style="background:#7cc46b;opacity:.45"></i>trocken am Stoß</span><span><i style="background:#3f9a30"></i>✂ schnittreif (Sägezeit ${MONATE[(+c.saegVon || 7) - 1].slice(0, 3)}–${MONATE[(+c.saegBis || 8) - 1].slice(0, 3)})</span><span>▼ Sägetag</span><span><i style="background:#c4432d;border-radius:50%"></i>verheizt (Bunker)</span><span><i style="background:#d4772a;opacity:.25"></i>Berichtszeitraum</span></div>`;
+}
+
+/* Vermessen: Holzlos ist fertig aufgearbeitet und liegt gespalten am Stoß */
+document.addEventListener("click", ev => { const b = ev.target.closest("[data-mess]"); if (b) messForm(b.dataset.mess); });
+function messForm(id) {
+  const e = S.events[id]; if (!e) return;
+  let stoesse = [];
+  modal(`<h3>📏 ${esc(losName(id))} vermessen</h3>
+    <div class="hint" style="font-size:13px">Wenn alles gespalten und aufgeschlichtet ist: Raummeter am Stoß eingeben. Erst dann rechnet die App den echten Preis je Raummeter aus.</div>
+    <label>Vermessen am</label><input id="mD" type="date" value="${dkey(Date.now())}" max="${dkey(Date.now())}">
+    <label>Raummeter am Stoß (aufgeschlichtet, Meterholz)</label><input id="mRm" type="number" min="0" step="0.1" inputmode="decimal" style="font-size:22px;font-weight:700">
+    <div class="measure" style="display:block;margin-top:12px">
+      <div style="margin-bottom:6px">Rechenhilfe – mehrere Stöße zusammenzählen (1 m tief):</div>
+      <div class="inl" style="align-items:center;gap:6px"><input id="mL" type="number" min="0" step="0.1" inputmode="decimal" placeholder="Länge m"> × <input id="mH" type="number" min="0" step="0.1" inputmode="decimal" placeholder="Höhe m"><button id="mAdd" style="background:var(--holz);color:#1c1612;border-color:var(--holz);height:46px;min-width:52px;font-size:22px;padding:0">+</button></div>
+      <div id="mStoesse" style="margin-top:6px"></div>
+    </div>
+    <div class="btns"><button id="mX">Abbrechen</button><button class="pri" id="mOk">Vermessen ✓</button></div>`);
+  const upd = () => {
+    $("mStoesse").innerHTML = stoesse.map((s, i) => `Stoß ${i + 1}: ${num(s[0], 1)} m × ${num(s[1], 1)} m = <b style="color:var(--text)">${num(s[0] * s[1], 2)} rm</b>`).join("<br>");
+    if (stoesse.length) $("mRm").value = Math.round(stoesse.reduce((a, s) => a + s[0] * s[1], 0) * 100) / 100;
+  };
+  $("mAdd").onclick = () => { const l = parseFloat($("mL").value), h = parseFloat($("mH").value); if (!(l > 0 && h > 0)) return; stoesse.push([l, h]); $("mL").value = $("mH").value = ""; upd(); $("mL").focus(); };
+  $("mX").onclick = closeModal;
+  $("mOk").onclick = () => {
+    const rm = parseFloat(String($("mRm").value).replace(",", "."));
+    if (!(rm > 0)) { alert("Bitte die Raummeter eingeben."); return; }
+    const v = $("mD").value, tMess = v === dkey(Date.now()) ? Date.now() : +new Date(v + "T12:00");
+    putEvent(id, { ...e, done: true, rmMess: rm, tMess });
+    closeModal();
+    const l = lager().lose.find(x => x.id === id);
+    toast(`📏 ${losName(id)}: ${num(rm, 1)} rm → ${eur(losCosts(l).perRm)} je rm`, false);
+  };
+  setTimeout(() => $("mRm").focus(), 50);
+}
+
+/* Formulare für Lager-Einträge (neu + ändern) */
+function lagerForm(kind, id) {
+  const e = id ? S.events[id] : null, L = lager();
+  const t0 = e ? e.t : lgTime();
+  const losOpts = (sel, allowNone) => (allowNone ? `<option value="">– allgemein / kein Los –</option>` : "") +
+    L.lose.map(l => `<option value="${l.id}" ${l.id === sel ? "selected" : ""}>${esc(losName(l.id))} · ${esc(l.e.art || "")} · ${fmtShortDay.format(l.e.t)}.${new Date(l.e.t).getFullYear()}</option>`).join("");
+  const numIn = (fid, label, val, step = 1, hint = "") => `<label>${label}</label><input id="${fid}" type="number" min="0" step="${step}" inputmode="decimal" value="${val ?? ""}">${hint ? `<div class="hint">${hint}</div>` : ""}`;
+  const title = { buy: "🌲 Holzkauf", hol: "🚜 Holz aus dem Wald geholt", cost: "💶 Sonstige Kosten", saeg: "🪚 Sägetag", bunk: "📦 Bunker befüllt", inv: "📋 Volle Kisten zählen" }[kind];
+  let body = `<label>Datum</label><input id="fD" type="date" value="${dkey(t0)}" max="${dkey(Date.now())}">`;
+  if (kind === "buy") body += `
+    <label>Wo / Bezeichnung (Waldstück, Auktion …)</label><input id="fName" value="${esc(e?.name || "")}" placeholder="z. B. Auktion Hochwald 2026">
+    <label>Holzart</label><div class="chips" id="fArt">${ARTEN.map(a => `<button class="chip ${(e?.art || "Buche") === a ? "on" : ""}" data-art="${a}">${a}</button>`).join("")}</div>
+    <label>Menge</label><div class="inl"><input id="fMenge" type="number" min="0" step="0.1" inputmode="decimal" value="${e?.menge ?? ""}"><select id="fEinh"><option ${e?.einheit !== "rm" ? "selected" : ""}>fm</option><option ${e?.einheit === "rm" ? "selected" : ""}>rm</option></select></div>
+    <div class="hint">fm = Festmeter (wie bei der Auktion), rm = Raummeter geschlichtet</div>
+    ${numIn("fPreis", "Kaufpreis (€)", e?.preis)}
+    ${numIn("fNeben", "Auktions-/Nebenkosten (€)", e?.neben)}
+    ${e ? `<div class="measure" style="display:block;margin-top:14px">
+      <label style="display:flex;gap:10px;align-items:center;margin:0;color:var(--text);font-size:15px;cursor:pointer"><input type="checkbox" id="fDone" style="width:22px;height:22px;accent-color:var(--holz)" ${e.done ? "checked" : ""}> Aufarbeitung abgeschlossen & vermessen</label>
+      <div id="fMessBox" style="display:${e.done ? "block" : "none"}">
+        ${numIn("fRmMess", "Raummeter am Stoß (aufgeschlichtet)", e.rmMess, 0.1)}
+        <label>Vermessen am</label><input id="fTMess" type="date" value="${dkey(e.tMess || Date.now())}" max="${dkey(Date.now())}">
+      </div></div>` : ""}`;
+  if (kind === "hol") {
+    if (!L.lose.length) { modal(`<h3>${title}</h3><p>Bitte zuerst einen Holzkauf eintragen – das Holz wird dann diesem Los zugeordnet.</p><div class="btns"><button id="fX">Abbrechen</button><button class="pri" id="fGo">🌲 Holzkauf eintragen</button></div>`);
+      $("fX").onclick = closeModal; $("fGo").onclick = () => lagerForm("buy"); return; }
+    body += `<label>Welches Holzlos</label><select id="fLos">${losOpts(e?.los || L.lose[0].id)}</select>
+    ${numIn("fRm", "Meterholz heimgebracht (rm, grob – optional)", e?.rm, 0.1, "Die genaue Menge kommt später beim Vermessen am Stoß.")}
+    ${numIn("fH", "Traktorstunden", e?.h, 0.5, `× ${eur(S.cfg.traktor)}/h (in den Einstellungen änderbar)`)}
+    ${numIn("fMk", "Weitere Maschinenkosten (€)", e?.mk, 1, "z. B. Seilwinde, Spalter-Miete, Sprit Motorsäge")}`;
+  }
+  if (kind === "cost") body += `<label>Wofür</label><input id="fTxt" value="${esc(e?.txt || "")}" placeholder="z. B. Kettenöl, neue Kette, Spalter-Service">
+    ${numIn("fEur", "Betrag (€)", e?.eur)}
+    <label>Zu welchem Holzlos (optional)</label><select id="fLos">${losOpts(e?.los || "", true)}</select>`;
+  if (kind === "saeg") body += `<label>Aus welchem Holzlos</label><select id="fLos">${losOpts(e?.los)}</select>${numIn("fG", "Große Kisten gefüllt", e?.g)}${numIn("fK", "Kleine Kisten gefüllt", e?.kl)}`;
+  if (kind === "bunk") body += `${numIn("fG", "Große Kisten in den Bunker", e?.g)}${numIn("fK", "Kleine Kisten in den Bunker", e?.kl)}`;
+  if (kind === "inv") body += `<div class="hint" style="margin-top:8px">Setzt den Bestand an <b>vollen</b> Kisten auf diese Zahl – z. B. zum Start oder nach dem Nachzählen.</div>
+    ${numIn("fG", `Volle große Kisten (von ${S.cfg.kistenG})`, e ? e.g : L.fullG)}${numIn("fK", `Volle kleine Kisten (von ${S.cfg.kistenK})`, e ? e.kl : L.fullK)}`;
+  body += `<label>Notiz</label><input id="fNote" value="${esc(e?.note || "")}">`;
+  modal(`<h3>${title}</h3>${body}<div class="btns">${e ? `<button class="del" id="fDel">Löschen</button>` : ""}<button id="fX">Abbrechen</button><button class="pri" id="fOk">Speichern</button></div>`);
+  if ($("fDone")) $("fDone").onchange = () => { $("fMessBox").style.display = $("fDone").checked ? "block" : "none"; };
+  if ($("fArt")) $("fArt").onclick = ev => { const b = ev.target.closest("[data-art]"); if (!b) return; $$("#fArt .chip").forEach(x => x.classList.toggle("on", x === b)); };
+  $("fX").onclick = closeModal;
+  if ($("fDel")) $("fDel").onclick = () => {
+    const deps = kind === "buy" ? list().filter(x => x.los === id).length : 0;
+    if (!confirm(deps ? `Dieses Holzlos hat noch ${deps} zugehörige Einträge (Holen, Sägen, Kosten). Trotzdem löschen?` : "Diesen Eintrag wirklich löschen?")) return;
+    putEvent(id, null); closeModal();
+  };
+  $("fOk").onclick = () => {
+    const v = $("fD").value, t = v === dkey(Date.now()) && !e ? Date.now() : (e && v === dkey(e.t) ? e.t : +new Date(v + "T12:00"));
+    const n = fid => { const x = parseFloat(String($(fid)?.value ?? "").replace(",", ".")); return isNaN(x) ? 0 : x; };
+    const ne = { t, k: kind };
+    if ($("fNote").value.trim()) ne.note = $("fNote").value.trim();
+    if (kind === "buy") {
+      Object.assign(ne, { name: $("fName").value.trim(), art: document.querySelector("#fArt .chip.on")?.dataset.art || "", menge: n("fMenge"), einheit: $("fEinh").value, preis: n("fPreis"), neben: n("fNeben") });
+      if ($("fDone")?.checked) {
+        if (!n("fRmMess")) { alert("Bitte die gemessenen Raummeter eingeben."); return; }
+        Object.assign(ne, { done: true, rmMess: n("fRmMess"), tMess: $("fTMess").value === dkey(e.tMess || 0) ? e.tMess : +new Date($("fTMess").value + "T12:00") });
+      }
+    }
+    if (kind === "hol") Object.assign(ne, { los: $("fLos").value, rm: n("fRm"), h: n("fH"), mk: n("fMk") });
+    if (kind === "cost") { Object.assign(ne, { txt: $("fTxt").value.trim(), eur: n("fEur") }); if ($("fLos").value) ne.los = $("fLos").value; }
+    if (kind === "saeg") Object.assign(ne, { los: $("fLos").value, g: n("fG"), kl: n("fK") });
+    if (kind === "bunk" || kind === "inv") Object.assign(ne, { g: n("fG"), kl: n("fK") });
+    if (kind === "buy" && !ne.menge && !ne.preis && !ne.name) { alert("Bitte zumindest Bezeichnung, Menge oder Preis eingeben."); return; }
+    const nid = id || uid();
+    putEvent(nid, ne);
+    if (!id) { lastAdded = nid; toast(`${KIND[kind].icon} ${eventText(ne)}`); if (kind === "buy") { S.lg.los = nid; lsSet("hb-lg", S.lg); } }
+    closeModal();
+  };
+}
+
+/* ================= Dialoge ================= */
+function modal(html) { $("modalBox").innerHTML = html; $("modal").classList.add("show"); }
+function closeModal() { $("modal").classList.remove("show"); }
+$("modal").onclick = ev => { if (ev.target === $("modal")) closeModal(); };
+
+function editEvent(id) {
+  const e = S.events[id]; if (!e) return;
+  if (LAGER_KINDS.has(e.k)) return lagerForm(e.k, id);
+  let amount = "";
+  if (e.k === "holz") amount = `<label>Füllmenge</label><select id="mN">${FILLS.map(([f, l]) => `<option value="${f}" ${f === (e.n || 1) ? "selected" : ""}>${l} (≈ ${num(f * S.cfg.kgFuell)} kg)</option>`).join("")}</select>`;
+  if (e.k === "sack") amount = `<label>Anzahl Säcke à ${S.cfg.sackKg} kg</label><input id="mN" type="number" min="1" max="99" value="${e.n}">`;
+  if (e.k === "on" || e.k === "off") amount = `<label>Art</label><select id="mK"><option value="on" ${e.k === "on" ? "selected" : ""}>eingeschaltet</option><option value="off" ${e.k === "off" ? "selected" : ""}>ausgeschaltet</option></select>`;
+  modal(`<h3>${KIND[e.k].icon} Eintrag ändern</h3>
+    <label>Zeitpunkt</label><input id="mT" type="datetime-local" value="${toLocalInput(e.t)}">
+    ${amount}
+    <div class="btns"><button class="del" id="mDel">Löschen</button><button id="mCancel">Abbrechen</button><button class="pri" id="mSave">Speichern</button></div>`);
+  $("mCancel").onclick = closeModal;
+  $("mDel").onclick = () => { if (confirm("Diesen Eintrag wirklich löschen?")) { putEvent(id, null); closeModal(); } };
+  $("mSave").onclick = () => {
+    const ne = { ...e, t: +new Date($("mT").value) || e.t };
+    if ($("mN")) ne.n = Math.max(e.k === "sack" ? 1 : 0.25, +$("mN").value || 1);
+    if ($("mK")) ne.k = $("mK").value;
+    putEvent(id, ne); closeModal();
+  };
+}
+
+$("btnSettings").onclick = () => {
+  const c = S.cfg;
+  const jv = c.jahr === "kal" ? "kal" : `heiz-${c.hjStart || 8}`;
+  modal(`<h3>⚙ Einstellungen</h3>
+    <label>Jahreseinteilung (Jahresansicht, Vergleich, Bericht, Kosten)</label>
+    <select id="sJahr">${[["heiz-8", "Heizjahr August – Juli (wie Schuljahr)"], ["heiz-9", "Heizjahr September – August"], ["heiz-7", "Heizjahr Juli – Juni"], ["heiz-10", "Heizjahr Oktober – September"], ["kal", "Kalenderjahr Jänner – Dezember"]]
+      .map(([v, l]) => `<option value="${v}" ${v === jv ? "selected" : ""}>${l}</option>`).join("")}</select>
+    <label>Holz pro voller Kesselfüllung (kg)</label><input id="sKg" type="number" min="1" step="1" value="${c.kgFuell}">
+    <div class="hint">Am besten einmal eine volle Füllung abwiegen. Der Füllraum des ETA Twin 40 fasst grob 50–90 kg, je nach Holzart und Scheitlänge.</div>
+    <label>Gewicht pro Raummeter Holz (kg/rm)</label><input id="sRm" type="number" min="100" step="10" value="${c.kgRm}">
+    <div class="hint">Buche, Eiche, Robinie lufttrocken: ca. 450–520 kg/rm. Heizwert alle ähnlich, ca. 4,0–4,2 kWh/kg.</div>
+    <label>Heizwert Holz (kWh/kg)</label><input id="sKwhH" type="number" min="1" step="0.1" value="${c.kwhHolz}">
+    <label>Heizwert Pellets (kWh/kg)</label><input id="sKwhP" type="number" min="1" step="0.1" value="${c.kwhPellet}">
+    <label>Gewicht pro Pelletssack (kg)</label><input id="sSack" type="number" min="1" step="1" value="${c.sackKg}">
+    <h3 style="margin:22px 0 4px">🪵 Holzlager</h3>
+    ${LAGER_FIELDS.map(([k, l, st, h]) => `<label>${l}</label><input data-cfg="${k}" type="number" min="0" step="${st}" value="${c[k]}">${h ? `<div class="hint">${h}</div>` : ""}`).join("")}
+    <label>Standort für die Temperatur</label>
+    <div class="inl"><input id="sOrt" value="${esc(c.ort)}"><button id="sFind">Suchen</button></div>
+    <div class="hint" id="sOrtHint">${num(c.lat, 3)}° N · ${num(c.lon, 3)}° O · Daten: Open-Meteo</div>
+    <label>Haushalts-Code (gleicher Code = gleiche Daten auf allen Geräten)</label><input id="sHaus" value="${esc(S.haus)}">
+    <h3 style="margin:22px 0 4px">💾 Datensicherung</h3>
+    <div class="hint">Deine Daten liegen online und bleiben bei App-Updates erhalten. Zur Sicherheit kannst du sie zusätzlich als Datei speichern.</div>
+    <div class="btns" style="margin-top:8px"><button id="sBak">💾 Backup speichern</button><button id="sRes">📂 Backup einspielen</button><button id="sCsv">Excel (CSV)</button></div>
+    <input type="file" id="sResFile" accept=".json,application/json" style="display:none">
+    <div class="btns"><button id="sCancel">Abbrechen</button><button class="pri" id="sSave">Speichern</button></div>`);
+  $("sBak").onclick = backupDownload;
+  $("sRes").onclick = () => $("sResFile").click();
+  $("sResFile").onchange = () => { const f = $("sResFile").files[0]; if (f) backupRestore(f); };
+  let loc = { ort: c.ort, lat: c.lat, lon: c.lon };
+  $("sFind").onclick = async () => {
+    const q = $("sOrt").value.replace(/\(.*?\)/g, "").replace(/^A-?\d{4}\s*/i, "").trim();
+    $("sOrtHint").textContent = "suche…";
+    try {
+      const j = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=de`)).json();
+      const r = j.results?.[0];
+      if (!r) { $("sOrtHint").textContent = "Ort nicht gefunden – bitte nur den Ortsnamen eingeben."; return; }
+      loc = { ort: `${r.name}${r.country_code ? ` (${r.country_code})` : ""}`, lat: r.latitude, lon: r.longitude };
+      $("sOrt").value = loc.ort;
+      $("sOrtHint").textContent = `✓ ${r.name}, ${r.admin1 || ""} · ${num(r.latitude, 3)}° N · ${num(r.longitude, 3)}° O`;
+    } catch { $("sOrtHint").textContent = "Keine Verbindung."; }
+  };
+  $("sCancel").onclick = closeModal;
+  $("sCsv").onclick = exportCsv;
+  $("sSave").onclick = async () => {
+    const nc = { ...c, kgFuell: +$("sKg").value || c.kgFuell, kgRm: +$("sRm").value || c.kgRm, kwhHolz: +$("sKwhH").value || c.kwhHolz,
+                 kwhPellet: +$("sKwhP").value || c.kwhPellet, sackKg: +$("sSack").value || c.sackKg, ...loc };
+    $$("[data-cfg]").forEach(i => { const v = parseFloat(i.value); nc[i.dataset.cfg] = isNaN(v) ? c[i.dataset.cfg] : v; });
+    const jNew = $("sJahr").value;
+    nc.jahr = jNew === "kal" ? "kal" : "heiz";
+    if (jNew !== "kal") nc.hjStart = +jNew.split("-")[1];
+    const jahrChanged = jNew !== jv;
+    const locChanged = tempLocKey() !== `${(+nc.lat).toFixed(3)},${(+nc.lon).toFixed(3)}`;
+    S.cfg = nc; lsSet("hb-cfg", nc);
+    if (jahrChanged) {   // Umschalter in Vergleich & Bericht folgen der neuen Grundeinstellung
+      S.cmp.season = S.rp.mode = heizOn() ? "saison" : "jahr"; S.rp.year = null; S.cmp.hidden = {};
+      lsSet("hb-cmpseason", S.cmp.season); lsSet("hb-rpmode", S.rp.mode);
+    }
+    if (locChanged) { resetTemps(); loadRecentTemps(); }
+    const haus = $("sHaus").value.trim().replace(/[.#$\[\]\/]/g, "") || CONFIG.HAUS;
+    closeModal();
+    if (haus !== S.haus) { S.haus = haus; lsSet("hb-haus", haus); S.events = {}; save(); }
+    render();
+    try { await fetch(DB.url("cfg"), { method: "PUT", body: JSON.stringify(nc) }); } catch {}
+    sync();
+  };
+};
+function download(name, blob) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+function backupDownload() {
+  const data = { app: "heizbuch", version: 1, erstellt: new Date().toISOString(), haus: S.haus, cfg: S.cfg, events: S.events };
+  download(`heizbuch-backup-${dkey(Date.now())}.json`, new Blob([JSON.stringify(data, null, 1)], { type: "application/json" }));
+  toast(`💾 Backup mit ${Object.keys(S.events).length} Einträgen gespeichert`, false);
+}
+async function backupRestore(file) {
+  let data;
+  try { data = JSON.parse(await file.text()); } catch { alert("Diese Datei ist kein gültiges Heizbuch-Backup."); return; }
+  if (data?.app !== "heizbuch" || typeof data.events !== "object") { alert("Diese Datei ist kein Heizbuch-Backup."); return; }
+  const n = Object.keys(data.events).length, cur = Object.keys(S.events).length;
+  if (!confirm(`Backup vom ${new Date(data.erstellt).toLocaleString("de-DE")} mit ${n} Einträgen einspielen?\n\nDie jetzigen ${cur} Einträge werden dadurch ERSETZT (auf allen Geräten).`)) return;
+  try {
+    const r = await fetch(DB.url("e"), { method: "PUT", body: JSON.stringify(data.events) });
+    if (!r.ok) throw new Error(r.status);
+    if (data.cfg) await fetch(DB.url("cfg"), { method: "PUT", body: JSON.stringify(data.cfg) });
+  } catch { alert("Einspielen fehlgeschlagen – keine Verbindung zur Datenbank. Bitte später nochmal versuchen."); return; }
+  S.events = data.events; S.pending = {}; if (data.cfg) { S.cfg = { ...DEFAULT_CFG, ...data.cfg }; lsSet("hb-cfg", S.cfg); }
+  save(); closeModal(); render(); toast(`📂 ${n} Einträge wiederhergestellt`, false);
+}
+function exportCsv() {
+  const rows = [["Datum", "Uhrzeit", "Art", "Menge", "kg", "Tagesmittel °C"]];
+  for (const e of list()) {
+    const d = new Date(e.t), tp = tempOf(e.t);
+    const art = { holz: "Holz nachgelegt", on: "Pelletsofen ein", off: "Pelletsofen aus", sack: "Pellets nachgefüllt" }[e.k] || eventText(e);
+    const menge = e.k === "holz" ? fillLabel(e.n || 1) : e.k === "sack" ? `${e.n} Säcke` : "";
+    const kg = e.k === "holz" ? (e.n || 1) * S.cfg.kgFuell : e.k === "sack" ? e.n * S.cfg.sackKg : "";
+    rows.push([d.toLocaleDateString("de-DE"), fmtTime.format(d), art, menge, String(kg).replace(".", ","), tp ? String(tp[0]).replace(".", ",") : ""]);
+  }
+  const csv = "﻿" + rows.map(r => r.map(x => `"${String(x).replace(/"/g, '""')}"`).join(";")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = `heizbuch-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+}
+
+/* ================= Start ================= */
+render();
+sync();
+loadRecentTemps();
+setInterval(() => { if (document.visibilityState === "visible") sync(); }, 30000);
+setInterval(() => { if (document.visibilityState === "visible") loadRecentTemps(); }, 15 * 60000);
+setInterval(render, 60000);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") sync(); });
+window.addEventListener("online", sync);
+let rsz; window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(render, 200); });
+</script>
+</body>
+</html>
