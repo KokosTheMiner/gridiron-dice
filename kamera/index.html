@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Look-Kamera</title>
+<meta name="theme-color" content="#121110">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#121110; --panel:#1d1b19; --panel2:#272421; --line:#35312d;
+  --text:#f2ede6; --dim:#a39a8f; --accent:#f0a64b; --accent2:#ffcf8a; --danger:#e8705f;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+  font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.hidden{display:none!important}
+
+/* ---------- Start ---------- */
+#start{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:18px;padding:32px 20px calc(32px + env(safe-area-inset-bottom))}
+#start h1{margin:0;font-size:30px;letter-spacing:.5px}
+#start h1 span{color:var(--accent)}
+#start p.sub{margin:0 0 10px;color:var(--dim);text-align:center;max-width:320px}
+.big{width:100%;max-width:340px;padding:22px 18px;border-radius:22px;font-size:20px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:12px}
+.big.cam{background:linear-gradient(135deg,var(--accent),#d9792c);color:#1b120a;box-shadow:0 8px 30px #f0a64b33}
+.big.gal{background:var(--panel2);border:1px solid var(--line)}
+.big .ico{font-size:28px}
+#startLook{color:var(--dim);font-size:14px;margin-top:6px}
+#startLook b{color:var(--accent2)}
+.help{max-width:340px;color:var(--dim);font-size:13px;margin-top:14px}
+.help summary{cursor:pointer;color:var(--text);font-size:14px}
+.help li{margin:6px 0}
+
+/* ---------- Editor ---------- */
+#editor{position:fixed;inset:0;display:flex;flex-direction:column;background:#000}
+.topbar{display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top)) 10px 8px;background:var(--bg)}
+.topbar .title{flex:1;font-weight:600;font-size:15px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:20px;background:var(--panel2)}
+.pill{padding:9px 14px;border-radius:999px;background:var(--panel2);font-size:14px;font-weight:600;user-select:none;-webkit-user-select:none;touch-action:none}
+.pill.on{background:var(--accent);color:#1b120a}
+#stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;position:relative;padding:6px}
+#view{max-width:100%;max-height:100%;display:block;touch-action:none}
+#badge{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:#000a;padding:5px 12px;border-radius:999px;font-size:13px;pointer-events:none}
+
+.panel{background:var(--bg);padding:8px 0 calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+.looks{display:flex;gap:8px;overflow-x:auto;padding:4px 12px 10px;scrollbar-width:none}
+.looks::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:8px 14px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:14px;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#1b120a;font-weight:600}
+.chip.add{border-style:dashed;color:var(--dim)}
+.chip .x{margin-left:2px;font-size:13px;opacity:.7;padding:0 2px}
+
+.sliders{padding:0 16px;display:grid;gap:4px}
+.srow{display:grid;grid-template-columns:96px 1fr 44px;align-items:center;gap:10px;min-height:36px}
+.srow label{font-size:14px;color:var(--dim);display:flex;align-items:center;gap:5px}
+.srow label .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);visibility:hidden}
+.srow.changed label .dot{visibility:visible}
+.srow .val{text-align:right;font-variant-numeric:tabular-nums;font-size:14px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--text);margin-top:-9px;box-shadow:0 1px 4px #0008}
+input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--line)}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border:0;border-radius:50%;background:var(--text)}
+.more{margin:2px 16px 0;font-size:13px;color:var(--dim);padding:6px 0}
+.actions{display:flex;gap:10px;padding:10px 12px 0;align-items:center}
+.actions .save{flex:1;padding:15px;border-radius:16px;background:var(--accent);color:#1b120a;font-weight:700;font-size:17px}
+.actions .share{padding:15px 16px;border-radius:16px;background:var(--panel2);font-weight:600}
+.opt{display:flex;align-items:center;gap:8px;padding:8px 16px 0;font-size:13px;color:var(--dim)}
+.opt input{width:18px;height:18px;accent-color:var(--accent)}
+
+.namebox{display:flex;gap:8px;padding:0 12px 10px}
+.namebox input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font:inherit}
+.namebox button{padding:10px 14px;border-radius:12px;background:var(--accent);color:#1b120a;font-weight:600}
+.namebox button.cancel{background:var(--panel2);color:var(--text)}
+
+/* ---------- Overlay / Toast ---------- */
+#busy{position:fixed;inset:0;background:#000b;display:grid;place-items:center;z-index:20}
+#busy div{background:var(--panel);padding:18px 24px;border-radius:16px;display:flex;gap:12px;align-items:center}
+.spin{width:22px;height:22px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp 0.8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+#done{position:fixed;inset:0;background:#000c;display:grid;place-items:center;z-index:19;padding:20px}
+#done .card{background:var(--panel);border-radius:22px;padding:22px;max-width:360px;width:100%;text-align:center}
+#done h2{margin:4px 0 6px;font-size:22px}
+#done p{color:var(--dim);margin:0 0 16px;font-size:14px}
+#done .big{max-width:none;margin-top:10px;padding:16px;font-size:17px}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--panel2);
+  padding:10px 16px;border-radius:12px;font-size:14px;z-index:30;box-shadow:0 6px 24px #0008;max-width:90vw}
+
+@media (min-width:900px){
+  #editor{flex-direction:row;flex-wrap:wrap}
+  .topbar{width:100%}
+  #stage{height:calc(100% - 60px)}
+  .panel{width:380px;height:calc(100% - 60px);overflow-y:auto;border-top:0;border-left:1px solid var(--line)}
+  .looks{flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+
+<!-- Start -->
+<section id="start">
+  <h1>Look-<span>Kamera</span></h1>
+  <p class="sub">Fotografieren mit der Pixel-Kamera, und dein Look liegt sofort drauf.</p>
+  <button class="big cam" id="btnCam"><span class="ico">📷</span>Foto machen</button>
+  <button class="big gal" id="btnGal"><span class="ico">🖼️</span>Aus der Galerie</button>
+  <div id="startLook">Aktueller Look: <b id="startLookName">Farbe</b></div>
+  <details class="help">
+    <summary>So funktioniert's</summary>
+    <ul>
+      <li><b>Foto machen</b> öffnet deine normale Pixel-Kamera. Foto machen, mit ✓ bestätigen, schon ist es hier mit deinem Look.</li>
+      <li>Mit den Reglern kannst du nachjustieren. <b>Gedrückt halten</b> auf das Bild oder auf „Vorher“ zeigt das Original.</li>
+      <li><b>Speichern</b> legt das Foto im Ordner <i>Download</i> ab. Damit Google Fotos es sichert: in Google Fotos → <i>Fotos auf dem Gerät</i> → <i>Download</i> → <i>Sichern</i> einschalten (nur einmal nötig).</li>
+      <li><b>Teilen</b> → <i>Google Fotos</i> lädt das Foto direkt in Google Fotos hoch.</li>
+      <li>Deine Fotos verlassen das Handy nicht – alles wird direkt auf dem Gerät berechnet.</li>
+    </ul>
+  </details>
+  <input type="file" id="fileCam" accept="image/*" capture="environment" class="hidden">
+  <input type="file" id="fileGal" accept="image/*" class="hidden">
+</section>
+
+<!-- Editor -->
+<section id="editor" class="hidden">
+  <div class="topbar">
+    <button class="iconbtn" id="btnBack" title="Zurück">✕</button>
+    <div class="title" id="fileTitle"></div>
+    <button class="pill" id="btnBefore">Vorher</button>
+  </div>
+  <div id="stage">
+    <canvas id="view"></canvas>
+    <div id="badge" class="hidden">Original</div>
+  </div>
+  <div class="panel">
+    <div class="looks" id="looks"></div>
+    <div class="namebox hidden" id="namebox">
+      <input id="lookName" maxlength="20" placeholder="Name für den Look">
+      <button id="nameOk">Speichern</button>
+      <button class="cancel" id="nameCancel">✕</button>
+    </div>
+    <div class="sliders" id="sliders"></div>
+    <button class="more" id="btnMore">Mehr Regler ▾</button>
+    <div class="actions">
+      <button class="share" id="btnShare">Teilen</button>
+      <button class="save" id="btnSave">💾 Speichern</button>
+    </div>
+    <label class="opt"><input type="checkbox" id="optOrig"> Original zusätzlich speichern</label>
+  </div>
+</section>
+
+<div id="busy" class="hidden"><div><span class="spin"></span><span id="busyText">Wird gespeichert …</span></div></div>
+<div id="done" class="hidden"><div class="card">
+  <div style="font-size:40px">✅</div>
+  <h2>Gespeichert</h2>
+  <p id="doneText">Das Foto liegt im Ordner Download.</p>
+  <button class="big cam" id="doneCam"><span class="ico">📷</span>Nächstes Foto</button>
+  <button class="big gal" id="doneBack">Zurück zum Foto</button>
+</div></div>
+<div id="toast" class="hidden"></div>
+
+<script>
+'use strict';
+/* ================= Einstellungen / Looks ================= */
+// Werte wie im Google-Fotos-Editor: -1 … 1 (Anzeige -100 … 100), Vignette 0 … 1
+const SLIDERS = [
+  {k:'bp',   n:'Schwarzpunkt', min:-1, max:1},
+  {k:'warm', n:'Wärme',        min:-1, max:1},
+  {k:'vig',  n:'Vignette',     min:0,  max:1},
+  {k:'con',  n:'Kontrast',     min:-1, max:1},
+  {k:'bri',  n:'Helligkeit',   min:-1, max:1, more:true},
+  {k:'sat',  n:'Sättigung',    min:-1, max:1, more:true},
+  {k:'wp',   n:'Weißpunkt',    min:-1, max:1, more:true},
+];
+const ZERO = {bp:0,warm:0,vig:0,con:0,bri:0,sat:0,wp:0,mono:false};
+// Aus deinen Google-Fotos-Bearbeitungen ermittelt (Album „analyse“)
+const BUILTIN = [
+  {id:'farbe',  name:'Farbe',        v:{bp:.15, warm:.10, vig:.13, wp:.04}},
+  {id:'sw',     name:'Schwarz-Weiß', v:{bp:.25, con:.37, vig:.27, mono:true}},
+  {id:'moody',  name:'Dramatisch',   v:{bp:.20, con:.22, warm:-.08, sat:-.20, bri:-.10, vig:.35}},
+  {id:'orig',   name:'Ohne',         v:{}},
+];
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('lookcam.'+k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('lookcam.'+k, JSON.stringify(v)); }catch(e){} }
+};
+let custom = store.get('custom', []);
+let lookId = store.get('look', 'farbe');
+const allLooks = () => [...BUILTIN, ...custom];
+const findLook = id => allLooks().find(l => l.id === id) || BUILTIN[0];
+const lookVals = l => Object.assign({}, ZERO, l.v);
+
+/* ================= Zustand ================= */
+let file = null;        // Original-Datei
+let bmp = null;         // volle Auflösung (ImageBitmap)
+let srcData = null;     // Vorschau-Pixel (unbearbeitet)
+let params = lookVals(findLook(lookId));
+let showOrig = false;
+let showMore = false;
+const $ = id => document.getElementById(id);
+const view = $('view'), vctx = view.getContext('2d', {willReadFrequently:true});
+
+/* ================= Bildbearbeitung ================= */
+const clamp01 = x => x < 0 ? 0 : x > 1 ? 1 : x;
+function tone(v, p){
+  v = v * (1 + 0.35 * p.wp);                    // Weißpunkt
+  const bpt = 0.18 * p.bp;                      // Schwarzpunkt (+ = tiefere Schatten)
+  v = (v - bpt) / (1 - bpt);
+  v = clamp01(v);
+  if (p.bri) v = Math.pow(v, Math.pow(2, -p.bri * 0.9));   // Helligkeit (Gamma)
+  if (p.con) {                                  // Kontrast (S-Kurve)
+    const k = Math.pow(2.6, p.con);
+    v = v < 0.5 ? 0.5 * Math.pow(2 * v, k) : 1 - 0.5 * Math.pow(2 * (1 - v), k);
+  }
+  return clamp01(v);
+}
+function buildLuts(p){
+  const kr = 1 + 0.13 * p.warm, kg = 1 + 0.02 * p.warm, kb = 1 - 0.15 * p.warm;
+  const R = new Float32Array(256), G = new Float32Array(256), B = new Float32Array(256);
+  for (let i = 0; i < 256; i++){
+    const v = i / 255;
+    R[i] = tone(v * kr, p) * 255; G[i] = tone(v * kg, p) * 255; B[i] = tone(v * kb, p) * 255;
+  }
+  return {R, G, B};
+}
+// src/dst: Uint8ClampedArray RGBA; y0..y1: Zeilenbereich; fullH: Gesamthöhe (für Vignette)
+function processRows(src, dst, w, fullH, yOff, rows, p, L, colD){
+  const sat = 1 + p.sat, mono = p.mono, vig = p.vig * 2.2;
+  const cy = fullH / 2;
+  for (let y = 0; y < rows; y++){
+    const dy = (y + yOff + 0.5 - cy) / cy, dy2 = dy * dy;
+    let i = y * w * 4;
+    for (let x = 0; x < w; x++, i += 4){
+      let r = L.R[src[i]], g = L.G[src[i+1]], b = L.B[src[i+2]];
+      if (mono){
+        const l = 0.30 * r + 0.59 * g + 0.11 * b; r = g = b = l;
+      } else if (sat !== 1){
+        const l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        r = l + (r - l) * sat; g = l + (g - l) * sat; b = l + (b - l) * sat;
+      }
+      if (vig){
+        const d = (colD[x] + dy2) * 0.5;           // 0 Mitte … 1 Ecke
+        let f = 1 - vig * d * d * (3 - 2 * d) * 0.85 - vig * 0.15 * d;
+        if (f < 0) f = 0;
+        r *= f; g *= f; b *= f;
+      }
+      dst[i] = r; dst[i+1] = g; dst[i+2] = b; dst[i+3] = 255;
+    }
+  }
+}
+function colDist(w){
+  const cx = w / 2, a = new Float32Array(w);
+  for (let x = 0; x < w; x++){ const d = (x + 0.5 - cx) / cx; a[x] = d * d; }
+  return a;
+}
+
+/* ================= Vorschau ================= */
+let raf = 0;
+function render(){
+  if (raf) return;
+  raf = requestAnimationFrame(() => {
+    raf = 0;
+    if (!srcData) return;
+    if (showOrig){ vctx.putImageData(srcData, 0, 0); return; }
+    const out = vctx.createImageData(srcData.width, srcData.height);
+    processRows(srcData.data, out.data, srcData.width, srcData.height, 0, srcData.height, params, buildLuts(params), colDist(srcData.width));
+    vctx.putImageData(out, 0, 0);
+  });
+}
+
+async function openFile(f){
+  if (!f) return;
+  file = f;
+  try{
+    bmp && bmp.close && bmp.close();
+    bmp = await createImageBitmap(f, {imageOrientation:'from-image'});
+  }catch(e){
+    toast('Dieses Bild kann ich leider nicht öffnen.'); return;
+  }
+  const maxSide = Math.min(1800, Math.round(Math.max(innerWidth, innerHeight) * (devicePixelRatio || 1)));
+  const s = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+  view.width = Math.round(bmp.width * s); view.height = Math.round(bmp.height * s);
+  vctx.drawImage(bmp, 0, 0, view.width, view.height);
+  srcData = vctx.getImageData(0, 0, view.width, view.height);
+  params = lookVals(findLook(lookId));
+  $('fileTitle').textContent = `${bmp.width} × ${bmp.height} · ${(bmp.width*bmp.height/1e6).toFixed(1)} MP`;
+  $('start').classList.add('hidden'); $('editor').classList.remove('hidden');
+  buildUI(); render();
+}
+
+/* ================= Oberfläche ================= */
+function buildLooks(){
+  const box = $('looks'); box.innerHTML = '';
+  for (const l of allLooks()){
+    const b = document.createElement('button');
+    b.className = 'chip' + (l.id === lookId ? ' on' : '');
+    b.textContent = l.name;
+    if (l.custom && l.id === lookId){
+      const x = document.createElement('span'); x.className = 'x'; x.textContent = '✕'; x.title = 'Look löschen';
+      x.onclick = ev => { ev.stopPropagation(); deleteLook(l.id); };
+      b.appendChild(x);
+    }
+    b.onclick = () => selectLook(l.id);
+    box.appendChild(b);
+  }
+  const add = document.createElement('button');
+  add.className = 'chip add'; add.textContent = '＋ Als Look speichern';
+  add.onclick = () => { $('namebox').classList.remove('hidden'); $('lookName').value = ''; $('lookName').focus(); };
+  box.appendChild(add);
+  $('startLookName').textContent = findLook(lookId).name;
+}
+function selectLook(id){
+  lookId = id; store.set('look', id);
+  params = lookVals(findLook(id));
+  buildUI(); render();
+}
+function deleteLook(id){
+  const l = custom.find(c => c.id === id);
+  if (!l) return;
+  custom = custom.filter(c => c.id !== id); store.set('custom', custom);
+  toast(`Look „${l.name}“ gelöscht`);
+  selectLook('farbe');
+}
+function saveLook(){
+  const name = $('lookName').value.trim();
+  if (!name){ $('lookName').focus(); return; }
+  const v = {};
+  for (const k of Object.keys(ZERO)) if (params[k]) v[k] = params[k];
+  const id = 'c' + Date.now().toString(36);
+  custom.push({id, name, v, custom:true}); store.set('custom', custom);
+  $('namebox').classList.add('hidden');
+  toast(`Look „${name}“ gespeichert`);
+  selectLook(id);
+}
+const fmt = v => (v > 0 ? '+' : '') + Math.round(v * 100);
+function buildSliders(){
+  const box = $('sliders'); box.innerHTML = '';
+  const base = lookVals(findLook(lookId));
+  for (const s of SLIDERS){
+    if (s.more && !showMore) continue;
+    const row = document.createElement('div'); row.className = 'srow';
+    row.innerHTML = `<label><span class="dot"></span>${s.n}</label>
+      <input type="range" min="${s.min*100}" max="${s.max*100}" step="1" value="${Math.round(params[s.k]*100)}">
+      <span class="val"></span>`;
+    const inp = row.querySelector('input'), val = row.querySelector('.val');
+    const upd = () => {
+      val.textContent = s.k === 'vig' ? Math.round(params[s.k]*100) : fmt(params[s.k]);
+      row.classList.toggle('changed', Math.abs(params[s.k] - base[s.k]) > 0.004);
+    };
+    inp.oninput = () => { params[s.k] = inp.value / 100; upd(); render(); };
+    // Doppeltipp auf den Namen: zurück auf den Look-Wert
+    row.querySelector('label').ondblclick = () => { params[s.k] = base[s.k]; inp.value = Math.round(base[s.k]*100); upd(); render(); };
+    upd(); box.appendChild(row);
+  }
+  $('btnMore').textContent = showMore ? 'Weniger Regler ▴' : 'Mehr Regler ▾';
+}
+function buildUI(){ buildLooks(); buildSliders(); }
+
+/* Vorher/Nachher: gedrückt halten */
+function holdOrig(el){
+  const on = e => { e.preventDefault(); showOrig = true; $('badge').classList.remove('hidden'); $('btnBefore').classList.add('on'); render(); };
+  const off = () => { if (!showOrig) return; showOrig = false; $('badge').classList.add('hidden'); $('btnBefore').classList.remove('on'); render(); };
+  el.addEventListener('pointerdown', on);
+  ['pointerup','pointerleave','pointercancel'].forEach(t => el.addEventListener(t, off));
+  el.addEventListener('contextmenu', e => e.preventDefault());
+}
+holdOrig($('btnBefore')); holdOrig(view);
+
+/* ================= Export in voller Auflösung ================= */
+async function renderFull(){
+  const w = bmp.width, h = bmp.height;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d', {willReadFrequently:true});
+  ctx.drawImage(bmp, 0, 0);
+  const L = buildLuts(params), cd = colDist(w);
+  const band = Math.max(64, Math.floor(4e6 / w));   // in Streifen, damit das Handy nicht einfriert
+  for (let y = 0; y < h; y += band){
+    const rows = Math.min(band, h - y);
+    const img = ctx.getImageData(0, y, w, rows);
+    processRows(img.data, img.data, w, h, y, rows, params, L, cd);
+    ctx.putImageData(img, 0, y);
+    await new Promise(r => setTimeout(r, 0));
+  }
+  const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.95));
+  c.width = c.height = 1;
+  return blob;
+}
+
+/* EXIF (Aufnahmedatum, Ort, Kamera) vom Original übernehmen */
+async function readExif(f){
+  try{
+    const buf = await f.slice(0, 256 * 1024).arrayBuffer();
+    const dv = new DataView(buf);
+    if (dv.getUint16(0) !== 0xFFD8) return null;
+    let o = 2;
+    while (o + 4 < dv.byteLength){
+      const m = dv.getUint16(o), len = dv.getUint16(o + 2);
+      if (m === 0xFFDA) break;
+      if (m === 0xFFE1 && dv.getUint32(o + 4) === 0x45786966){   // "Exif"
+        if (o + 2 + len > buf.byteLength) return null;
+        const seg = new Uint8Array(buf.slice(o, o + 2 + len));
+        fixExif(seg);
+        return seg;
+      }
+      o += 2 + len;
+    }
+  }catch(e){}
+  return null;
+}
+function fixExif(seg){
+  // Ausrichtung auf 1 setzen (Pixel sind schon gedreht) und Vorschaubild (IFD1) abhängen
+  const dv = new DataView(seg.buffer), t = 10;
+  const le = dv.getUint16(t) === 0x4949;
+  const ifd = t + dv.getUint32(t + 4, le);
+  const n = dv.getUint16(ifd, le);
+  for (let i = 0; i < n; i++){
+    const e = ifd + 2 + i * 12;
+    if (dv.getUint16(e, le) === 0x0112) dv.setUint16(e + 8, 1, le);
+  }
+  const next = ifd + 2 + n * 12;
+  if (next + 4 <= seg.length) dv.setUint32(next, 0, le);
+}
+async function withExif(blob, exif){
+  if (!exif) return blob;
+  const out = new Uint8Array(await blob.arrayBuffer());
+  let rest = 2;
+  if (out[2] === 0xFF && out[3] === 0xE0) rest = 4 + ((out[4] << 8) | out[5]);  // JFIF-Kopf entfernen
+  return new Blob([out.subarray(0, 2), exif, out.subarray(rest)], {type:'image/jpeg'});
+}
+function baseName(){
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return `LOOK_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+}
+async function buildOutput(){
+  $('busyText').textContent = 'Foto wird berechnet …';
+  $('busy').classList.remove('hidden');
+  await new Promise(r => setTimeout(r, 60));   // Overlay zuerst zeichnen lassen
+  try{
+    const [blob, exif] = await Promise.all([renderFull(), readExif(file)]);
+    const name = baseName();
+    const lookName = findLook(lookId).name.replace(/[^\wäöüÄÖÜß-]+/g, '');
+    return {
+      edited: new File([await withExif(blob, exif)], `${name}_${lookName}.jpg`, {type:'image/jpeg'}),
+      orig: new File([file], `${name}_original.${(file.type.split('/')[1] || 'jpg').replace('jpeg','jpg')}`, {type:file.type || 'image/jpeg'})
+    };
+  } finally {
+    $('busy').classList.add('hidden');
+  }
+}
+function download(f){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(f); a.download = f.name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+}
+async function doSave(){
+  if (!bmp) return;
+  let out;
+  try{ out = await buildOutput(); }catch(e){ toast('Speichern hat nicht geklappt: ' + e.message); return; }
+  download(out.edited);
+  const withOrig = $('optOrig').checked;
+  if (withOrig) setTimeout(() => download(out.orig), 400);
+  $('doneText').textContent = withOrig
+    ? 'Bearbeitetes Foto und Original liegen im Ordner Download.'
+    : 'Das Foto liegt im Ordner Download.';
+  $('done').classList.remove('hidden');
+}
+async function doShare(){
+  if (!bmp) return;
+  let out;
+  try{ out = await buildOutput(); }catch(e){ toast('Hat nicht geklappt: ' + e.message); return; }
+  const files = $('optOrig').checked ? [out.edited, out.orig] : [out.edited];
+  if (navigator.canShare && navigator.canShare({files})){
+    try{ await navigator.share({files}); }catch(e){ if (e.name !== 'AbortError') toast('Teilen abgebrochen'); }
+  } else {
+    toast('Teilen geht hier nicht – ich speichere stattdessen.');
+    files.forEach((f, i) => setTimeout(() => download(f), i * 400));
+  }
+}
+
+/* ================= Verdrahtung ================= */
+function toast(t){
+  const el = $('toast'); el.textContent = t; el.classList.remove('hidden');
+  clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.add('hidden'), 2600);
+}
+function pick(id){ const inp = $(id); inp.value = ''; inp.click(); }
+$('btnCam').onclick = () => pick('fileCam');
+$('btnGal').onclick = () => pick('fileGal');
+$('fileCam').onchange = e => openFile(e.target.files[0]);
+$('fileGal').onchange = e => openFile(e.target.files[0]);
+$('btnBack').onclick = () => { $('editor').classList.add('hidden'); $('start').classList.remove('hidden'); $('namebox').classList.add('hidden'); };
+$('btnMore').onclick = () => { showMore = !showMore; buildSliders(); };
+$('btnSave').onclick = doSave;
+$('btnShare').onclick = doShare;
+$('nameOk').onclick = saveLook;
+$('nameCancel').onclick = () => $('namebox').classList.add('hidden');
+$('lookName').onkeydown = e => { if (e.key === 'Enter') saveLook(); };
+$('doneCam').onclick = () => { $('done').classList.add('hidden'); pick('fileCam'); };
+$('doneBack').onclick = () => $('done').classList.add('hidden');
+$('optOrig').checked = store.get('orig', false);
+$('optOrig').onchange = e => store.set('orig', e.target.checked);
+$('startLookName').textContent = findLook(lookId).name;
+// Foto per „Teilen“ in die App? (nur Vorbereitung) – Drag & Drop am PC
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) openFile(f); });
+
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+window.__lookcam = {openFile, get params(){ return params; }};
+</script>
+</body>
+</html>
