@@ -32,6 +32,10 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .big .ico{font-size:28px}
 #startLook{color:var(--dim);font-size:14px;margin-top:6px}
 #startLook b{color:var(--accent2)}
+.howto{width:100%;max-width:340px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px 16px;font-size:15px}
+.howto ol{margin:8px 0 0;padding-left:22px}
+.howto li{margin:4px 0}
+.big small{font-weight:400;font-size:13px;color:var(--dim)}
 .help{max-width:340px;color:var(--dim);font-size:13px;margin-top:14px}
 .help summary{cursor:pointer;color:var(--text);font-size:14px}
 .help li{margin:6px 0}
@@ -105,18 +109,27 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:0;border-radiu
 <!-- Start -->
 <section id="start">
   <h1>Look-<span>Kamera</span></h1>
-  <p class="sub">Fotografieren mit der Pixel-Kamera, und dein Look liegt sofort drauf.</p>
-  <button class="big cam" id="btnCam"><span class="ico">📷</span>Foto machen</button>
-  <button class="big gal" id="btnGal"><span class="ico">🖼️</span>Aus der Galerie</button>
+  <p class="sub">Dein Look auf deinen Pixel-Fotos, mit wenigen Fingertipps.</p>
+  <div class="howto">
+    <b>Beste Qualität (mit Nachtsicht):</b>
+    <ol>
+      <li>Ganz normal mit der <b>Pixel-Kamera</b> fotografieren</li>
+      <li>Unten rechts auf das <b>kleine Vorschaubild</b> tippen</li>
+      <li><b>Teilen</b> → <b>Look-Kamera</b></li>
+    </ol>
+  </div>
+  <button class="big cam" id="btnGal"><span class="ico">🖼️</span>Foto auswählen</button>
+  <button class="big gal" id="btnCam"><span class="ico">📷</span>Schnell-Foto <small>(ohne Nachtsicht)</small></button>
   <div id="startLook">Aktueller Look: <b id="startLookName">Farbe</b></div>
   <details class="help">
-    <summary>So funktioniert's</summary>
+    <summary>Hilfe</summary>
     <ul>
-      <li><b>Foto machen</b> öffnet deine normale Pixel-Kamera. Foto machen, mit ✓ bestätigen, schon ist es hier mit deinem Look.</li>
+      <li><b>„Look-Kamera“ fehlt im Teilen-Menü?</b> Die App muss über Chrome installiert sein (⋮ → <i>App installieren</i>). War sie schon installiert, einmal vom Startbildschirm entfernen und neu installieren. Im Teilen-Menü eventuell nach rechts wischen oder auf <i>Mehr</i> tippen.</li>
+      <li><b>Schnell-Foto</b> leiht sich die Pixel-Kamera nur in einem einfachen Modus aus. Google erlaubt dort keine Nachtsicht und weniger Bildverarbeitung.</li>
       <li>Mit den Reglern kannst du nachjustieren. <b>Gedrückt halten</b> auf das Bild oder auf „Vorher“ zeigt das Original.</li>
-      <li><b>Speichern</b> legt das Foto im Ordner <i>Download</i> ab. Damit Google Fotos es sichert: in Google Fotos → <i>Fotos auf dem Gerät</i> → <i>Download</i> → <i>Sichern</i> einschalten (nur einmal nötig).</li>
-      <li><b>Teilen</b> → <i>Google Fotos</i> lädt das Foto direkt in Google Fotos hoch.</li>
-      <li>Deine Fotos verlassen das Handy nicht – alles wird direkt auf dem Gerät berechnet.</li>
+      <li><b>In Google Fotos</b> öffnet das Teilen-Menü: dort <i>Google Fotos</i> → <i>In Fotos hochladen</i> wählen. Das Foto landet direkt in deiner Google-Fotos-Mediathek.</li>
+      <li><b>⬇</b> speichert das Foto stattdessen im Ordner <i>Download</i> auf dem Handy.</li>
+      <li>Das Bearbeiten passiert direkt auf dem Handy. Hochgeladen wird nur, was du selbst an Google Fotos schickst.</li>
     </ul>
   </details>
   <input type="file" id="fileCam" accept="image/*" capture="environment" class="hidden">
@@ -144,19 +157,19 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:0;border-radiu
     <div class="sliders" id="sliders"></div>
     <button class="more" id="btnMore">Mehr Regler ▾</button>
     <div class="actions">
-      <button class="share" id="btnShare">Teilen</button>
-      <button class="save" id="btnSave">💾 Speichern</button>
+      <button class="share" id="btnSave" title="Im Ordner Download speichern">⬇</button>
+      <button class="save" id="btnShare">📤 In Google Fotos</button>
     </div>
-    <label class="opt"><input type="checkbox" id="optOrig"> Original zusätzlich speichern</label>
+    <label class="opt" id="optOrigRow"><input type="checkbox" id="optOrig"> Original zusätzlich speichern</label>
   </div>
 </section>
 
 <div id="busy" class="hidden"><div><span class="spin"></span><span id="busyText">Wird gespeichert …</span></div></div>
 <div id="done" class="hidden"><div class="card">
   <div style="font-size:40px">✅</div>
-  <h2>Gespeichert</h2>
+  <h2 id="doneTitle">Gespeichert</h2>
   <p id="doneText">Das Foto liegt im Ordner Download.</p>
-  <button class="big cam" id="doneCam"><span class="ico">📷</span>Nächstes Foto</button>
+  <button class="big cam" id="doneCam">Fertig</button>
   <button class="big gal" id="doneBack">Zurück zum Foto</button>
 </div></div>
 <div id="toast" class="hidden"></div>
@@ -194,6 +207,7 @@ const lookVals = l => Object.assign({}, ZERO, l.v);
 
 /* ================= Zustand ================= */
 let file = null;        // Original-Datei
+let fromCam = false;    // per Schnell-Foto aufgenommen (Original liegt dann nirgends)
 let bmp = null;         // volle Auflösung (ImageBitmap)
 let srcData = null;     // Vorschau-Pixel (unbearbeitet)
 let params = lookVals(findLook(lookId));
@@ -270,9 +284,10 @@ function render(){
   });
 }
 
-async function openFile(f){
+async function openFile(f, cam = false){
   if (!f) return;
-  file = f;
+  file = f; fromCam = cam;
+  $('optOrigRow').classList.toggle('hidden', !cam);
   try{
     bmp && bmp.close && bmp.close();
     bmp = await createImageBitmap(f, {imageOrientation:'from-image'});
@@ -460,24 +475,46 @@ async function doSave(){
   let out;
   try{ out = await buildOutput(); }catch(e){ toast('Speichern hat nicht geklappt: ' + e.message); return; }
   download(out.edited);
-  const withOrig = $('optOrig').checked;
+  const withOrig = withOriginal();
   if (withOrig) setTimeout(() => download(out.orig), 400);
-  $('doneText').textContent = withOrig
+  showDone('Gespeichert', withOrig
     ? 'Bearbeitetes Foto und Original liegen im Ordner Download.'
-    : 'Das Foto liegt im Ordner Download.';
-  $('done').classList.remove('hidden');
+    : 'Das Foto liegt im Ordner Download.');
 }
 async function doShare(){
   if (!bmp) return;
   let out;
   try{ out = await buildOutput(); }catch(e){ toast('Hat nicht geklappt: ' + e.message); return; }
-  const files = $('optOrig').checked ? [out.edited, out.orig] : [out.edited];
+  const files = withOriginal() ? [out.edited, out.orig] : [out.edited];
   if (navigator.canShare && navigator.canShare({files})){
-    try{ await navigator.share({files}); }catch(e){ if (e.name !== 'AbortError') toast('Teilen abgebrochen'); }
+    try{
+      await navigator.share({files});
+      showDone('Weitergegeben', 'Wenn du „Google Fotos → In Fotos hochladen“ gewählt hast, ist das Foto jetzt in deiner Google-Fotos-Mediathek.');
+    }catch(e){ if (e.name !== 'AbortError') toast('Teilen hat nicht geklappt: ' + e.message); }
   } else {
-    toast('Teilen geht hier nicht – ich speichere stattdessen.');
+    toast('Teilen geht hier nicht – ich speichere im Ordner Download.');
     files.forEach((f, i) => setTimeout(() => download(f), i * 400));
   }
+}
+const withOriginal = () => fromCam && $('optOrig').checked;   // nur beim Schnell-Foto fehlt sonst das Original
+function showDone(title, text){
+  $('doneTitle').textContent = title; $('doneText').textContent = text;
+  $('done').classList.remove('hidden');
+}
+
+/* Foto, das über „Teilen → Look-Kamera“ kam (vom Service Worker zwischengelegt) */
+async function loadShared(){
+  if (!/[?&]shared=1/.test(location.search)) return;
+  history.replaceState(null, '', location.pathname);
+  try{
+    const c = await caches.open('lookcam-share');
+    const r = await c.match('shared-photo');
+    if (!r){ toast('Das geteilte Foto ist nicht angekommen.'); return; }
+    const blob = await r.blob();
+    const name = decodeURIComponent(r.headers.get('x-name') || 'foto.jpg');
+    await c.delete('shared-photo');
+    openFile(new File([blob], name, {type: blob.type || 'image/jpeg'}));
+  }catch(e){ toast('Das geteilte Foto konnte ich nicht öffnen.'); }
 }
 
 /* ================= Verdrahtung ================= */
@@ -488,7 +525,7 @@ function toast(t){
 function pick(id){ const inp = $(id); inp.value = ''; inp.click(); }
 $('btnCam').onclick = () => pick('fileCam');
 $('btnGal').onclick = () => pick('fileGal');
-$('fileCam').onchange = e => openFile(e.target.files[0]);
+$('fileCam').onchange = e => openFile(e.target.files[0], true);
 $('fileGal').onchange = e => openFile(e.target.files[0]);
 $('btnBack').onclick = () => { $('editor').classList.add('hidden'); $('start').classList.remove('hidden'); $('namebox').classList.add('hidden'); };
 $('btnMore').onclick = () => { showMore = !showMore; buildSliders(); };
@@ -497,16 +534,17 @@ $('btnShare').onclick = doShare;
 $('nameOk').onclick = saveLook;
 $('nameCancel').onclick = () => $('namebox').classList.add('hidden');
 $('lookName').onkeydown = e => { if (e.key === 'Enter') saveLook(); };
-$('doneCam').onclick = () => { $('done').classList.add('hidden'); pick('fileCam'); };
+$('doneCam').onclick = () => { $('done').classList.add('hidden'); $('btnBack').click(); };
 $('doneBack').onclick = () => $('done').classList.add('hidden');
 $('optOrig').checked = store.get('orig', false);
 $('optOrig').onchange = e => store.set('orig', e.target.checked);
 $('startLookName').textContent = findLook(lookId).name;
-// Foto per „Teilen“ in die App? (nur Vorbereitung) – Drag & Drop am PC
+loadShared();
+// Drag & Drop am PC
 document.addEventListener('dragover', e => e.preventDefault());
 document.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) openFile(f); });
 
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
 window.__lookcam = {openFile, get params(){ return params; }};
 </script>
 </body>
