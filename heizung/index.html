@@ -246,7 +246,7 @@ body.printing .rp-three { grid-template-columns: 1.4fr 1fr 1fr !important; gap: 
 body.printing .rp-page .legend { font-size: 9px; margin-bottom: 2px; gap: 2px 10px; }
 body.printing .rp-page .legend i { width: 8px; height: 8px; }
 body.printing .rp-chart svg { width: 100%; }
-body.printing .rp-gantt svg { max-height: 62mm; }
+body.printing .rp-gantt svg { max-height: 52mm; }
 body.printing .rp-sec { break-inside: auto; page-break-inside: auto; }
 body.printing .rp-page tr, body.printing .rp-box, body.printing .rp-kpi { break-inside: avoid; page-break-inside: avoid; }
 body.printing .tablewrap { overflow: visible !important; }
@@ -495,6 +495,50 @@ const KIND = { holz: { icon: "🪵" }, on: { icon: "⚡" }, off: { icon: "⏻" }
 const HEAT_KINDS = new Set(["holz", "on", "off", "sack"]);
 const LAGER_KINDS = new Set(["buy", "hol", "saeg", "bunk", "cost", "inv"]);
 const ARTEN = ["Buche", "Eiche", "Robinie", "Gemischt"];
+// Günstigster Sommerpreis Pellets-Sackware 15 kg in Österreich (€/Sack inkl. MwSt., Palettenabnahme).
+// Quelle: Erhebung proPellets Austria (über Windhager, Geldmarie, Holzkurier, finfo).
+// est = geschätzt aus dem Jahresdurchschnitt lose Ware (× 1,09: Sommerabschlag + Sackaufschlag).
+const PP_DEFAULT = {
+  2015: { eur: 3.83, est: true }, 2016: { eur: 3.71, est: true }, 2017: { eur: 3.78, est: true }, 2018: { eur: 3.89, est: true },
+  2019: { eur: 3.89, est: true }, 2020: { eur: 3.79, est: true }, 2021: { eur: 3.79, est: true }, 2022: { eur: 6.44, est: true },
+  2023: { eur: 6.00, src: "Mai 2023" }, 2024: { eur: 4.94, src: "Juli 2024" }, 2025: { eur: 4.97, src: "Mai 2025" }, 2026: { eur: 6.48, src: "Juli 2026" }
+};
+// Preis je 15-kg-Sack für ein Jahr: eigener Wert aus den Einstellungen > Tabelle > letzter bekannter Wert
+function pelletPrice(y) {
+  const own = S.cfg.pp?.[y];
+  if (own > 0) return { eur: +own, own: true };
+  if (PP_DEFAULT[y]) return { ...PP_DEFAULT[y] };
+  const ys = Object.keys(PP_DEFAULT).map(Number).sort((a, b) => a - b), last = y > ys.at(-1) ? ys.at(-1) : ys[0];
+  const ownLast = Object.keys(S.cfg.pp || {}).map(Number).filter(k => S.cfg.pp[k] > 0 && k < y).sort((a, b) => b - a)[0];
+  return ownLast ? { eur: +S.cfg.pp[ownLast], own: true, from: ownLast } : { ...PP_DEFAULT[last], from: last };
+}
+// Ersparnis gegenüber reiner Pelletsheizung im Zeitraum [from, to)
+function savings(from, to, Lall = lager()) {
+  const c = S.cfg, T = totals(from, to), y = new Date(from).getFullYear(), pr = pelletPrice(y), perKg = pr.eur / 15;
+  const woodKwh = T.kg * c.kwhHolz, eqKg = woodKwh / c.kwhPellet;               // so viele kg Pellets hat das Holz ersetzt
+  const pelletCost = T.pkg * perKg, allPellets = (eqKg + T.pkg) * perKg;
+  // Kosten des verheizten Holzes: aus den Bunker-Kisten und ihren Losen, sonst Ø-Preis der vermessenen Lose
+  const measured = Lall.lose.filter(l => l.measured && l.basis > 0);
+  const avgKg = measured.length ? measured.reduce((s, l) => s + l.cost, 0) / measured.reduce((s, l) => s + l.basis * c.kgRm, 0) : null;
+  const byId = Object.fromEntries(Lall.lose.map(l => [l.id, l]));
+  const burned = Lall.burned.filter(b => b.t >= from && b.t < to);
+  let woodCost = null, woodEst = false;
+  if (burned.length) {
+    woodCost = 0;
+    for (const b of burned) {
+      const l = byId[b.los], kg = kistenSrm(b.g, b.kl) * kgSrm();
+      const pKg = l && l.basis ? l.cost / (l.basis * c.kgRm) : avgKg;
+      if (!l || !l.measured) woodEst = true;
+      if (pKg != null) woodCost += kg * pKg;
+    }
+    // verheizte kg laut Kessel können von den Kisten abweichen → auf verheizte Menge hochrechnen
+    const bKg = burned.reduce((s, b) => s + kistenSrm(b.g, b.kl) * kgSrm(), 0);
+    if (bKg > 0 && T.kg > 0) woodCost = woodCost / bKg * T.kg;
+  } else if (T.kg > 0 && avgKg != null) { woodCost = T.kg * avgKg; woodEst = true; }
+  const net = woodCost != null ? allPellets - pelletCost - woodCost : null;
+  return { T, y, pr, perKg, eqKg, eqSacks: eqKg / 15, pelletCost, allPellets, woodCost, woodEst, net, gross: eqKg * perKg,
+           pct: net != null && allPellets ? net / allPellets * 100 : null };
+}
 const YEAR_COLORS = ["#e08a3c", "#5fa8d3", "#7cbf6b", "#c678dd", "#d9b44a", "#e4573d", "#56b6c2", "#f4ebe1", "#a3785a", "#98c379"];
 
 /* ================= Hilfen ================= */
@@ -1034,7 +1078,7 @@ function renderVergleich() {
   $$("#cmpMetric button").forEach(b => b.classList.toggle("on", b.dataset.c === S.cmp.metric));
   $$("#cmpStyle button").forEach(b => b.classList.toggle("on", b.dataset.s === S.cmp.style));
   $$("#cmpSeason button").forEach(b => b.classList.toggle("on", b.dataset.y === S.cmp.season));
-  const R = cmpRanges(), M = METRICS[S.cmp.metric], now = Date.now();
+  const R = cmpRanges(), M = METRICS[S.cmp.metric], now = Date.now(), LallV = lager();
   if (R.length) needTemps(R[0].start, now);
   const labels = R[0].months.map(t => MONATE[new Date(t).getMonth()].slice(0, narrow() ? 1 : 3));
   const rows = R.map((r, i) => {
@@ -1042,7 +1086,7 @@ function renderVergleich() {
     const mt = r.months.map(m => { const e = addDays(new Date(m).setMonth(new Date(m).getMonth() + 1), 0); return m > now ? null : { T: totals(m, e), tp: tempStats(m, e) }; });
     const val = x => x == null ? null : S.cmp.metric === "temp" ? x.tp.mean : x.T[S.cmp.metric];
     const end = r.months.at(-1), endT = +new Date(new Date(end).getFullYear(), new Date(end).getMonth() + 1, 1);
-    return { ...r, color, vals: mt.map(val), temps: mt.map(x => x?.tp.mean ?? null), Y: totals(r.start, endT), tp: tempStats(r.start, endT) };
+    return { ...r, color, endT, vals: mt.map(val), temps: mt.map(x => x?.tp.mean ?? null), Y: totals(r.start, endT), tp: tempStats(r.start, endT) };
   });
   const visible = rows.filter(r => !S.cmp.hidden[r.name]);
   $("cmpTitle").innerHTML = `${M.t} <span class="sub">${M.u} je Monat</span>`;
@@ -1050,9 +1094,9 @@ function renderVergleich() {
   $("cmpChart").innerHTML = multiChart(labels, visible.map(r => ({ name: r.name, color: r.color, vals: r.vals, bold: r.cur })), S.cmp.style, M.f, S.cmp.metric === "temp");
   $("cmpTempCard").style.display = S.cmp.metric === "temp" ? "none" : "";
   if (S.cmp.metric !== "temp") $("cmpTemp").innerHTML = multiChart(labels, visible.map(r => ({ name: r.name, color: r.color, vals: r.temps, bold: r.cur })), "welle", v => num(v, 0) + "°", true);
-  $("cmpTable").innerHTML = `<table><thead><tr><th>${S.cmp.season === "saison" ? "Heizjahr" : "Jahr"}</th><th>Holz kg</th><th>rm</th><th>Füllungen</th><th>Ofen h</th><th>Pellets kg</th><th>kWh</th><th>Ø °C</th><th>HGT</th><th>kWh/HGT</th></tr></thead><tbody>${
-    rows.slice().reverse().map(r => `<tr><td><i style="background:${r.color}"></i>${r.name}${r.cur ? " *" : ""}</td><td>${num(r.Y.kg)}</td><td>${num(r.Y.kg / S.cfg.kgRm, 1)}</td><td>${fmtFills(r.Y.fills)}</td><td>${num(r.Y.h)}</td><td>${num(r.Y.pkg)}</td><td>${num(r.Y.kwh)}</td><td>${r.tp.mean != null ? num(r.tp.mean, 1) : "–"}</td><td>${r.tp.hgt != null ? num(r.tp.hgt) : "–"}</td><td>${r.tp.hgt ? num(r.Y.kwh / r.tp.hgt, 1) : "–"}</td></tr>`).join("")
-  }</tbody></table><div class="hint" style="font-size:12px;color:var(--muted);margin-top:8px">* läuft noch. kWh je Heizgradtag macht Jahre mit unterschiedlich kalten Wintern vergleichbar – kleiner ist sparsamer.</div>`;
+  $("cmpTable").innerHTML = `<table><thead><tr><th>${S.cmp.season === "saison" ? "Heizjahr" : "Jahr"}</th><th>Holz kg</th><th>rm</th><th>Füllungen</th><th>Ofen h</th><th>Pellets kg</th><th>kWh</th><th>Ø °C</th><th>HGT</th><th>kWh/HGT</th><th>Ersparnis</th></tr></thead><tbody>${
+    rows.slice().reverse().map(r => `<tr><td><i style="background:${r.color}"></i>${r.name}${r.cur ? " *" : ""}</td><td>${num(r.Y.kg)}</td><td>${num(r.Y.kg / S.cfg.kgRm, 1)}</td><td>${fmtFills(r.Y.fills)}</td><td>${num(r.Y.h)}</td><td>${num(r.Y.pkg)}</td><td>${num(r.Y.kwh)}</td><td>${r.tp.mean != null ? num(r.tp.mean, 1) : "–"}</td><td>${r.tp.hgt != null ? num(r.tp.hgt) : "–"}</td><td>${r.tp.hgt ? num(r.Y.kwh / r.tp.hgt, 1) : "–"}</td><td style="color:var(--ok);font-weight:700">${(() => { const sv = savings(r.start, r.endT, LallV); return sv.net != null ? (sv.woodEst ? "≈ " : "") + eur(sv.net) : (sv.T.kg ? "≈ " + eur(sv.gross) : "–"); })()}</td></tr>`).join("")
+  }</tbody></table><div class="hint" style="font-size:12px;color:var(--muted);margin-top:8px">* läuft noch. kWh je Heizgradtag macht Jahre mit unterschiedlich kalten Wintern vergleichbar – kleiner ist sparsamer. Ersparnis = was reine Pelletsheizung (Sackware, günstigster Sommerpreis) mehr gekostet hätte, abzüglich der eigenen Holzkosten.</div>`;
 }
 
 /* ================= Aktionen ================= */
@@ -1545,7 +1589,31 @@ function buildReport(year, mode) {
     <div class="rp-note">Regel: Holz trocknet mindestens ${c.trocken} Monate gespalten am Meterstoß (ab dem Vermessen), dann wird es gesägt und lagert beliebig lange in den Kisten. Die Kisten werden in der Reihenfolge verheizt, in der sie gefüllt wurden.</div>
   </div>
 
-  <div class="rp-sec rp-pb"><h2>Holzlager & Ausgaben</h2>
+  <div class="rp-sec rp-pb"><h2>💶 Ersparnis gegenüber reiner Pelletsheizung</h2>
+    ${(() => {
+      const SV = savings(P.from, P.to, Lall), SVP = savings(PP.from, PP.to, Lall);
+      if (!SV.T.kg && !SV.T.pkg) return `<div class="rp-box">Im Zeitraum wurde nichts verheizt.</div>`;
+      // Summe aller bisherigen Jahre bis zu diesem Zeitraum
+      const first = list().length ? list()[0].t : P.from; let cum = 0, cumN = 0, cumEst = false;
+      for (let y = year; ; y--) { const Q = rpPeriod(y, mode); if (Q.to <= first) break; const s = savings(Q.from, Q.to, Lall); if (s.net != null && (s.T.kg || s.T.pkg)) { cum += s.net; cumN++; cumEst ||= s.woodEst; } if (y < 2000) break; }
+      const pr = SV.pr, prTxt = `${num(pr.eur, 2)} € je 15-kg-Sack (${pr.own ? "eigener Preis" : pr.est ? "geschätzt" : "proPellets " + pr.src}${pr.from ? `, Wert von ${pr.from}` : ""})`;
+      return `<div class="rp-three" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="rp-box"><b>Nur mit Pellets</b><br>Das Holz ersetzte <b>${num(SV.eqKg)} kg</b> Pellets = ${num(SV.eqSacks)} Säcke.<br>
+          Alles mit Pellets: ${num(SV.eqSacks + SV.T.pkg / 15)} Säcke<br><span style="font-size:1.25em">≈ <b>${eur(SV.allPellets)}</b></span></div>
+        <div class="rp-box"><b>Tatsächlich bezahlt</b><br>Pellets: ${num(SV.T.pkg / 15)} Säcke = <b>${eur(SV.pelletCost)}</b><br>
+          Holz (eigene Kosten): <b>${SV.woodCost != null ? (SV.woodEst ? "≈ " : "") + eur(SV.woodCost) : "–"}</b><br>
+          <span style="font-size:1.25em">Summe <b>${SV.woodCost != null ? eur(SV.pelletCost + SV.woodCost) : "–"}</b></span></div>
+        <div class="rp-box ${SV.net != null && SV.net >= 0 ? "good" : ""}"><b>Ersparnis</b><br>
+          <span style="font-size:1.9em;font-weight:800;color:var(--ok)">${SV.net != null ? (SV.woodEst ? "≈ " : "") + eur(SV.net) : "≈ " + eur(SV.gross)}</span>
+          ${SV.pct != null ? `<br>${num(SV.pct)} % weniger als nur Pellets` : `<br>ohne Holzkosten (noch kein Los vermessen)`}
+          ${SVP.net != null && (SVP.T.kg || SVP.T.pkg) ? `<br>Vorjahr: ${eur(SVP.net)}` : ""}</div>
+      </div>
+      ${cumN > 1 ? `<div class="rp-box good" style="margin-top:6px">Seit Beginn der Aufzeichnung (${cumN} ${mode === "saison" ? "Heizjahre" : "Jahre"}) insgesamt gespart: <b style="font-size:1.15em">${cumEst ? "≈ " : ""}${eur(cum)}</b></div>` : ""}
+      <div class="rp-note">Pelletspreis: ${prTxt}. Umrechnung über den Heizwert: 1 kg Holz (${num(S.cfg.kwhHolz, 1)} kWh) ersetzt ${num(S.cfg.kwhHolz / S.cfg.kwhPellet, 2)} kg Pellets (${num(S.cfg.kwhPellet, 1)} kWh). Holzkosten = Kauf, Auktion, Traktor und Maschinen der verheizten Lose. Die eigene Arbeitszeit ist nicht eingerechnet.</div>`;
+    })()}
+  </div>
+
+  <div class="rp-sec"><h2>Holzlager & Ausgaben</h2>
     <div class="rp-three">
     <div class="tablewrap"><table><thead><tr><th></th><th>Anfang (${fmtD(P.from)})</th><th>${laufend ? "Heute" : "Ende"} (${fmtD(stand - (laufend ? 0 : 1))})</th></tr></thead><tbody>
       <tr><td>Volle große Kisten</td><td>${L0.fullG}</td><td>${L1.fullG}</td></tr>
@@ -1569,7 +1637,7 @@ function buildReport(year, mode) {
     ${buys.length || messP.length ? `<h4>Holzkäufe und Vermessungen</h4><div class="tablewrap"><table><thead><tr><th>Holzlos</th><th>Art</th><th>gekauft</th><th>Menge</th><th>Kosten gesamt</th><th>vermessen</th><th>€/rm</th><th>Ausbeute</th></tr></thead><tbody>${
       [...new Set([...buys.map(e => e.id), ...messP.map(l => l.id)])].map(id => losById[id]).filter(Boolean).map(l => `<tr><td>${esc(losName(l.id))}</td><td>${esc(l.e.art || "")}</td><td>${fmtD(l.e.t)}</td><td>${num(l.e.menge || 0, 1)} ${l.e.einheit || "fm"}</td><td>${eur(l.cost)}</td><td>${l.measured ? `${num(l.basis, 1)} rm` : "noch nicht"}</td><td>${l.measured ? eur(l.cost / l.basis) : "–"}</td><td>${l.yield ? `${num(l.yield, 2)} rm/fm` : "–"}</td></tr>`).join("")
     }</tbody></table></div>` : ""}
-    <div class="rp-note">Ausgaben fließen meist in Holz, das erst in 2–3 Jahren verheizt wird. Die echten Heizkosten dieses Zeitraums zeigt „Kosten verheiztes Holz" oben (Kosten der jeweiligen Lose${burnCostEst ? "; ≈ = Los noch nicht vermessen oder Herkunft unbekannt, mit Durchschnittspreis geschätzt" : ""}). Pellets sind ohne Preis erfasst.</div>
+    <div class="rp-note">Ausgaben fließen meist in Holz, das erst in 2–3 Jahren verheizt wird. Die echten Heizkosten dieses Zeitraums zeigt „Kosten verheiztes Holz" oben (Kosten der jeweiligen Lose${burnCostEst ? "; ≈ = Los noch nicht vermessen oder Herkunft unbekannt, mit Durchschnittspreis geschätzt" : ""}).</div>
   </div>
 
   <div class="rp-sec rp-gantt"><h2>Zeitleiste der Holzlose</h2>${gantt}</div>
@@ -1775,6 +1843,13 @@ $("btnSettings").onclick = () => {
     <label>Heizwert Holz (kWh/kg)</label><input id="sKwhH" type="number" min="1" step="0.1" value="${c.kwhHolz}">
     <label>Heizwert Pellets (kWh/kg)</label><input id="sKwhP" type="number" min="1" step="0.1" value="${c.kwhPellet}">
     <label>Gewicht pro Pelletssack (kg)</label><input id="sSack" type="number" min="1" step="1" value="${c.sackKg}">
+    <h3 style="margin:22px 0 4px">💶 Pelletspreise (Sack 15 kg, günstigster Sommerpreis)</h3>
+    <div class="hint">Für die Ersparnis-Rechnung. Vorbelegt mit den Werten von proPellets Austria (≈ = aus dem Jahresdurchschnitt geschätzt). Eigenen Preis eintragen, um ihn zu ersetzen – z. B. was du wirklich bezahlt hast.</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px;margin-top:8px">${
+      (() => { const y0 = Math.min(2015, ...list().map(e => new Date(e.t).getFullYear())), y1 = new Date().getFullYear(); let h = "";
+        for (let y = y1; y >= y0; y--) { const d = PP_DEFAULT[y]; h += `<label style="margin:0;font-size:12px">${y}${d?.est ? " ≈" : ""}<input data-pp="${y}" type="text" inputmode="decimal" autocomplete="off" placeholder="${d ? num(d.eur, 2) : num(pelletPrice(y).eur, 2)}" value="${c.pp?.[y] ?? ""}" style="padding:8px"></label>`; }
+        return h; })()
+    }</div>
     <h3 style="margin:22px 0 4px">🪵 Holzlager</h3>
     ${LAGER_FIELDS.map(([k, l, st, h]) => `<label>${l}</label><input data-cfg="${k}" type="number" min="0" step="${st}" value="${c[k]}">${h ? `<div class="hint">${h}</div>` : ""}`).join("")}
     <label>Standort für die Temperatur</label>
@@ -1808,6 +1883,7 @@ $("btnSettings").onclick = () => {
     const nc = { ...c, kgFuell: +$("sKg").value || c.kgFuell, kgRm: +$("sRm").value || c.kgRm, kwhHolz: +$("sKwhH").value || c.kwhHolz,
                  kwhPellet: +$("sKwhP").value || c.kwhPellet, sackKg: +$("sSack").value || c.sackKg, ...loc };
     $$("[data-cfg]").forEach(i => { const v = parseFloat(i.value); nc[i.dataset.cfg] = isNaN(v) ? c[i.dataset.cfg] : v; });
+    nc.pp = {}; $$("[data-pp]").forEach(i => { const v = parseFloat(String(i.value).replace(",", ".")); if (v > 0) nc.pp[i.dataset.pp] = v; });
     const jNew = $("sJahr").value;
     nc.jahr = jNew === "kal" ? "kal" : "heiz";
     if (jNew !== "kal") nc.hjStart = +jNew.split("-")[1];
