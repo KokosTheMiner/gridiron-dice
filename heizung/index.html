@@ -1783,11 +1783,19 @@ function buildReport(year, mode) {
 }
 
 function ganttSvg(Lall, P) {
-  const now = Date.now(), c = S.cfg;
-  const lose = Lall.lose.filter(l => l.e.t < P.to + 365 * 864e5 && (!l.done || Lall.burned.some(b => b.los === l.id && b.t >= P.from - 365 * 864e5))).sort((a, b) => a.e.t - b.e.t);
+  const now = Date.now(), c = S.cfg, Y1 = 365 * 864e5;
+  // Je Los: wann zuletzt etwas passierte (Sägen, Verheizen, Abgeben) – bzw. „jetzt", wenn noch Holz am Stoß oder in Kisten ist
+  const info = l => {
+    const saws = list().filter(e => e.k === "saeg" && e.los === l.id).sort((a, b) => a.t - b.t);
+    const outs = [...Lall.burned.filter(b => b.los === l.id), ...Lall.gifts.filter(g => g.los === l.id)].map(b => b.t);
+    const boxes = Lall.full.some(q => q.los === l.id && (q.g || q.kl));
+    const lastAct = Math.max(l.e.t, l.e.tMess || 0, ...saws.map(x => x.t), ...outs, (l.stoss > 0.05 || boxes || !l.done) ? now : 0);
+    return { saws, outs, boxes, lastAct };
+  };
+  const lose = Lall.lose.map(l => ({ l, ...info(l) })).filter(x => x.l.e.t < P.to + Y1 && x.lastAct >= P.from - 2 * Y1).sort((a, b) => a.l.e.t - b.l.e.t);
   if (!lose.length) return `<div class="rp-box">Noch keine Holzlose eingetragen.</div>`;
-  const ends = lose.map(l => Math.max(sawWindowEnd(l.cutAt), ...Lall.burned.filter(b => b.los === l.id).map(b => b.t), now));
-  const x0 = +new Date(new Date(Math.min(...lose.map(l => l.e.t))).getFullYear(), 0, 1);
+  const ends = lose.map(x => Math.max(sawWindowEnd(x.l.cutAt), x.lastAct, now));
+  const x0 = +new Date(new Date(Math.min(...lose.map(x => x.l.e.t))).getFullYear(), 0, 1);
   const x1 = +new Date(new Date(Math.max(P.to, ...ends)).getFullYear() + 1, 0, 1);
   const W = 780, lw = 150, rh = 26, top = 24, H = top + lose.length * rh + 8, X = t => lw + (W - lw - 8) * (t - x0) / (x1 - x0);
   let s = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;font-size:11px">`;
@@ -1798,17 +1806,23 @@ function ganttSvg(Lall, P) {
     if (y < new Date(x1).getFullYear()) s += `<text x="${x + 4}" y="12" fill="#6b6058">${y}</text>`;
   }
   s += `<line x1="${X(now)}" x2="${X(now)}" y1="${top - 8}" y2="${H}" stroke="#c4432d" stroke-dasharray="3 3"/><text x="${X(now) + 3}" y="${H - 2}" fill="#c4432d" font-size="10">heute</text>`;
-  lose.forEach((l, i) => {
+  lose.forEach(({ l, saws, boxes }, i) => {
     const y = top + i * rh, mid = y + rh / 2 - 2;
-    const lab = losName(l.id), short = lab.length > 22 ? lab.slice(0, 21) + "…" : lab;
+    const lab = losName(l.id), short = lab.length > 24 ? lab.slice(0, 23) + "…" : lab;
     s += `<text x="0" y="${mid + 4}" fill="#222">${esc(short)}</text>`;
     const bar = (a, b, col, title, op = 1) => { if (b <= a) return; s += `<rect x="${X(a)}" y="${mid - 6}" width="${Math.max(1, X(b) - X(a))}" height="12" rx="3" fill="${col}" fill-opacity="${op}"><title>${title}</title></rect>`; };
     const tm = l.measured && l.e.tMess ? l.e.tMess : null;
+    const firstSaw = saws[0]?.t, lastSaw = saws.at(-1)?.t, stossLeer = l.stoss <= 0.05;
     bar(l.e.t, tm || Math.min(now, l.dryAt), "#9cc4e4", "Kauf → Aufarbeitung");
-    if (tm) bar(tm, l.dryAt, "#f0c75e", `Trocknung bis ${fmtMonYear(l.dryAt)}`);
-    const saws = list().filter(e => e.k === "saeg" && e.los === l.id);
-    const lastUse = l.stoss > 0.05 ? Math.max(now, sawWindowEnd(l.cutAt)) : (saws.at(-1)?.t || l.dryAt);
-    if (tm) {
+    // Trocknung endet mit dem Sägen, falls früher gesägt wurde
+    const tEnd = stossLeer && lastSaw && lastSaw < l.dryAt ? lastSaw : l.dryAt;
+    if (tm) bar(tm, tEnd, "#f0c75e", `Trocknung bis ${fmtMonYear(l.dryAt)}${tEnd < l.dryAt ? " – vorher gesägt!" : ""}`);
+    if (tm && tEnd < l.dryAt) s += `<text x="${X(tEnd) + 2}" y="${mid + 4}" font-size="11" fill="#c4432d">!</text>`;
+    // in Kisten: vom ersten Sägetag bis die letzte Kiste verheizt/abgegeben ist (oder heute, wenn noch voll)
+    if (firstSaw) { const outs = [...Lall.burned, ...Lall.gifts].filter(b => b.los === l.id).map(b => b.t); const kEnd = boxes ? now : Math.max(firstSaw, ...outs);
+      s += `<rect x="${X(firstSaw)}" y="${mid - 3}" width="${Math.max(1, X(kEnd) - X(firstSaw))}" height="6" rx="2" fill="#a0764e" fill-opacity=".55"><title>in Kisten ${fmtD(firstSaw)} – ${boxes ? "heute (noch voll)" : fmtD(kEnd)}</title></rect>`; }
+    const lastUse = l.stoss > 0.05 ? Math.max(now, sawWindowEnd(l.cutAt)) : (lastSaw || l.dryAt);
+    if (tm && lastUse > l.dryAt) {
       bar(l.dryAt, lastUse, "#7cc46b", "trocken am Stoß", 0.4);
       // Sägefenster im Hochsommer kräftig hervorheben – das erste davon = schnittreif
       for (let y = new Date(l.dryAt).getFullYear(); y <= new Date(lastUse).getFullYear(); y++) {
@@ -1819,10 +1833,11 @@ function ganttSvg(Lall, P) {
       }
     }
     for (const sw of saws) s += `<path d="M${X(sw.t)},${mid - 9} l4,-6 h-8 z" fill="#7a4a24"><title>Sägetag ${fmtD(sw.t)}</title></path>`;
-    for (const b of Lall.burned.filter(b => b.los === l.id)) s += `<circle cx="${X(b.t)}" cy="${mid + 10}" r="2.6" fill="#c4432d"><title>verheizt ${fmtD(b.t)}</title></circle>`;
+    for (const b of Lall.burned.filter(b => b.los === l.id)) s += `<circle cx="${X(b.t)}" cy="${mid + 10}" r="2.6" fill="#c4432d"><title>verheizt ${fmtD(b.t)}: ${kistenTxt(b.g, b.kl)}</title></circle>`;
+    for (const g of Lall.gifts.filter(g => g.los === l.id)) s += `<circle cx="${X(g.t)}" cy="${mid + 10}" r="3" fill="#8e5bb5"><title>abgegeben ${fmtD(g.t)}: ${kistenTxt(g.g, g.kl)}</title></circle>`;
   });
   s += `</svg>`;
-  return s + `<div class="legend" style="margin-top:6px;color:#6b6058"><span><i style="background:#9cc4e4"></i>Kauf / Aufarbeitung</span><span><i style="background:#f0c75e"></i>Trocknung (${c.trocken} Mon.)</span><span><i style="background:#7cc46b;opacity:.45"></i>trocken am Stoß</span><span><i style="background:#3f9a30"></i>✂ schnittreif (Sägezeit ${MONATE[(+c.saegVon || 7) - 1].slice(0, 3)}–${MONATE[(+c.saegBis || 8) - 1].slice(0, 3)})</span><span>▼ Sägetag</span><span><i style="background:#c4432d;border-radius:50%"></i>verheizt (Bunker)</span><span><i style="background:#d4772a;opacity:.25"></i>Berichtszeitraum</span></div>`;
+  return s + `<div class="legend" style="margin-top:6px;color:#6b6058"><span><i style="background:#9cc4e4"></i>Kauf / Aufarbeitung</span><span><i style="background:#f0c75e"></i>Trocknung (${c.trocken} Mon.)</span><span><i style="background:#7cc46b;opacity:.45"></i>trocken am Stoß</span><span><i style="background:#3f9a30"></i>✂ schnittreif (Sägezeit ${MONATE[(+c.saegVon || 7) - 1].slice(0, 3)}–${MONATE[(+c.saegBis || 8) - 1].slice(0, 3)})</span><span>▼ Sägetag</span><span><i style="background:#a0764e;opacity:.6;height:6px"></i>in Kisten</span><span><i style="background:#c4432d;border-radius:50%"></i>verheizt (Bunker)</span><span><i style="background:#8e5bb5;border-radius:50%"></i>abgegeben</span><span><i style="background:#d4772a;opacity:.25"></i>Berichtszeitraum</span></div>`;
 }
 
 /* Vermessen: Holzlos ist fertig aufgearbeitet und liegt gespalten am Stoß */
