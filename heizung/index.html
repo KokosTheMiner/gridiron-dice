@@ -423,6 +423,7 @@ body.printing .rp-pb { break-before: page; page-break-before: always; }
       <div class="btngrid">
         <button id="lgBuy">🌲 Holzkauf</button><button id="lgHol">🚜 Holz geholt</button>
         <button id="lgCost">💶 Kosten</button><button id="lgInv">📋 Kisten zählen</button>
+        <button id="lgGift" style="grid-column:1 / -1">🎁 Kisten abgegeben (z. B. an Oma)</button>
       </div>
       <div class="card" style="margin-top:12px">
         <h3>Lager-Einträge <span class="sub">antippen zum Ändern</span></h3>
@@ -491,9 +492,9 @@ const DEFAULT_CFG = { kgFuell: 60, kwhHolz: 4.1, kwhPellet: 4.8, sackKg: 15, kgR
                       ort: "Großrußbach (A-2114)", lat: 48.47412, lon: 16.41649 };
 const FILLS = [[0.25, "¼"], [0.5, "½"], [0.75, "¾"], [1, "voll"]];
 const KIND = { holz: { icon: "🪵" }, on: { icon: "⚡" }, off: { icon: "⏻" }, sack: { icon: "🛢️" },
-               buy: { icon: "🌲" }, hol: { icon: "🚜" }, saeg: { icon: "🪚" }, bunk: { icon: "📦" }, cost: { icon: "💶" }, inv: { icon: "📋" } };
+               buy: { icon: "🌲" }, hol: { icon: "🚜" }, saeg: { icon: "🪚" }, bunk: { icon: "📦" }, cost: { icon: "💶" }, inv: { icon: "📋" }, gift: { icon: "🎁" } };
 const HEAT_KINDS = new Set(["holz", "on", "off", "sack"]);
-const LAGER_KINDS = new Set(["buy", "hol", "saeg", "bunk", "cost", "inv"]);
+const LAGER_KINDS = new Set(["buy", "hol", "saeg", "bunk", "cost", "inv", "gift"]);
 const ARTEN = ["Buche", "Eiche", "Robinie", "Gemischt"];
 // Günstigster Sommerpreis Pellets-Sackware 15 kg in Österreich (€/Sack inkl. MwSt., Palettenabnahme).
 // Quelle: Erhebung proPellets Austria (über Windhager, Geldmarie, Holzkurier, finfo).
@@ -902,7 +903,9 @@ function monthsHtml(start) {
 }
 
 /* ================= Anzeige ================= */
-function eventText(e) {
+function eventText(e) { const t = eventText0(e); return e.est ? t + " · ≈ geschätzt" : t; }
+function eventText0(e) {
+  if (e.k === "gift") return `Kisten abgegeben${e.an ? ` an ${e.an}` : ""}: ${kistenTxt(e.g, e.kl)}`;
   if (e.k === "holz") return `Holz nachgelegt (${fillLabel(e.n || 1)}) · ~${num((e.n || 1) * S.cfg.kgFuell)} kg`;
   if (e.k === "on") return "Pelletsofen eingeschaltet";
   if (e.k === "off") return "Pelletsofen ausgeschaltet";
@@ -1198,7 +1201,7 @@ const addMonths = (t, m) => { const d = new Date(t); d.setMonth(d.getMonth() + (
 const fmtMonYear = t => `${pad(new Date(t).getMonth() + 1)}/${new Date(t).getFullYear()}`;
 
 function lager(until) {   // until = Stichtag (für Jahresbericht), sonst jetzt
-  const c = S.cfg, lose = {}, years = {}, queue = [], bunks = [], burned = [];
+  const c = S.cfg, lose = {}, years = {}, queue = [], bunks = [], burned = [], gifts = [];
   const src = until ? list().filter(e => e.t < until) : list();
   const Y = t => (years[yearKey(t)] ||= { buy: 0, mach: 0, other: 0, rm: 0, h: 0, mrm: 0, mcost: 0 });
   for (const e of src) if (e.k === "buy") {
@@ -1218,15 +1221,17 @@ function lager(until) {   // until = Stichtag (für Jahresbericht), sonst jetzt
       queue.push({ t: e.t, los: e.los, g: +e.g || 0, kl: +e.kl || 0 });
     } else if (e.k === "inv") {
       queue.length = 0; queue.push({ t: e.t, los: null, g: +e.g || 0, kl: +e.kl || 0, inv: true });
-    } else if (e.k === "bunk") {
-      bunks.push(e);
+    } else if (e.k === "bunk" || e.k === "gift") {
+      // Bunker = verheizt; gift = abgegeben (z. B. an Oma) – beide leeren Kisten in FIFO-Reihenfolge
+      const out = e.k === "bunk" ? burned : gifts;
+      if (e.k === "bunk") bunks.push(e);
       let g = +e.g || 0, kl = +e.kl || 0;
       for (const q of queue) {
         const a = Math.min(q.g, g); q.g -= a; g -= a; const b = Math.min(q.kl, kl); q.kl -= b; kl -= b;
-        if (a || b) burned.push({ t: e.t, los: q.los, inv: !!q.inv, sawT: q.t, g: a, kl: b });   // Herkunft der verheizten Kisten
+        if (a || b) out.push({ t: e.t, los: q.los, inv: !!q.inv, sawT: q.t, g: a, kl: b });   // Herkunft der Kisten
         if (!g && !kl) break;
       }
-      if (g || kl) burned.push({ t: e.t, los: null, unknown: true, g, kl });
+      if (g || kl) out.push({ t: e.t, los: null, unknown: true, g, kl });
     }
   }
   const full = queue.filter(q => q.g || q.kl);
@@ -1262,7 +1267,7 @@ function lager(until) {   // until = Stichtag (für Jahresbericht), sonst jetzt
     const fills = totals(bunks[0].t, bunks.at(-1).t).fills;
     if (fills >= 3) measured = { kg: kgIn / fills, fills, n: bunks.length - 1 };
   }
-  return { lose: L, years, full, fullG, fullK, emptyG: c.kistenG - fullG, emptyK: c.kistenK - fullK, srm, kg, perDay, bunker, measured, burned, bunks };
+  return { lose: L, years, full, fullG, fullK, emptyG: c.kistenG - fullG, emptyK: c.kistenK - fullK, srm, kg, perDay, bunker, measured, burned, bunks, gifts };
 }
 
 function losCosts(l) {
@@ -1391,6 +1396,7 @@ $("lgBuy").onclick = () => lagerForm("buy");
 $("lgHol").onclick = () => lagerForm("hol");
 $("lgCost").onclick = () => lagerForm("cost");
 $("lgInv").onclick = () => lagerForm("inv");
+$("lgGift").onclick = () => lagerForm("gift");
 document.addEventListener("click", ev => {
   const b = ev.target.closest("[data-st]"); if (!b) return;
   const [k, d] = b.dataset.st.split(":");
@@ -1627,7 +1633,7 @@ function buildReport(year, mode) {
         🚜 ${hols.length}× Holz geholt${traktorH ? ` · ${num(traktorH, 1)} Traktorstunden` : ""}<br>
         📏 ${messP.length} Los${messP.length === 1 ? "" : "e"} vermessen${messP.length ? `: ${num(messP.reduce((s, l) => s + l.basis, 0), 1)} rm` : ""}<br>
         🪚 ${saegs.length} Sägetag${saegs.length === 1 ? "" : "e"}${saegs.length ? `: ${kistenTxt(sG, sK)} gefüllt` : ""}<br>
-        📦 ${bunksP.length}× Bunker befüllt</div>
+        📦 ${bunksP.length}× Bunker befüllt${(() => { const gs = ev.filter(e => e.k === "gift"); const g = gs.reduce((s, e) => s + (+e.g || 0), 0), k = gs.reduce((s, e) => s + (+e.kl || 0), 0); return gs.length ? `<br>🎁 ${kistenTxt(g, k)} abgegeben` : ""; })()}</div>
       <div class="rp-box"><b>Ausgaben im Zeitraum</b><br>
         Holzkauf & Auktion: <b>${eur(ausgKauf)}</b><br>
         Traktor & Maschinen: <b>${eur(ausgMasch)}</b>${traktorH ? ` <span class="sub">(${num(traktorH, 1)} h × ${eur(c.traktor)})</span>` : ""}<br>
@@ -1739,7 +1745,7 @@ function lagerForm(kind, id) {
   const losOpts = (sel, allowNone) => (allowNone ? `<option value="">– allgemein / kein Los –</option>` : "") +
     L.lose.map(l => `<option value="${l.id}" ${l.id === sel ? "selected" : ""}>${esc(losName(l.id))} · ${esc(l.e.art || "")} · ${fmtShortDay.format(l.e.t)}.${new Date(l.e.t).getFullYear()}</option>`).join("");
   const numIn = (fid, label, val, step = 1, hint = "") => `<label>${label}</label><input id="${fid}" type="number" min="0" step="${step}" inputmode="decimal" value="${val ?? ""}">${hint ? `<div class="hint">${hint}</div>` : ""}`;
-  const title = { buy: "🌲 Holzkauf", hol: "🚜 Holz aus dem Wald geholt", cost: "💶 Sonstige Kosten", saeg: "🪚 Sägetag", bunk: "📦 Bunker befüllt", inv: "📋 Volle Kisten zählen" }[kind];
+  const title = { buy: "🌲 Holzkauf", hol: "🚜 Holz aus dem Wald geholt", cost: "💶 Sonstige Kosten", saeg: "🪚 Sägetag", bunk: "📦 Bunker befüllt", inv: "📋 Volle Kisten zählen", gift: "🎁 Kisten abgegeben" }[kind];
   let body = `<label>Datum</label><input id="fD" type="date" value="${dkey(t0)}" max="${dkey(Date.now())}">`;
   if (kind === "buy") body += `
     <label>Wo / Bezeichnung (Waldstück, Auktion …)</label><input id="fName" value="${esc(e?.name || "")}" placeholder="z. B. Auktion Hochwald 2026">
@@ -1767,6 +1773,7 @@ function lagerForm(kind, id) {
     <label>Zu welchem Holzlos (optional)</label><select id="fLos">${losOpts(e?.los || "", true)}</select>`;
   if (kind === "saeg") body += `<label>Aus welchem Holzlos</label><select id="fLos">${losOpts(e?.los)}</select>${numIn("fG", "Große Kisten gefüllt", e?.g)}${numIn("fK", "Kleine Kisten gefüllt", e?.kl)}`;
   if (kind === "bunk") body += `${numIn("fG", "Große Kisten in den Bunker", e?.g)}${numIn("fK", "Kleine Kisten in den Bunker", e?.kl)}`;
+  if (kind === "gift") body += `<label>An wen</label><input id="fAn" value="${esc(e?.an ?? "Oma")}">${numIn("fG", "Große Kisten", e?.g)}${numIn("fK", "Kleine Kisten", e?.kl ?? (e ? "" : 1))}<div class="hint">Die Kisten werden leer, zählen aber nicht als verheizt.</div>`;
   if (kind === "inv") body += `<div class="hint" style="margin-top:8px">Setzt den Bestand an <b>vollen</b> Kisten auf diese Zahl – z. B. zum Start oder nach dem Nachzählen.</div>
     ${numIn("fG", `Volle große Kisten (von ${S.cfg.kistenG})`, e ? e.g : L.fullG)}${numIn("fK", `Volle kleine Kisten (von ${S.cfg.kistenK})`, e ? e.kl : L.fullK)}`;
   body += `<label>Notiz</label><input id="fNote" value="${esc(e?.note || "")}">`;
@@ -1794,7 +1801,8 @@ function lagerForm(kind, id) {
     if (kind === "hol") Object.assign(ne, { los: $("fLos").value, rm: n("fRm"), h: n("fH"), mk: n("fMk") });
     if (kind === "cost") { Object.assign(ne, { txt: $("fTxt").value.trim(), eur: n("fEur") }); if ($("fLos").value) ne.los = $("fLos").value; }
     if (kind === "saeg") Object.assign(ne, { los: $("fLos").value, g: n("fG"), kl: n("fK") });
-    if (kind === "bunk" || kind === "inv") Object.assign(ne, { g: n("fG"), kl: n("fK") });
+    if (kind === "bunk" || kind === "inv" || kind === "gift") Object.assign(ne, { g: n("fG"), kl: n("fK") });
+    if (kind === "gift") ne.an = $("fAn").value.trim();
     if (kind === "buy" && !ne.menge && !ne.preis && !ne.name) { alert("Bitte zumindest Bezeichnung, Menge oder Preis eingeben."); return; }
     const nid = id || uid();
     putEvent(nid, ne);
