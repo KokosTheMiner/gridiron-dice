@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Heizbuch</title>
+<style>body{background:#111;color:#ccc;font:20px sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}</style>
+</head><body><div id="m">Heizbuch wird geladen …</div>
+<script>
+/* Lader für alte Tablets (Fire HD 8, Android 5): github.io-Zertifikat wird dort nicht
+   erkannt, daher wird das Heizbuch über jsDelivr geholt und lokal zwischengespeichert. */
+var SRC = 'https://cdn.jsdelivr.net/gh/KokosTheMiner/gridiron-dice@main/heizung/index.html';
+var KEY = 'hb-fire-app';
+/* Vollbild: Browser erlaubt es nur nach einer Berührung – daher beim ersten Antippen
+   (und nach jedem Verlassen erneut) einschalten. */
+var FS = '<script>(function(){function fs(){var d=document.documentElement;if(document.fullscreenElement||document.webkitFullscreenElement)return;' +
+  'var r=d.requestFullscreen||d.webkitRequestFullscreen;if(r)try{var p=r.call(d);if(p&&p.catch)p.catch(function(){})}catch(e){}}' +
+  'document.addEventListener("touchend",fs,true);document.addEventListener("click",fs,true);})()<\/script>';
+function show(html) {
+  /* Emojis, die Android 5 noch nicht kennt, durch bekannte ersetzen */
+  html = html.replace(/🪵/g, '🌲').replace(/🪚/g, '✂️');
+  html = html.indexOf('</body>') >= 0 ? html.replace('</body>', FS + '</body>') : html + FS;
+  document.open(); document.write(html); document.close();
+}
+function fallback(msg) {
+  var c = null; try { c = localStorage.getItem(KEY); } catch (e) {}
+  if (c) show(c);
+  else { document.getElementById('m').textContent = msg + ' – neuer Versuch in 30 s'; setTimeout(function () { location.reload(); }, 30000); }
+}
+var x = new XMLHttpRequest();
+x.open('GET', SRC + '?t=' + Math.floor(Date.now() / 3600000));
+x.timeout = 20000;
+x.onload = function () {
+  if (x.status === 200 && x.responseText.indexOf('<html') >= 0) {
+    try { localStorage.setItem(KEY, x.responseText); } catch (e) {}
+    show(x.responseText);
+  } else fallback('Fehler ' + x.status);
+};
+x.onerror = x.ontimeout = function () { fallback('Kein Internet'); };
+x.send();
+</script></body></html>

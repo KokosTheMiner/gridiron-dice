@@ -411,6 +411,8 @@ body.printing .rp-pb { break-before: page; page-break-before: always; }
           <div><div class="stepcap">kleine Kisten</div><div class="stepper"><button data-st="bk:-1">−</button><div class="val" data-sv="bk"></div><button data-st="bk:1">+</button></div></div>
         </div>
         <button class="big b-holz" id="lgBunk">Bunker befüllt</button>
+        <button class="big" id="lgLeer" style="margin-top:10px;background:transparent;border:2px dashed var(--line);color:var(--text)">📭 Bunker ist jetzt komplett leer</button>
+        <div class="hint" style="margin-top:6px">Tippen, wenn du den Bunker ganz leer gemacht hast (vor dem Befüllen). Damit rechnet die App genau nach, wie viel eine Kiste hergibt und wie lange der Bunker reicht.</div>
       </div>
       <div class="card">
         <h3>🪚 Sägetag – Kisten gefüllt <span class="sub" id="lgSaegSub"></span></h3>
@@ -496,9 +498,9 @@ const DEFAULT_CFG = { kgFuell: 60, kwhHolz: 4.1, kwhPellet: 4.8, sackKg: 15, kgR
                       ort: "Großrußbach (A-2114)", lat: 48.47412, lon: 16.41649 };
 const FILLS = [[0.25, "¼"], [0.5, "½"], [0.75, "¾"], [1, "voll"]];
 const KIND = { holz: { icon: "🪵" }, on: { icon: "⚡" }, off: { icon: "⏻" }, sack: { icon: "🛢️" },
-               buy: { icon: "🌲" }, hol: { icon: "🚜" }, saeg: { icon: "🪚" }, bunk: { icon: "📦" }, cost: { icon: "💶" }, inv: { icon: "📋" }, gift: { icon: "🎁" }, stand: { icon: "🔎" } };
+               buy: { icon: "🌲" }, hol: { icon: "🚜" }, saeg: { icon: "🪚" }, bunk: { icon: "📦" }, cost: { icon: "💶" }, inv: { icon: "📋" }, gift: { icon: "🎁" }, stand: { icon: "🔎" }, leer: { icon: "📭" } };
 const HEAT_KINDS = new Set(["holz", "on", "off", "sack"]);
-const LAGER_KINDS = new Set(["buy", "hol", "saeg", "bunk", "cost", "inv", "gift", "stand"]);
+const LAGER_KINDS = new Set(["buy", "hol", "saeg", "bunk", "cost", "inv", "gift", "stand", "leer"]);
 const ARTEN = ["Buche", "Eiche", "Robinie", "Gemischt"];
 // Günstigster Sommerpreis Pellets-Sackware 15 kg in Österreich (€/Sack inkl. MwSt., Palettenabnahme).
 // Quelle: Erhebung proPellets Austria (über Windhager, Geldmarie, Holzkurier, finfo).
@@ -627,13 +629,20 @@ const list = () => listCache ||= Object.entries(S.events).map(([id, e]) => ({ id
 /* ================= Datenbank (Firebase REST, offline-fähig) ================= */
 const DB = {
   url: p => `${CONFIG.FIREBASE_URL}/${CONFIG.BASE}/${encodeURIComponent(S.haus)}/${p}.json`,
-  async pull() {
+  async cfg() {
+    const r = await fetch(DB.url("cfg"), { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    return await r.json();
+  },
+  async pull(c) {
     const r = await fetch(DB.url("e"), { cache: "no-store" });
     if (!r.ok) throw new Error(r.status);
     const remote = (await r.json()) || {};
     for (const [id, e] of Object.entries(S.pending)) { if (e) remote[id] = e; else delete remote[id]; }
+    // Schutz: verschwinden online plötzlich viele Einträge, vorher eine Sicherung auf diesem Gerät anlegen
+    const n0 = Object.keys(S.events).length, n1 = Object.keys(remote).length;
+    if (n0 >= 20 && n1 < n0 * 0.7) snapTake(`vor dem Abgleich: online nur noch ${n1} statt ${n0} Einträge`);
     S.events = remote;
-    const c = await (await fetch(DB.url("cfg"), { cache: "no-store" })).json();
     if (c) { const old = tempLocKey(); S.cfg = { ...DEFAULT_CFG, ...c }; lsSet("hb-cfg", S.cfg); if (old !== tempLocKey()) resetTemps(); }
   },
   async flush() {
@@ -650,7 +659,11 @@ async function sync() {
   if (syncing) { syncAgain = true; return; }
   syncing = true; syncAgain = false;
   setSync("wait");
-  try { await DB.flush(); if (!syncAgain) await DB.pull(); save(); setSync("ok"); }
+  try {
+    const c = await DB.cfg();
+    if (c && c.moved) { setSync("moved"); syncing = false; askHaus(); return; }   // Haushalt umgezogen → neuer Code nötig
+    await DB.flush(); if (!syncAgain) await DB.pull(c); save(); setSync("ok"); snapAuto();
+  }
   catch { setSync(Object.keys(S.pending).length ? "err" : "off"); }
   syncing = false;
   if (syncAgain) return sync();
@@ -658,9 +671,77 @@ async function sync() {
 }
 function setSync(s) {
   const n = Object.keys(S.pending).length;
-  const txt = { ok: "synchron", wait: "speichert…", err: `offline · ${n} wartet`, off: "offline" }[s];
+  const txt = { ok: "synchron", wait: "speichert…", err: `offline · ${n} wartet`, off: "offline", moved: "neuer Code nötig" }[s];
   $("sync").innerHTML = `<span class="dot ${s === "ok" ? "ok" : s === "wait" ? "wait" : "err"}"></span><span>${txt}</span>`;
 }
+/* ---------- Automatische Sicherungen auf diesem Gerät (falls online etwas gelöscht wird) ---------- */
+const SNAP_MAX = 6;
+const snaps = () => lsGet("hb-snaps", []);
+function snapTake(why) {
+  if (!Object.keys(S.events).length) return;
+  const a = snaps();
+  a.unshift({ t: Date.now(), why, haus: S.haus, n: Object.keys(S.events).length, cfg: S.cfg, events: S.events });
+  while (a.length > SNAP_MAX) a.pop();
+  for (;;) {   // wird der Speicher knapp, die ältesten weglassen
+    try { localStorage.setItem("hb-snaps", JSON.stringify(a)); break; } catch (err) { if (a.length <= 1) break; a.pop(); }
+  }
+}
+function snapAuto() {
+  if (Date.now() - lsGet("hb-snapt", 0) < 7 * 864e5 || !Object.keys(S.events).length) return;
+  snapTake("wöchentlich"); lsSet("hb-snapt", Date.now());
+}
+
+/* ---------- Haushalts-Code ---------- */
+function newHausCode() {
+  const abc = "abcdefghjkmnpqrstuvwxyz23456789", r = new Uint8Array(16);
+  crypto.getRandomValues(r);
+  return Array.from(r, (x, i) => (i && i % 4 === 0 ? "-" : "") + abc[x % abc.length]).join("");
+}
+const cleanHaus = s => String(s || "").trim().replace(/[.#$\[\]\/\s]/g, "");
+const hausLink = () => `${location.href.startsWith("http") ? location.href.split("#")[0] : "https://kokostheminer.github.io/gridiron-dice/heizung/"}#haus=${S.haus}`;
+function setHaus(haus) {
+  if (!haus || haus === S.haus) return;
+  S.haus = haus; lsSet("hb-haus", haus); S.events = {}; S.pending = {}; save();
+}
+
+function askHaus() {
+  if ($("hNew") && $("modal").classList.contains("show")) return;   // Abfrage ist schon offen
+  modal(`<h3>🔒 Neuer Haushalts-Code</h3>
+    <p>Deine Heizbuch-Daten sind jetzt mit einem <b>geheimen Code</b> geschützt. Bitte auf diesem Gerät einmal den neuen Code eingeben – oder den Link öffnen, den du dir vom PC geschickt hast.</p>
+    <label>Haushalts-Code</label><input id="hNew" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="xxxx-xxxx-xxxx-xxxx">
+    <div class="btns"><button class="pri" id="hOk">Übernehmen</button></div>`);
+  $("hOk").onclick = () => {
+    const h = cleanHaus($("hNew").value);
+    if (h.length < 8) { alert("Bitte den ganzen Code eingeben."); return; }
+    setHaus(h); closeModal(); render(); sync();
+  };
+}
+// Link mit #haus=… (vom PC geschickt) übernimmt den Code und entfernt ihn wieder aus der Adresszeile
+(() => {
+  const m = location.hash.match(/haus=([^&]+)/);
+  if (!m) return;
+  const h = cleanHaus(decodeURIComponent(m[1]));
+  if (h.length >= 8) setHaus(h);
+  try { history.replaceState(null, "", location.href.split("#")[0]); } catch {}
+})();
+// Daten in einen neuen, geheimen Haushalt umziehen; der alte bekommt nur noch die Markierung „umgezogen"
+async function moveHaus() {
+  const from = S.haus, to = newHausCode(), base = `${CONFIG.FIREBASE_URL}/${CONFIG.BASE}/`;
+  if (Object.keys(S.pending).length) { alert("Es warten noch Einträge aufs Hochladen – bitte erst wieder online sein."); return; }
+  if (!confirm(`Alle Daten in einen neuen, geheimen Haushalts-Code umziehen?\n\nDanach musst du auf jedem anderen Gerät (Handy, Tablets) einmal den neuen Code eingeben oder den Link öffnen.`)) return;
+  snapTake(`vor dem Umzug von „${from}“`);
+  try {
+    const put = async (p, v) => { const r = await fetch(base + p + ".json", { method: "PUT", body: JSON.stringify(v) }); if (!r.ok) throw new Error(r.status); };
+    await put(`${to}/e`, S.events); await put(`${to}/cfg`, S.cfg);
+    const chk = (await (await fetch(base + `${to}/e.json?shallow=true`, { cache: "no-store" })).json()) || {};
+    if (Object.keys(chk).length !== Object.keys(S.events).length) throw new Error("Prüfung fehlgeschlagen");
+    await put(encodeURIComponent(from), { cfg: { moved: true } });
+  } catch (err) { alert("Umzug fehlgeschlagen (" + err.message + "). Es wurde nichts gelöscht."); return; }
+  S.haus = to; lsSet("hb-haus", to); closeModal(); render(); sync();
+  $("btnSettings").click();
+  toast("🔒 Umgezogen – jetzt den Link an deine anderen Geräte schicken", false);
+}
+
 function putEvent(id, e) {
   if (e) S.events[id] = e; else delete S.events[id];
   S.pending[id] = e;
@@ -936,6 +1017,7 @@ function eventText0(e) {
   if (e.k === "saeg") return `Sägetag (${losName(e.los)}): ${kistenTxt(e.g, e.kl)} gefüllt${e.res ? ` – reserviert für ${e.res}` : ""}`;
   if (e.k === "stand") return `${isInventur(e) ? "Inventur" : "Bestand"}: ${[e.g != null ? `${kistenTxt(e.g, e.kl)} voll` : "", ...(e.stoss || []).filter(x => x.rm > 0).map(x => `Stoß ${losName(x.los)} ${num(x.rm, 1)} rm`),e.bunker != null && e.bunker !== "" ? `Heizraumbunker ≈ ${num(e.bunker, 1)} Kiste(n)` : "", e.pelS != null ? `Pelletsbunker ≈ ${num(e.pelS, 1)} von ${S.cfg.pelBunkerS} Säcken` : "", e.kesselL != null ? `Behälter am Kessel ${num(e.kesselL)} l` : ""].filter(Boolean).join(" · ")}`;
   if (e.k === "bunk") return `Bunker befüllt: ${kistenTxt(e.g, e.kl)}`;
+  if (e.k === "leer") return "Bunker komplett leer";
   if (e.k === "cost") return `Kosten ${eur(e.eur)} · ${e.txt || ""}${e.los ? ` (${losName(e.los)})` : ""}`;
   if (e.k === "inv") return `Bestand gezählt: ${kistenTxt(e.g, e.kl)} voll`;
   return e.k;
@@ -1284,18 +1366,43 @@ function lager(until) {   // until = Stichtag (für Jahresbericht), sonst jetzt
   const now = until ? Math.min(until, Date.now()) : Date.now();
   const f60 = totals(now - 60 * 864e5, now).fills, f365 = totals(now - 365 * 864e5, now).fills;
   const perDay = f60 ? f60 / 60 : f365 / 365;
-  // Bunker
-  const last = bunks.at(-1), lastStand = stands.at(-1);
+  // Gemessene kg je Kesselfüllung: am genauesten zwischen zwei Mal „Bunker komplett leer"
+  // (alles, was dazwischen eingefüllt wurde, ist verheizt). Sonst grob aus den Befüllungen.
+  const leers = src.filter(e => e.k === "leer");
+  let measured = null;
+  {
+    let kgIn = 0, srmIn = 0, fills = 0, n = 0;
+    for (let i = 1; i < leers.length; i++) {
+      const a = leers[i - 1].t, b = leers[i].t;
+      const s = bunks.filter(x => x.t > a && x.t < b).reduce((s, x) => s + kistenSrm(x.g, x.kl), 0), f = totals(a, b).fills;
+      if (s > 0 && f >= 3) { srmIn += s; kgIn += s * kgSrm(); fills += f; n++; }
+    }
+    if (n) measured = { kg: kgIn / fills, fills, n, leer: true, perG: fills / (srmIn / c.volG) };
+    else if (bunks.length >= 2) {
+      const kgB = bunks.slice(0, -1).reduce((s, b) => s + kistenSrm(b.g, b.kl) * kgSrm(), 0);
+      const f = totals(bunks[0].t, bunks.at(-1).t).fills;
+      if (f >= 3) measured = { kg: kgB / f, fills: f, n: bunks.length - 1 };
+    }
+  }
+  // Bunker: ab dem letzten Fixpunkt (Bunker leer = 0 kg, oder Inventur-Schätzung) Befüllungen dazu, Kesselfüllungen weg
+  const kgF = measured?.leer ? measured.kg : c.kgFuell, cap = c.bunkerG * c.volG * kgSrm();
+  const last = bunks.at(-1), lastStand = stands.at(-1), lastLeer = leers.at(-1);
   const standB = stands.filter(s => s.bunker != null && s.bunker !== "").at(-1);
+  const anchor = [lastLeer, standB].filter(Boolean).sort((a, b) => a.t - b.t).at(-1);
   let bunker = null;
-  if (standB && (!last || standB.t > last.t)) {
-    // Inventur ist neuer als die letzte Befüllung → von dort weiterrechnen
-    const addKg = (+standB.bunker || 0) * c.volG * kgSrm(), fillsSince = totals(standB.t, now + 1).fills, used = fillsSince * c.kgFuell;
+  if (anchor && (anchor.k === "leer" || !last || anchor.t > last.t)) {
+    const startKg = anchor.k === "leer" ? 0 : (+anchor.bunker || 0) * c.volG * kgSrm();
+    const ins = bunks.filter(b => b.t > anchor.t), inKg = ins.reduce((s, b) => s + kistenSrm(b.g, b.kl) * kgSrm(), 0);
+    const addKg = startKg + inKg, fillsSince = totals(anchor.t, now + 1).fills, used = fillsSince * kgF;
     const rest = Math.max(0, addKg - used);
-    bunker = { last: standB, fromStand: true, addKg, fillsSince, used, rest, pct: Math.max(0, Math.min(1, rest / (c.bunkerG * c.volG * kgSrm()))) };
+    bunker = { last: anchor, fromStand: anchor.k === "stand", fromLeer: anchor.k === "leer", ins, inKg, startKg, addKg, fillsSince, used, rest, kgF, pct: Math.max(0, Math.min(1, rest / cap)) };
   } else if (last) {
-    const addKg = kistenSrm(last.g, last.kl) * kgSrm(), fillsSince = totals(last.t, now + 1).fills, used = fillsSince * c.kgFuell;
-    bunker = { last, addKg, fillsSince, used, rest: Math.max(0, addKg - used), pct: Math.max(0, Math.min(1, 1 - used / addKg)) };
+    const addKg = kistenSrm(last.g, last.kl) * kgSrm(), fillsSince = totals(last.t, now + 1).fills, used = fillsSince * kgF;
+    bunker = { last, addKg, fillsSince, used, rest: Math.max(0, addKg - used), kgF, pct: Math.max(0, Math.min(1, 1 - used / addKg)) };
+  }
+  if (bunker) {   // Reichweite nach dem Verbrauch der letzten 14 Tage (im Winter genauer als 60 Tage)
+    const f14 = totals(now - 14 * 864e5, now).fills, pd = f14 >= 2 ? f14 / 14 : perDay;
+    bunker.restFills = bunker.rest / kgF; bunker.perDay = pd; bunker.days = pd > 0 ? bunker.restFills / pd : null;
   }
   // Pelletsvorrat: letzte Inventur (Pelletsbunker in Säcken + Behälter am Kessel in Litern) + seither gekaufte Säcke
   const standP = stands.filter(s => s.pelS != null || s.kesselL != null).at(-1);
@@ -1305,14 +1412,7 @@ function lager(until) {   // until = Stichtag (für Jahresbericht), sonst jetzt
     const added = src.filter(e => e.k === "sack" && e.t > standP.t).reduce((s, e) => s + (+e.n || 0) * c.sackKg, 0);
     pellets = { stand: standP, kgAt, added, kg: kgAt + added };
   }
-  // Gemessene kg je Kesselfüllung aus den Bunker-Befüllungen
-  let measured = null;
-  if (bunks.length >= 2) {
-    const kgIn = bunks.slice(0, -1).reduce((s, b) => s + kistenSrm(b.g, b.kl) * kgSrm(), 0);
-    const fills = totals(bunks[0].t, bunks.at(-1).t).fills;
-    if (fills >= 3) measured = { kg: kgIn / fills, fills, n: bunks.length - 1 };
-  }
-  return { lose: L, years, full, fullG, fullK, resG, resK, resFor, emptyG: c.kistenG - fullG, emptyK: c.kistenK - fullK, srm, kg, perDay, bunker, measured, burned, bunks, gifts, stands, lastStand, pellets };
+  return { lose: L, years, full, fullG, fullK, resG, resK, resFor, emptyG: c.kistenG - fullG, emptyK: c.kistenK - fullK, srm, kg, perDay, bunker, measured, burned, bunks, leers, gifts, stands, lastStand, pellets };
 }
 
 /* ---------- Holz-Kreislauf: reicht der Vorrat? Wie viel muss diesen Winter gemacht werden? ---------- */
@@ -1411,16 +1511,21 @@ function renderLager() {
   // Bunker
   const B = L.bunker;
   $("lgBunkInfo").textContent = `fasst ${c.bunkerG} große Kisten`;
+  const dTxt = d => d == null ? "" : d < 1 ? "weniger als 1 Tag" : d < 1.5 ? "ca. 1 Tag" : `ca. ${num(d)} Tage`;
+  const srcTxt = !B ? "" : B.fromLeer ? `Zuletzt komplett leer am ${fmtDayShort.format(B.last.t)}${B.ins.length ? `, seither befüllt mit ${kistenTxt(B.ins.reduce((s, b) => s + (+b.g || 0), 0), B.ins.reduce((s, b) => s + (+b.kl || 0), 0))} (≈ ${num(B.inKg)} kg)` : ", seither nicht befüllt"}`
+    : B.fromStand ? `Laut Bestand vom ${fmtDayShort.format(B.last.t)}: ≈ ${num(B.last.bunker, 1)} Kiste(n) im Bunker (≈ ${num(B.startKg)} kg)${B.ins.length ? `, seither befüllt mit ≈ ${num(B.inKg)} kg` : ""}`
+    : `Befüllt am ${fmtDayShort.format(B.last.t)} mit ${kistenTxt(B.last.g, B.last.kl)} (≈ ${num(B.addKg)} kg)`;
   let bh = B ? `<div class="bar"><i style="width:${Math.round(B.pct * 100)}%"></i></div>
-    <div style="font-size:14px">Noch ca. <b>${num(B.rest)} kg</b> (≈ ${num(B.rest / c.kgFuell)} Kesselfüllungen)</div>
-    <div class="los"><div class="meta">${B.fromStand ? `Laut Bestand vom ${fmtDayShort.format(B.last.t)}: ≈ ${num(B.last.bunker, 1)} Kiste(n) im Bunker (≈ ${num(B.addKg)} kg)` : `Befüllt am ${fmtDayShort.format(B.last.t)} mit ${kistenTxt(B.last.g, B.last.kl)} (≈ ${num(B.addKg)} kg)`}. Seither ${fmtFills(B.fillsSince)} Kesselfüllungen ≈ ${num(B.used)} kg.</div></div>`
+    <div style="font-size:14px">${B.rest < 1 ? "<b>Bunker ist leer</b> – bitte befüllen" : `Noch ca. <b>${num(B.rest)} kg</b> (≈ ${num(B.restFills, B.restFills < 10 ? 1 : 0)} Kesselfüllungen)${B.days != null ? ` · reicht <b>${dTxt(B.days)}</b>` : ""}`}</div>
+    <div class="los"><div class="meta">${srcTxt}. Seither ${fmtFills(B.fillsSince)} Kesselfüllungen ≈ ${num(B.used)} kg${B.days != null ? ` · Verbrauch zuletzt Ø ${num(B.perDay, 1)} Füllungen/Tag` : ""}.${B.fromLeer ? "" : " Genauer wird es, wenn du beim nächsten Leermachen „📭 Bunker ist jetzt leer“ tippst."}</div></div>`
     : `<div class="empty">Noch keine Bunker-Befüllung eingetragen.</div>`;
   if (L.pellets) { const P = L.pellets, cap = c.pelBunkerS * c.sackKg + c.kesselL * c.pelDichte;
     bh += `<div class="sect">🛢️ Pelletsvorrat</div><div class="bar"><i style="width:${Math.round(Math.min(1, P.kg / cap) * 100)}%;background:var(--pellet)"></i></div>
       <div style="font-size:14px">≈ <b>${num(P.kg)} kg</b> (≈ ${num(P.kg / c.sackKg, 1)} Säcke)</div>
       <div class="los"><div class="meta">Bestand vom ${fmtDayShort.format(P.stand.t)}: Pelletsbunker ≈ ${num(P.stand.pelS || 0, 1)} von ${c.pelBunkerS} Säcken, Behälter am Kessel ${num(P.stand.kesselL || 0)} von ${c.kesselL} l${P.added ? ` · seither ${num(P.added / c.sackKg)} Säcke nachgefüllt` : ""}. Verbrauch im Pelletsbetrieb wird nicht abgezogen – nach dem Pelletsheizen neu nachsehen.</div></div>`; }
-  if (L.measured) bh += `<div class="measure"><span>📏 Gemessen aus ${L.measured.n} Bunker-Befüllungen: <b style="color:var(--text)">Ø ${num(L.measured.kg)} kg</b> je Kesselfüllung (eingestellt: ${num(c.kgFuell)} kg)</span>${Math.abs(L.measured.kg - c.kgFuell) >= 1 ? `<button id="lgTakeKg">Übernehmen</button>` : ""}</div>`;
-  else bh += `<div class="measure">📏 Ab der 2. Bunker-Befüllung rechnet die App aus, wie viel kg eine Kesselfüllung wirklich hat (statt geschätzt ${num(c.kgFuell)} kg).</div>`;
+  const M = L.measured;
+  if (M) bh += `<div class="measure"><span>📏 ${M.leer ? `Gemessen zwischen ${M.n === 1 ? "zwei Mal" : `${M.n + 1} Mal`} „Bunker leer“ (${fmtFills(M.fills)} Kesselfüllungen): <b style="color:var(--text)">Ø ${num(M.kg)} kg</b> je Kesselfüllung · 1 große Kiste ≈ <b style="color:var(--text)">${num(M.perG, 1)} Füllungen</b>` : `Grob aus ${M.n} Bunker-Befüllungen: <b style="color:var(--text)">Ø ${num(M.kg)} kg</b> je Kesselfüllung`} (eingestellt: ${num(c.kgFuell)} kg)</span>${Math.abs(M.kg - c.kgFuell) >= 1 ? `<button id="lgTakeKg">Übernehmen</button>` : ""}</div>`;
+  if (!M?.leer) bh += `<div class="measure">📏 ${L.leers.length ? "Beim nächsten „Bunker leer“" : "Ab dem 2. Mal „Bunker leer“"} rechnet die App genau aus, wie viele Kesselfüllungen eine Kiste wirklich hergibt.</div>`;
   $("lgBunker").innerHTML = bh;
   if ($("lgTakeKg")) $("lgTakeKg").onclick = async () => {
     S.cfg.kgFuell = Math.round(L.measured.kg); lsSet("hb-cfg", S.cfg); render(); toast(`Kesselfüllung = ${S.cfg.kgFuell} kg übernommen`, false);
@@ -1504,6 +1609,13 @@ $("lgBunk").onclick = () => {
   if (!g && !kl) return toast("Bitte Anzahl Kisten wählen", false);
   if ((g > L.fullG || kl > L.fullK) && !confirm(`Laut Lager sind nur ${L.fullG} große und ${L.fullK} kleine Kisten voll.\nTrotzdem eintragen? (Tipp: Bestand mit „Kisten zählen" korrigieren)`)) return;
   lgAdd({ t: lgTime(), k: "bunk", g, kl });
+};
+$("lgLeer").onclick = () => {
+  const v = $("lgDate").value, today = !v || v === dkey(Date.now());
+  const t = today ? Date.now() : +new Date(v + "T11:55");   // vor einer Befüllung am selben Tag (12:00)
+  const B = lager(t).bunker;
+  lgAdd({ t, k: "leer" });
+  if (B) setTimeout(() => toast(`📭 Bunker leer – die App hatte noch ≈ ${num(B.rest)} kg erwartet${B.rest >= 30 ? " (wird ab jetzt genauer)" : ""}`), 50);
 };
 $("lgSaeg").onclick = () => {
   const g = S.lg.sg, kl = S.lg.sk, L = lager();
@@ -1990,7 +2102,7 @@ function lagerForm(kind, id) {
   const losOpts = (sel, allowNone) => (allowNone ? `<option value="">– allgemein / kein Los –</option>` : "") +
     L.lose.map(l => `<option value="${l.id}" ${l.id === sel ? "selected" : ""}>${esc(losName(l.id))} · ${esc(l.e.art || "")} · ${fmtShortDay.format(l.e.t)}.${new Date(l.e.t).getFullYear()}</option>`).join("");
   const numIn = (fid, label, val, step = 1, hint = "") => `<label>${label}</label><input id="${fid}" type="number" min="0" step="${step}" inputmode="decimal" value="${val ?? ""}">${hint ? `<div class="hint">${hint}</div>` : ""}`;
-  const title = { buy: "🌲 Holzkauf", hol: "🚜 Holz aus dem Wald geholt", cost: "💶 Sonstige Kosten", saeg: "🪚 Sägetag", bunk: "📦 Bunker befüllt", inv: "📋 Volle Kisten zählen", gift: "🎁 Kisten abgegeben", stand: "🔎 Bestand Bunker und Pellets" }[kind];
+  const title = { buy: "🌲 Holzkauf", hol: "🚜 Holz aus dem Wald geholt", cost: "💶 Sonstige Kosten", saeg: "🪚 Sägetag", bunk: "📦 Bunker befüllt", inv: "📋 Volle Kisten zählen", gift: "🎁 Kisten abgegeben", stand: "🔎 Bestand Bunker und Pellets", leer: "📭 Bunker komplett leer" }[kind];
   let body = `<label>Datum</label><input id="fD" type="date" value="${dkey(t0)}" max="${dkey(Date.now())}">`;
   if (kind === "buy") body += `
     <label>Wo / Bezeichnung (Waldstück, Auktion …)</label><input id="fName" value="${esc(e?.name || "")}" placeholder="z. B. Auktion Hochwald 2026">
@@ -2034,7 +2146,7 @@ function lagerForm(kind, id) {
     putEvent(id, null); closeModal();
   };
   $("fOk").onclick = () => {
-    const v = $("fD").value, t = v === dkey(Date.now()) && !e ? Date.now() : (e && v === dkey(e.t) ? e.t : +new Date(v + "T12:00"));
+    const v = $("fD").value, t = v === dkey(Date.now()) && !e ? Date.now() : (e && v === dkey(e.t) ? e.t : +new Date(v + (kind === "leer" ? "T11:55" : "T12:00")));
     const n = fid => { const x = parseFloat(String($(fid)?.value ?? "").replace(",", ".")); return isNaN(x) ? 0 : x; };
     const ne = { t, k: kind };
     if ($("fNote").value.trim()) ne.note = $("fNote").value.trim();
@@ -2125,15 +2237,28 @@ $("btnSettings").onclick = () => {
     <label>Standort für die Temperatur</label>
     <div class="inl"><input id="sOrt" value="${esc(c.ort)}"><button id="sFind">Suchen</button></div>
     <div class="hint" id="sOrtHint">${num(c.lat, 3)}° N · ${num(c.lon, 3)}° O · Daten: Open-Meteo</div>
-    <label>Haushalts-Code (gleicher Code = gleiche Daten auf allen Geräten)</label><input id="sHaus" value="${esc(S.haus)}">
+    <h3 style="margin:22px 0 4px">🔒 Haushalts-Code</h3>
+    <div class="hint">Gleicher Code = gleiche Daten auf allen Geräten. Wer den Code kennt, kann die Daten sehen und ändern – also wie ein Passwort behandeln.</div>
+    <input id="sHaus" value="${esc(S.haus)}" autocomplete="off" autocapitalize="none" spellcheck="false" style="margin-top:8px">
+    <div class="btns" style="margin-top:8px"><button id="sLink">📤 Link für weitere Geräte</button>${S.haus.length < 12 ? `<button id="sMove">🔒 Geheimen Code erzeugen &amp; umziehen</button>` : ""}</div>
+    <div class="hint" id="sLinkHint"></div>
     <h3 style="margin:22px 0 4px">💾 Datensicherung</h3>
-    <div class="hint">Deine Daten liegen online und bleiben bei App-Updates erhalten. Zur Sicherheit kannst du sie zusätzlich als Datei speichern.</div>
-    <div class="btns" style="margin-top:8px"><button id="sBak">💾 Backup speichern</button><button id="sRes">📂 Backup einspielen</button><button id="sCsv">Excel (CSV)</button></div>
+    <div class="hint">Deine Daten liegen online und bleiben bei App-Updates erhalten. Jedes Gerät legt außerdem <b>jede Woche automatisch eine Sicherung</b> bei sich an – und sofort eine, falls online plötzlich viele Einträge verschwinden.</div>
+    <div id="sSnaps" style="margin-top:6px">${snaps().map((s, i) => `<div class="inl" style="align-items:center;margin-top:6px"><span style="flex:1;font-size:13px">${new Date(s.t).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })} · ${s.n} Einträge<br><span style="color:var(--muted)">${esc(s.why)}</span></span><button data-snap="${i}" style="flex:none">Wiederherstellen</button></div>`).join("") || `<div class="hint">Noch keine automatische Sicherung auf diesem Gerät.</div>`}</div>
+    <div class="btns" style="margin-top:8px"><button id="sBak">💾 Backup als Datei</button><button id="sRes">📂 Backup einspielen</button><button id="sCsv">Excel (CSV)</button></div>
     <input type="file" id="sResFile" accept=".json,application/json" style="display:none">
     <div class="btns"><button id="sCancel">Abbrechen</button><button class="pri" id="sSave">Speichern</button></div>`);
   $("sBak").onclick = backupDownload;
   $("sRes").onclick = () => $("sResFile").click();
   $("sResFile").onchange = () => { const f = $("sResFile").files[0]; if (f) backupRestore(f); };
+  $$("[data-snap]").forEach(b => b.onclick = () => { const s = snaps()[+b.dataset.snap]; if (s) restoreData({ erstellt: s.t, cfg: s.cfg, events: s.events }); });
+  if ($("sMove")) $("sMove").onclick = moveHaus;
+  $("sLink").onclick = async () => {
+    const link = hausLink();
+    try { if (navigator.share) { await navigator.share({ title: "Heizbuch", url: link }); return; } } catch (err) { if (err.name === "AbortError") return; }
+    try { await navigator.clipboard.writeText(link); $("sLinkHint").textContent = "✓ Link kopiert – z. B. per WhatsApp oder Mail an dich selbst schicken und am anderen Gerät öffnen."; }
+    catch { $("sLinkHint").textContent = link; }
+  };
   let loc = { ort: c.ort, lat: c.lat, lon: c.lon };
   $("sFind").onclick = async () => {
     const q = $("sOrt").value.replace(/\(.*?\)/g, "").replace(/^A-?\d{4}\s*/i, "").trim();
@@ -2171,9 +2296,9 @@ $("btnSettings").onclick = () => {
       lsSet("hb-cmpseason", S.cmp.season); lsSet("hb-rpmode", S.rp.mode);
     }
     if (locChanged) { resetTemps(); loadRecentTemps(); }
-    const haus = $("sHaus").value.trim().replace(/[.#$\[\]\/]/g, "") || CONFIG.HAUS;
+    const haus = cleanHaus($("sHaus").value) || S.haus;
     closeModal();
-    if (haus !== S.haus) { S.haus = haus; lsSet("hb-haus", haus); S.events = {}; save(); }
+    if (haus !== S.haus) { setHaus(haus); render(); sync(); return; }   // anderer Haushalt: dessen Einstellungen laden, nicht überschreiben
     render();
     try { await fetch(DB.url("cfg"), { method: "PUT", body: JSON.stringify(nc) }); } catch {}
     sync();
@@ -2194,7 +2319,12 @@ async function backupRestore(file) {
   let data;
   try { data = JSON.parse(await file.text()); } catch { alert("Diese Datei ist kein gültiges Heizbuch-Backup."); return; }
   if (data?.app !== "heizbuch" || typeof data.events !== "object") { alert("Diese Datei ist kein Heizbuch-Backup."); return; }
+  return restoreData(data);
+}
+async function restoreData(data) {
   const n = Object.keys(data.events).length, cur = Object.keys(S.events).length;
+  if (data.cfg) { data.cfg = { ...data.cfg }; delete data.cfg.moved; }
+  if (cur) snapTake("vor dem Wiederherstellen");
   if (!confirm(`Backup vom ${new Date(data.erstellt).toLocaleString("de-DE")} mit ${n} Einträgen einspielen?\n\nDie jetzigen ${cur} Einträge werden dadurch ERSETZT (auf allen Geräten).`)) return;
   try {
     const r = await fetch(DB.url("e"), { method: "PUT", body: JSON.stringify(data.events) });
