@@ -5,9 +5,12 @@
 <style>body{background:#111;color:#ccc;font:20px sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}</style>
 </head><body><div id="m">Heizbuch wird geladen …</div>
 <script>
-/* Lader für alte Tablets (Fire HD 8, Android 5): github.io-Zertifikat wird dort nicht
-   erkannt, daher wird das Heizbuch über jsDelivr geholt und lokal zwischengespeichert. */
-var SRC = 'https://cdn.jsdelivr.net/gh/KokosTheMiner/gridiron-dice@main/heizung/index.html';
+/* Lader für alte Tablets (Fire HD 8, Android 5): holt das Heizbuch vom Heimserver im
+   Heimnetz (http, daher keine Zertifikatsprobleme), speichert es lokal zwischen und
+   sagt ihm, dass die Daten auf dem Heimserver liegen. */
+var HEIM = 'http://192.168.133.167';
+var SRC = HEIM + '/heizung/index.html';
+var HB_DB_TAG = '<script>window.HB_DB="' + HEIM + '/db";<\/script>';
 var KEY = 'hb-fire-app';
 /* Vollbild: Browser erlaubt es nur nach einer Berührung – daher beim ersten Antippen
    (und nach jedem Verlassen erneut) einschalten. */
@@ -17,6 +20,7 @@ var FS = '<script>(function(){function fs(){var d=document.documentElement;if(do
 function show(html) {
   /* Emojis, die Android 5 noch nicht kennt, durch bekannte ersetzen */
   html = html.replace(/🪵/g, '🌲').replace(/🪚/g, '✂️');
+  html = html.replace('<script>', HB_DB_TAG + '<script>');
   html = html.indexOf('</body>') >= 0 ? html.replace('</body>', FS + '</body>') : html + FS;
   document.open(); document.write(html); document.close();
 }

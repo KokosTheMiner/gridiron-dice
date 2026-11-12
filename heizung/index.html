@@ -487,8 +487,11 @@ body.printing .rp-pb { break-before: page; page-break-before: always; }
 
 <script>
 /* ================= Konfiguration ================= */
+// Vom Heimserver geladen (Heimnetz oder Tailscale)? Dann speichert das Heizbuch dort, sonst bei Firebase.
+const ON_HEIMSERVER = /^(192\.168\.133\.167|heimserver(\.fritz\.box|\.tail3903ae\.ts\.net)?)$/.test(location.hostname);
 const CONFIG = {
-  FIREBASE_URL: "https://nfl-tippspiel-df32c-default-rtdb.europe-west1.firebasedatabase.app",
+  // window.HB_DB setzt der Lader fürs Fire-Tablet (Seite läuft dort als lokale Datei)
+  FIREBASE_URL: window.HB_DB || (ON_HEIMSERVER ? location.origin + "/db" : "https://nfl-tippspiel-df32c-default-rtdb.europe-west1.firebasedatabase.app"),
   BASE: "tippspiel/heizung",     // Pfad in der Datenbank (liegt im freigegebenen Bereich)
   HAUS: "eta-twin"               // gleicher Code auf allen Geräten = gleiche Daten
 };
@@ -2364,6 +2367,30 @@ function exportCsv() {
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   a.download = `heizbuch-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
+}
+
+/* ================= Umzug auf den Heimserver ================= */
+// Alte Version (GitHub/jsDelivr): Hinweis mit Knopf. Wer wechselt, wird ab dann auf diesem
+// Gerät immer automatisch zum Heimserver im Heimnetz weitergeleitet (auch nach Neustart).
+const HEIM_LAN = "http://192.168.133.167";
+const heimZiel = () => `${HEIM_LAN}/heizung/${location.protocol === "file:" ? "fire-loader.html" : ""}#haus=${encodeURIComponent(S.haus)}`;
+if (!ON_HEIMSERVER && !window.HB_DB) {
+  if (lsGet("hb-umzug", false)) location.replace(heimZiel());
+  else {
+    const b = document.createElement("div");
+    b.style.cssText = "position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:#2b5d34;color:#fff;padding:12px 14px;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.5);font-size:15px;display:flex;gap:10px;align-items:center;flex-wrap:wrap";
+    const btn = "border:0;border-radius:9px;padding:10px 14px;font-size:15px;font-weight:600;cursor:pointer";
+    b.innerHTML = `<span style="flex:1;min-width:200px">🏠 Das Heizbuch ist auf den <b>Heimserver</b> umgezogen (für Geräte im Heimnetz, z. B. Tablets und PC).</span>
+      <button id="umzugGo" style="${btn};background:#fff;color:#2b5d34">Auf diesem Gerät wechseln</button>
+      <button id="umzugX" style="${btn};background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5)">später</button>`;
+    document.body.appendChild(b);
+    $("umzugGo").onclick = () => {
+      if (Object.keys(S.pending).length) { alert("Es warten noch Einträge aufs Hochladen – bitte kurz warten, bis oben „synchron“ steht."); sync(); return; }
+      lsSet("hb-umzug", true);
+      location.replace(heimZiel());
+    };
+    $("umzugX").onclick = () => b.remove();
+  }
 }
 
 /* ================= Start ================= */
