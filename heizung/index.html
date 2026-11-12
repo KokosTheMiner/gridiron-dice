@@ -1400,9 +1400,25 @@ function lager(until) {   // until = Stichtag (für Jahresbericht), sonst jetzt
     const addKg = kistenSrm(last.g, last.kl) * kgSrm(), fillsSince = totals(last.t, now + 1).fills, used = fillsSince * kgF;
     bunker = { last, addKg, fillsSince, used, rest: Math.max(0, addKg - used), kgF, pct: Math.max(0, Math.min(1, 1 - used / addKg)) };
   }
-  if (bunker) {   // Reichweite nach dem Verbrauch der letzten 14 Tage (im Winter genauer als 60 Tage)
-    const f14 = totals(now - 14 * 864e5, now).fills, pd = f14 >= 2 ? f14 / 14 : perDay;
-    bunker.restFills = bunker.rest / kgF; bunker.perDay = pd; bunker.days = pd > 0 ? bunker.restFills / pd : null;
+  if (bunker) {
+    // Reichweite: Verbrauch der kommenden Tage = Ø derselben Kalendertage der letzten 3 Jahre (je ±3 Tage geglättet).
+    // Ohne passende Vorjahre: Verbrauch der letzten 14 Tage.
+    bunker.restFills = bunker.rest / kgF;
+    const firstHolz = src.find(e => e.k === "holz")?.t ?? Infinity, D = 864e5, H = 180;
+    const yrs = [1, 2, 3].filter(k => addMonths(now, -12 * k) - 3 * D >= firstHolz);
+    if (yrs.length) {
+      const daily = yrs.map(k => { const s = addMonths(now, -12 * k) - 3 * D; return Array.from({ length: H + 7 }, (_, i) => totals(s + i * D, s + (i + 1) * D).fills); });
+      const exp = Array.from({ length: H }, (_, d) => daily.reduce((s, a) => s + a.slice(d, d + 7).reduce((x, y) => x + y, 0) / 7, 0) / yrs.length);
+      let left = bunker.restFills, days = null;
+      for (let d = 0; d < H; d++) { if (exp[d] >= left) { days = d + (exp[d] ? left / exp[d] : 0); break; } left -= exp[d]; }
+      const n = Math.max(1, Math.min(H, Math.ceil(days ?? H)));
+      bunker.days = days ?? (left > 0 && exp.every(x => !x) ? null : H);
+      bunker.perDay = exp.slice(0, n).reduce((s, x) => s + x, 0) / n;
+      bunker.hist = yrs.length; bunker.over = days == null && bunker.days === H;
+    } else {
+      const f14 = totals(now - 14 * D, now).fills, pd = f14 >= 2 ? f14 / 14 : perDay;
+      bunker.perDay = pd; bunker.days = pd > 0 ? bunker.restFills / pd : null; bunker.hist = 0;
+    }
   }
   // Pelletsvorrat: letzte Inventur (Pelletsbunker in Säcken + Behälter am Kessel in Litern) + seither gekaufte Säcke
   const standP = stands.filter(s => s.pelS != null || s.kesselL != null).at(-1);
@@ -1511,13 +1527,13 @@ function renderLager() {
   // Bunker
   const B = L.bunker;
   $("lgBunkInfo").textContent = `fasst ${c.bunkerG} große Kisten`;
-  const dTxt = d => d == null ? "" : d < 1 ? "weniger als 1 Tag" : d < 1.5 ? "ca. 1 Tag" : `ca. ${num(d)} Tage`;
+  const dTxt = d => d == null ? "" : B?.over ? "über ein halbes Jahr" : d < 1 ? "weniger als 1 Tag" : d < 1.5 ? "ca. 1 Tag" : `ca. ${num(d)} Tage`;
   const srcTxt = !B ? "" : B.fromLeer ? `Zuletzt komplett leer am ${fmtDayShort.format(B.last.t)}${B.ins.length ? `, seither befüllt mit ${kistenTxt(B.ins.reduce((s, b) => s + (+b.g || 0), 0), B.ins.reduce((s, b) => s + (+b.kl || 0), 0))} (≈ ${num(B.inKg)} kg)` : ", seither nicht befüllt"}`
     : B.fromStand ? `Laut Bestand vom ${fmtDayShort.format(B.last.t)}: ≈ ${num(B.last.bunker, 1)} Kiste(n) im Bunker (≈ ${num(B.startKg)} kg)${B.ins.length ? `, seither befüllt mit ≈ ${num(B.inKg)} kg` : ""}`
     : `Befüllt am ${fmtDayShort.format(B.last.t)} mit ${kistenTxt(B.last.g, B.last.kl)} (≈ ${num(B.addKg)} kg)`;
   let bh = B ? `<div class="bar"><i style="width:${Math.round(B.pct * 100)}%"></i></div>
     <div style="font-size:14px">${B.rest < 1 ? "<b>Bunker ist leer</b> – bitte befüllen" : `Noch ca. <b>${num(B.rest)} kg</b> (≈ ${num(B.restFills, B.restFills < 10 ? 1 : 0)} Kesselfüllungen)${B.days != null ? ` · reicht <b>${dTxt(B.days)}</b>` : ""}`}</div>
-    <div class="los"><div class="meta">${srcTxt}. Seither ${fmtFills(B.fillsSince)} Kesselfüllungen ≈ ${num(B.used)} kg${B.days != null ? ` · Verbrauch zuletzt Ø ${num(B.perDay, 1)} Füllungen/Tag` : ""}.${B.fromLeer ? "" : " Genauer wird es, wenn du beim nächsten Leermachen „📭 Bunker ist jetzt leer“ tippst."}</div></div>`
+    <div class="los"><div class="meta">${srcTxt}. Seither ${fmtFills(B.fillsSince)} Kesselfüllungen ≈ ${num(B.used)} kg${B.days != null ? (B.hist ? ` · Reichweite nach dem Verbrauch zur selben Zeit in den letzten ${B.hist === 1 ? "einem Jahr" : `${B.hist} Jahren`}: Ø ${num(B.perDay, 1)} Füllungen/Tag` : ` · Verbrauch zuletzt Ø ${num(B.perDay, 1)} Füllungen/Tag`) : ""}.${B.fromLeer ? "" : " Genauer wird es, wenn du beim nächsten Leermachen „📭 Bunker ist jetzt leer“ tippst."}</div></div>`
     : `<div class="empty">Noch keine Bunker-Befüllung eingetragen.</div>`;
   if (L.pellets) { const P = L.pellets, cap = c.pelBunkerS * c.sackKg + c.kesselL * c.pelDichte;
     bh += `<div class="sect">🛢️ Pelletsvorrat</div><div class="bar"><i style="width:${Math.round(Math.min(1, P.kg / cap) * 100)}%;background:var(--pellet)"></i></div>
