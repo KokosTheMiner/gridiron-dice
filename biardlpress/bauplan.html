@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Biardlpress – Bauplan</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+html, body { margin: 0; padding: 0; background: #888; }
+body { font-family: "Segoe UI", Arial, sans-serif; color: #1d1d1d; font-size: 10.5pt; line-height: 1.38; }
+.page { width: 210mm; height: 297mm; background: #fff; margin: 0 auto 8mm; padding: 14mm 14mm 12mm; position: relative; overflow: hidden; page-break-after: always; break-after: page; }
+@media print { body { background: #fff; } .page { margin: 0; } }
+h1 { font-size: 34pt; margin: 0; letter-spacing: .5px; color: #b3170f; line-height: 1.05; }
+h2 { font-size: 17pt; margin: 0 0 3mm; color: #b3170f; border-bottom: 1.2pt solid #b3170f; padding-bottom: 1.5mm; }
+h3 { font-size: 11.5pt; margin: 4mm 0 1.5mm; color: #333; }
+p { margin: 0 0 2.2mm; }
+.sub { font-size: 14pt; color: #444; margin-top: 2mm; }
+.foot { position: absolute; left: 14mm; right: 14mm; bottom: 7mm; font-size: 7.5pt; color: #777; display: flex; justify-content: space-between; border-top: .5pt solid #ccc; padding-top: 1.5mm; }
+table { border-collapse: collapse; width: 100%; font-size: 8.8pt; }
+th, td { border: .5pt solid #bbb; padding: 1.1mm 1.6mm; text-align: left; vertical-align: top; }
+#bom td, #bom th, #shop td, #shop th { padding: .7mm 1.4mm; } #bom .pos { min-width: 5mm; height: 5mm; line-height: 4.6mm; font-size: 7.5pt; }
+th { background: #f1e3e1; font-weight: 600; }
+td.n, th.n { text-align: right; white-space: nowrap; }
+td.c, th.c { text-align: center; }
+tr.grp td { background: #f4f4f4; font-weight: 600; }
+tr.sum td { font-weight: 700; background: #f1e3e1; }
+.pos { display: inline-block; min-width: 6mm; height: 6mm; line-height: 5.6mm; border: 1pt solid #b3170f; border-radius: 3mm; text-align: center; font-weight: 700; font-size: 8.5pt; color: #b3170f; padding: 0 1mm; }
+.box { border: .7pt solid #ccc; border-radius: 2mm; padding: 3mm 4mm; background: #fafafa; }
+.warn { border-left: 3pt solid #d98a00; background: #fff6e6; padding: 2.5mm 4mm; margin: 2.5mm 0; }
+.cols { display: flex; gap: 6mm; }
+.cols > div { flex: 1; }
+ol.steps { padding-left: 6mm; margin: 0; }
+ol.steps li { margin-bottom: 2mm; }
+ul { margin: 0 0 2mm; padding-left: 5mm; }
+li { margin-bottom: .8mm; }
+svg { display: block; }
+.cap { font-size: 8.5pt; color: #555; text-align: center; margin-top: 1mm; }
+.data td:first-child { color: #555; width: 45%; }
+.data td { border: none; border-bottom: .5pt solid #ddd; padding: 1.2mm 1mm; font-size: 10pt; }
+</style>
+</head>
+<body>
+
+<!-- ============ SEITE 1: DECKBLATT ============ -->
+<section class="page">
+  <div style="font-size:10pt;color:#777;letter-spacing:2px;text-transform:uppercase">Bauplan zum Selbstbauen</div>
+  <h1 style="margin-top:3mm">Biardlpress</h1>
+  <div class="sub">Bündelpresse für Anzündholz und Reisig bis 30&nbsp;mm Durchmesser</div>
+  <div id="hero" style="margin:6mm 0 4mm"></div>
+  <div class="cols">
+    <div>
+      <h3 style="margin-top:0">Was ist eine Biardlpress?</h3>
+      <p>Mit der Biardlpress („Biardl“ = Bündel) werden dünne Äste, Abschnitte und gespaltenes Kleinholz zu festen, handlichen Bündeln gepresst. Die Presse hat zwei Füllräume aus je zwei Bögen. Das Holz liegt quer darin. Zwei Ketten werden darübergelegt und mit einem Kletterhebel an den Zahnstangen Zahn für Zahn gespannt. Danach wird das Bündel mit Sisal-Bindegarn verschnürt, das gleich als Tragegriff dient.</p>
+      <p>Zu zweit geht es im Wechsel: Einer füllt die eine Seite, der andere presst und bindet auf der anderen. Danach wird die Spannvorrichtung umgesetzt.</p>
+      <p>So entsteht trockenes, gut stapelbares Anzündholz – und aus dem Reisig vom Holzmachen wird Brennstoff statt Abfall.</p>
+    </div>
+    <div>
+      <h3 style="margin-top:0">Technische Daten</h3>
+      <table class="data">
+        <tr><td>Länge (ohne Hebel)</td><td>ca. 1.320 mm</td></tr>
+        <tr><td>Breite (Fußspreizung)</td><td>ca. 690 mm</td></tr>
+        <tr><td>Höhe (Oberkante Bögen)</td><td>1.000 mm</td></tr>
+        <tr><td>Füllräume</td><td>2 × (392 × 396 mm)</td></tr>
+        <tr><td>Bündel-Ø (gepresst)</td><td>ca. 250 – 350 mm</td></tr>
+        <tr><td>Holzlänge</td><td>ca. 400 – 1.000 mm</td></tr>
+        <tr><td>Holzstärke</td><td>bis 30 mm</td></tr>
+        <tr><td>Gewicht</td><td>ca. 60 kg</td></tr>
+        <tr><td>Material</td><td>Baustahl S235, geschweißt</td></tr>
+        <tr><td>Materialkosten</td><td>ca. 300 – 440 €</td></tr>
+      </table>
+    </div>
+  </div>
+  <h3>Inhalt</h3>
+  <div class="cols" style="font-size:9.5pt;gap:8mm">
+    <div>1 Funktion und Bedienung · S. 2<br>2 Ansichten und Hauptmaße · S. 3<br>3 Explosionszeichnung · S. 4<br>4 Teileliste · S. 5</div>
+    <div>5 Einzelteilzeichnungen · S. 6<br>6 Bauablauf und Sicherheit · S. 7<br>7 Einkaufsliste und Kosten · S. 8</div>
+  </div>
+  <div class="foot"><span>Biardlpress · Bauplan für den Eigenbau · Alle Maße in mm</span><span>Seite 1 / 8</span></div>
+</section>
+
+<!-- ============ SEITE 2: FUNKTION ============ -->
+<section class="page">
+  <h2>1 Funktion und Bedienung</h2>
+  <div id="principleA"></div>
+  <div class="cap">Füllraum 1 wird gepresst, Füllraum 2 wird befüllt – die Spannvorrichtung wechselt von Seite zu Seite.</div>
+  <div class="cols" style="align-items:flex-start;margin-top:2mm">
+    <div style="flex:.68">
+      <div id="principleB"></div>
+      <div class="cap">Teil 1 und Teil 2 an der Zahnstange, verbunden über die Gelenkwelle <span class="pos">15</span> (vordere Wangen weggelassen).</div>
+    </div>
+    <div style="flex:1.15">
+      <h3 style="margin-top:0">So funktioniert es</h3>
+      <p style="font-size:9.8pt">Der Spannhebel besteht aus <b>zwei Teilen</b>, die über die Gelenkwelle <span class="pos">15</span> wie ein Scharnier verbunden sind. <b>Teil 2</b> ist der Kettenschlitten: zwei Wangen <span class="pos">13</span> mit dem Kettenrohr <span class="pos">14</span>, an dem die beiden Ketten <span class="pos">24</span> hängen. <b>Teil 1</b> ist der Hebelbügel: zwei Wangen <span class="pos">16</span> mit dem Kletterbolzen <span class="pos">17</span> und dem Hebel <span class="pos">19</span>. Drückt man den Hebel, stützt sich Teil 1 mit dem Kletterbolzen in der Zahnstange ab und zieht Teil 2 über das Gelenk Zahn für Zahn (Teilung 50&nbsp;mm) nach unten. Das Kettenrohr rastet jeweils in der nächsten Zahnlücke ein, und die Kette presst das Holz immer fester in die Bögen.</p>
+    </div>
+  </div>
+  <h3>Bedienung zu zweit – im Wechsel</h3>
+  <ol class="steps" style="font-size:9.4pt">
+    <li><b>Füllen (Person A):</b> Zweige auf Länge schneiden und quer in Füllraum 1 schlichten, bis knapp unter die Oberkante der Bögen.</li>
+    <li><b>Kette auflegen (Person B):</b> Haken <span class="pos">25</span> beider Ketten am Kettenanker <span class="pos">5</span> einhängen, Ketten über das Holz legen und den Spannhebel oben in die Zahnstangen am Ende von Füllraum 1 setzen.</li>
+    <li><b>Pressen:</b> Hebel <span class="pos">19</span> pumpen. Teil 1 zieht Teil 2 Zahn für Zahn über die Zahnstange nach unten, bis das Bündel fest genug ist.</li>
+    <li><b>Abbinden:</b> Das Bündel neben den Ketten mit Sisal-Bindegarn fest verschnüren, wie es die Hochdruck-Strohpresse verwendet. Die Schnur dient später als Tragegriff.</li>
+    <li><b>Lösen:</b> Den Hebel mit einem Ruck nach oben bewegen und weiter nach oben führen, bis Teil 2 aus der Zahnstange springt. Die Kette entspannt sich schlagartig. Dann die Spannvorrichtung mit der Kette vom Bündel wegnehmen. Der Korb ist frei, das verschnürte Bündel lässt sich bequem herausnehmen und an der Schnur zum Lagerplatz oder zur Schubkarre tragen.</li>
+    <li><b>Seite wechseln:</b> Inzwischen hat Person A Füllraum 2 gefüllt. Person B legt die Ketten über das neue Holz, setzt den Spannhebel in die Zahnstangen an diesem Ende und presst – A füllt wieder Füllraum 1.</li>
+  </ol>
+  <div class="warn" style="font-size:9pt"><b>Achtung:</b> Beim Lösen entspannt die Kette schlagartig – Hebel festhalten, nicht über Hebel oder Kette beugen. Nie in den Füllraum greifen, der gerade gespannt wird. Handschuhe tragen.</div>
+  <div class="foot"><span>Biardlpress · Funktion und Bedienung</span><span>Seite 2 / 8</span></div>
+</section>
+
+<!-- ============ SEITE 3: ANSICHTEN ============ -->
+<section class="page">
+  <h2>2 Ansichten und Hauptmaße</h2>
+  <div id="viewSide"></div>
+  <div class="cap" style="margin-bottom:3mm">Seitenansicht (Hebel links, Räder rechts)</div>
+  <div class="cols" style="gap:4mm">
+    <div style="flex:.9"><div id="viewEnd"></div><div class="cap">Stirnansicht von der Hebelseite</div></div>
+    <div style="flex:1.1"><div id="viewIso"></div><div class="cap">Schrägansicht mit Kette</div></div>
+  </div>
+  <div id="viewTop" style="margin-top:3mm"></div>
+  <div class="cap">Draufsicht</div>
+  <div class="foot"><span>Biardlpress · Ansichten · Maße in mm · Zeichnung nicht maßstäblich</span><span>Seite 3 / 8</span></div>
+</section>
+
+<!-- ============ SEITE 4: EXPLOSION ============ -->
+<section class="page">
+  <h2>3 Explosionszeichnung</h2>
+  <p style="font-size:9.5pt;color:#555">Die Nummern entsprechen den Positionen in der Teileliste (Seite 5) und der Einkaufsliste (Seite 8). Gleiche Teile tragen dieselbe Nummer.</p>
+  <div id="explode"></div>
+  <div id="explodeY" style="border-top:.5pt dashed #bbb;padding-top:2mm"></div>
+  <div class="box" style="margin-top:2mm;font-size:9pt">
+    <b>Baugruppen:</b> &nbsp;
+    <span style="color:#7a8794">■</span> Gestell <span class="pos">1</span>–<span class="pos">11</span> &nbsp;
+    <span style="color:#c0392b">■</span> Bögen <span class="pos">3</span> <span class="pos">4</span> &nbsp;
+    <span style="color:#d9822b">■</span> Spannwerk <span class="pos">12</span>–<span class="pos">23</span> &nbsp;
+    <span style="color:#555">■</span> Kette <span class="pos">24</span> <span class="pos">25</span>
+  </div>
+  <div class="foot"><span>Biardlpress · Explosionszeichnung</span><span>Seite 4 / 8</span></div>
+</section>
+
+<!-- ============ SEITE 5: TEILELISTE ============ -->
+<section class="page">
+  <h2>4 Teileliste</h2>
+  <table id="bom" style="font-size:8.2pt"></table>
+  <p style="font-size:8.5pt;color:#555;margin-top:2mm">Längen sind Zuschnittmaße. Bei schräg stehenden Teilen (Beine, Zahnstangen) den Winkel am Bauteil anreißen und erst dann auf Länge schneiden. Gewichte gerundet.</p>
+  <div class="foot"><span>Biardlpress · Teileliste</span><span>Seite 5 / 8</span></div>
+</section>
+
+<!-- ============ SEITE 6: EINZELTEILE ============ -->
+<section class="page">
+  <h2>5 Einzelteilzeichnungen</h2>
+  <div class="cols">
+    <div><h3 style="margin-top:0"><span class="pos">3</span> Bogen – 4 Stück</h3><div id="dWiege"></div></div>
+    <div><h3 style="margin-top:0"><span class="pos">13</span> <span class="pos">16</span> Wangen Spannhebel</h3><div id="dWange"></div></div>
+  </div>
+  <h3><span class="pos">12</span> Zahnstange – 4 Stück (alle zusammengespannt schneiden)</h3>
+  <div id="dRack"></div>
+  <div class="cols" style="margin-top:2mm">
+    <div><h3 style="margin-top:0">Spannhebel <span class="pos">13</span>–<span class="pos">23</span> zusammengebaut</h3><div id="dYoke"></div></div>
+    <div><h3 style="margin-top:0">Hinweise</h3>
+      <ul style="font-size:9.5pt">
+        <li><b>Bögen</b> über eine Schablone aus Spanplatte (Innenradius 96) biegen, kalt mit Rohrverlängerung oder rotwarm mit dem Brenner. Alle vier auf den ersten legen und vergleichen.</li>
+        <li><b>Zahnstangen</b> alle vier zusammenspannen und gemeinsam anreißen, bohren und schneiden – nur so passt die Teilung links und rechts genau. Steile Flanke zeigt nach oben.</li>
+        <li><b>Wangen</b> von Teil 1 und Teil 2 jeweils paarweise zusammenspannen und bohren. Kettenrohr und Kletterbolzen werden eingeschweißt. Die Gelenkwelle muss in Teil 1 frei drehen (Bohrung Ø12,5) und wird mit Scheiben und Splinten gesichert.</li>
+        <li><b>Erst probieren, dann schweißen:</b> Beide Teile nur heften und an den Zahnstangen probieren. Teil 1 muss Teil 2 Zahn für Zahn nach unten ziehen, und beim Hochreißen des Hebels muss Teil 2 aus der Verzahnung springen.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Biardlpress · Einzelteile · Maße in mm</span><span>Seite 6 / 8</span></div>
+</section>
+
+<!-- ============ SEITE 7: BAUABLAUF ============ -->
+<section class="page">
+  <h2>6 Bauablauf</h2>
+  <ol class="steps">
+    <li><b>Zuschnitt:</b> Alle Teile nach der Teileliste ablängen, beschriften (Positionsnummer mit Kreide oder Lackstift) und entgraten.</li>
+    <li><b>Bögen biegen</b> <span class="pos">3</span>: Biegeschablone bauen, alle vier Bögen biegen und vergleichen. Innenmaß 392 × 396.</li>
+    <li><b>Zahnstangen fertigen</b> <span class="pos">12</span>: Paarweise anreißen (Zeichnung Seite 6), Zahngrund vorbohren (Ø10), Flanken mit der Trennscheibe schneiden, entgraten.</li>
+    <li><b>Bett heften</b> <span class="pos">1</span> <span class="pos">2</span>: Längsholme und Querträger auf einer ebenen Fläche auslegen, rechtwinklig heften. Diagonalen messen – beide gleich lang? Dann verschweißen.</li>
+    <li><b>Beine anbauen</b> <span class="pos">6</span>–<span class="pos">9</span>: Bett kopfüber auf zwei Böcke legen. Beine nach außen gespreizt anheften (Fußabstand 570 quer), Fußtraversen und Längsstreben einsetzen. Umdrehen, auf ebenem Boden ausrichten, verschweißen.</li>
+    <li><b>Bögen setzen</b> <span class="pos">3</span> <span class="pos">4</span>: Die Bögen stehen längs auf den Längsholmen, je einer vorne und hinten (Mitte 125 neben der Bettmitte). Füllraum 1 von 50 bis 450, Füllraum 2 von 550 bis 950 (gemessen von der Hebelseite). Senkrecht ausrichten, heften, Oberkanten mit einer Schnur fluchten. Die beiden mittleren Schenkel jeder Seite mit dem Verbindungsblech koppeln.</li>
+    <li><b>Kettenanker</b> <span class="pos">5</span> genau in der Mitte (x = 500) quer auf die Längsholme schweißen.</li>
+    <li><b>Zahnstangen einbauen</b> <span class="pos">12</span>: An beiden Enden je ein Paar, unten auf die Fußtraverse, oben an den Querträger. Lichter Abstand 80, beide parallel und mit gleicher Zahnhöhe. Die Paare an beiden Enden spiegelbildlich, die Zahnseite zeigt jeweils nach außen.</li>
+    <li><b>Spannhebel bauen</b> <span class="pos">13</span>–<span class="pos">21</span>: <i>Teil 2:</i> die beiden Aufhängeringe <span class="pos">22</span> auf das Kettenrohr <span class="pos">14</span> schieben, dann das Rohr zwischen die Wangen <span class="pos">13</span> schweißen (lichte Weite 154). <i>Teil 1:</i> Kletterbolzen <span class="pos">17</span> zwischen die Wangen <span class="pos">16</span> schweißen (lichte Weite 104), Hebelsteg <span class="pos">18</span> quer an das untere Ende, Hebelrohr <span class="pos">19</span> mittig daran – in Verlängerung der Wangen, also entlang der Zahnstange nach unten (nicht rechtwinklig abstehend). Teil 1 zwischen die Wangen von Teil 2 setzen, Gelenkwelle <span class="pos">15</span> mit den Distanzhülsen <span class="pos">21</span> durchstecken und sichern.</li>
+    <li><b>Kette montieren</b> <span class="pos">23</span>–<span class="pos">25</span>: Beide Ketten (je 1,4&nbsp;m) mit Verbindungsgliedern <span class="pos">23</span> an den Aufhängeringen anschlagen, an das andere Ende je einen Einhängehaken <span class="pos">25</span>.</li>
+    <li><b>Räder</b> <span class="pos">10</span> <span class="pos">11</span> an die hinteren Füße schrauben (Bohrung Ø13 quer durch das Bein).</li>
+    <li><b>Oberfläche:</b> Schweißnähte verputzen, entfetten, grundieren und zweimal lackieren – klassisch in Signalrot.</li>
+  </ol>
+  <div class="cols" style="margin-top:3mm">
+    <div>
+      <h3 style="margin-top:0">Werkzeug</h3>
+      <ul style="font-size:9.5pt">
+        <li>Schweißgerät (E-Hand oder MAG)</li>
+        <li>Winkelschleifer mit Trenn-, Schrupp- und Fächerscheiben</li>
+        <li>Säulen- oder Magnetbohrmaschine, Bohrer bis Ø 35 (oder Stufenbohrer)</li>
+        <li>Schraubzwingen, Schlosserwinkel, Maßband, Reißnadel, Körner</li>
+        <li>Biegeschablone (Holz), Rohr als Hebelverlängerung, ggf. Gasbrenner</li>
+        <li>Schraubenschlüssel SW 19</li>
+      </ul>
+      <p style="font-size:9.5pt"><b>Zeitaufwand:</b> ca. 12–16 Stunden für geübte Hobbyschweißer.</p>
+    </div>
+    <div>
+      <h3 style="margin-top:0">Sicherheit</h3>
+      <ul style="font-size:9.5pt">
+        <li>Schweißen nur mit Schutzausrüstung (Schweißschirm, Handschuhe, schwer entflammbare Kleidung) und Feuerlöscher in Reichweite.</li>
+        <li>Wer nicht sicher schweißen kann: Zuschnitt und Heften selbst machen und die tragenden Nähte von einem Schlosser schweißen lassen.</li>
+        <li>Nur Kette mit Prüfzeichen verwenden, keine Baumarkt-Zierkette.</li>
+        <li>Beim Spannen und Lösen nicht in Hebelrichtung stehen. Kinder fernhalten.</li>
+        <li>Nachbau auf eigene Verantwortung. Vor dem ersten Einsatz alle Schweißnähte prüfen.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Biardlpress · Bauablauf und Sicherheit</span><span>Seite 7 / 8</span></div>
+</section>
+
+<!-- ============ SEITE 8: EINKAUF ============ -->
+<section class="page">
+  <h2>7 Einkaufsliste und Kostenabschätzung</h2>
+  <table id="shop" style="font-size:8.4pt"></table>
+  <p style="font-size:8.5pt;color:#555;margin-top:2mm">Preise: Schätzung Stand 2026 für Deutschland und Österreich, inkl. MwSt. Stahl beim Stahlhändler mit Zuschnitt (bei kleinen Mengen oft 3–4 €/kg). Im Baumarkt kostet derselbe Stahl leicht das Doppelte. Wer Reststücke, Schrott oder alte Gestelle verwertet, kommt mit 100–150 € aus.</p>
+  <div class="cols" style="margin-top:4mm;align-items:center">
+    <div style="flex:2" class="box">
+      <h3 style="margin-top:0">Tipps zum Einkauf</h3>
+      <ul style="font-size:9.5pt;margin-bottom:0">
+        <li>Stahlhändler: Teileliste (Seite 5) mitnehmen und gleich zuschneiden lassen.</li>
+        <li>Kette: Rundstahlkette 8&nbsp;mm nach DIN 766 oder Güteklasse 8 aus dem Landhandel oder Forstbedarf.</li>
+        <li>Räder: Vollgummi- oder Nylonrad Ø100 mit Gleitlager, Bohrung 12 (Transportgeräte-Bedarf).</li>
+        <li>Sisal-Bindegarn wie für die Hochdruck-Strohpresse (Landhandel). Eine Rolle reicht für Hunderte Bündel.</li>
+      </ul>
+    </div>
+    <div style="flex:1;text-align:center">
+      <div id="qr" style="display:inline-block"></div>
+      <div class="cap" style="margin-top:2mm">Diesen Bauplan kostenlos<br>herunterladen</div>
+    </div>
+  </div>
+  <div class="foot"><span>Biardlpress · Einkaufsliste und Kosten</span><span>Seite 8 / 8</span></div>
+</section>
+
+<script>
+// =====================================================================
+//  Kleine 3D-Engine: Modell in mm, Projektion nach SVG (Maler-Algorithmus)
+// =====================================================================
+const add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]];
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+const mul=(a,s)=>[a[0]*s,a[1]*s,a[2]*s];
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const len=a=>Math.hypot(a[0],a[1],a[2]);
+const nrm=a=>{const l=len(a)||1;return mul(a,1/l);};
+
+const COL={t2:[214,168,52],frame:[122,135,148],cradle:[192,57,43],tens:[217,130,43],chain:[85,85,85],wheel:[235,232,224],dark:[70,70,70]};
+const parts=[];
+function Part(no,col,ex,opt={}){const p={no,col,ex:ex||[0,0,0],faces:[],links:[],label:opt.label!==false,lab:opt.lab||null,anchor:opt.anchor||null,only:opt.only||null};parts.push(p);return p;}
+
+function faceNormal(pts){let n=[0,0,0];for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];n[0]+=(a[1]-b[1])*(a[2]+b[2]);n[1]+=(a[2]-b[2])*(a[0]+b[0]);n[2]+=(a[0]-b[0])*(a[1]+b[1]);}return nrm(n);}
+
+// Prisma: Profil (3D-Punkte, eben) entlang ext extrudiert, in Segmente unterteilt
+function prism(P,prof,ext,smooth){
+  const L=len(ext), n=Math.max(1,Math.ceil(L/50)), m=prof.length;
+  const sideN=[];
+  for(let i=0;i<m;i++){const a=prof[i],b=prof[(i+1)%m];sideN.push(faceNormal([a,b,add(b,ext),add(a,ext)]));}
+  for(let k=0;k<n;k++){
+    const o0=mul(ext,k/n),o1=mul(ext,(k+1)/n);
+    for(let i=0;i<m;i++){
+      const a=add(prof[i],o0),b=add(prof[(i+1)%m],o0),c=add(prof[(i+1)%m],o1),d=add(prof[i],o1);
+      const prev=sideN[(i-1+m)%m],cur=sideN[i],next=sideN[(i+1)%m];
+      P.faces.push({pts:[a,b,c,d],edges:[[a,d,prev,cur],[b,c,cur,next]],smooth});
+    }
+  }
+  P.faces.push({pts:prof.slice(),cap:true});
+  P.faces.push({pts:prof.map(q=>add(q,ext)),cap:true});
+}
+function basis(d,hint){let e1=cross(d,hint||[0,0,1]);if(len(e1)<1e-6)e1=cross(d,[1,0,0]);e1=nrm(e1);const e2=nrm(cross(e1,d));return[e1,e2];}
+function bar(P,a,b,w,h,e1h){const d=sub(b,a),dn=nrm(d);let e1,e2;if(e1h){e1=nrm(sub(e1h,mul(dn,dot(e1h,dn))));e2=nrm(cross(e1,dn));}else[e1,e2]=basis(dn);
+  const c=(s,t)=>add(a,add(mul(e1,s),mul(e2,t)));prism(P,[c(-w/2,-h/2),c(w/2,-h/2),c(w/2,h/2),c(-w/2,h/2)],d);}
+function cyl(P,a,b,r,seg){seg=seg||18;const d=sub(b,a),[e1,e2]=basis(nrm(d),[0,0,1]);const prof=[];for(let i=0;i<seg;i++){const t=i/seg*Math.PI*2;prof.push(add(a,add(mul(e1,Math.cos(t)*r),mul(e2,Math.sin(t)*r))));}prism(P,prof,d,true);}
+function hexnut(P,a,b,r){cyl(P,a,b,r,6);}
+// Winkelstahl: Ecke c, Länge entlang dir, Schenkel in eA und eB
+function angle(P,c,dir,L,s,t,eA,eB){const pr=(u,v)=>add(c,add(mul(eA,u),mul(eB,v)));
+  prism(P,[pr(0,0),pr(s,0),pr(s,t),pr(t,t),pr(t,s),pr(0,s)],mul(dir,L));}
+// Flachstahl entlang 2D-Pfad (y,z) in Ebene x=x0
+function sweepYZ(P,x0,path,thick,width){
+  const N=[];for(let i=0;i<path.length;i++){const p=path[Math.max(0,i-1)],q=path[Math.min(path.length-1,i+1)];const t=[q[0]-p[0],q[1]-p[1]];const l=Math.hypot(t[0],t[1]);N.push([-t[1]/l,t[0]/l]);}
+  const pt=(i,s,xo)=>[x0+xo,path[i][0]+N[i][0]*s,path[i][1]+N[i][1]*s];
+  const corners=[[ -thick/2,-width/2],[thick/2,-width/2],[thick/2,width/2],[-thick/2,width/2]];
+  const side=[];
+  for(let i=0;i<path.length-1;i++){
+    for(let k=0;k<4;k++){const c0=corners[k],c1=corners[(k+1)%4];
+      const a=pt(i,c0[0],c0[1]),b=pt(i,c1[0],c1[1]),c=pt(i+1,c1[0],c1[1]),d=pt(i+1,c0[0],c0[1]);
+      const fn=faceNormal([a,b,c,d]);
+      P.faces.push({pts:[a,b,c,d],edges:[[a,d,null,null],[b,c,null,null]],crease:true,n:fn});
+    }
+  }
+  const last=path.length-1;
+  P.faces.push({pts:corners.map(c=>pt(0,c[0],c[1])),cap:true});
+  P.faces.push({pts:corners.map(c=>pt(last,c[0],c[1])),cap:true});
+}
+// Flachstahl entlang 2D-Pfad (x,z) in Ebene y=y0
+function sweepXZ(P,y0,path,thick,width){
+  const n0=P.faces.length;
+  sweepYZ(P,0,path,thick,width);
+  // Koordinaten umbauen: (x0+xo, py, pz) -> (py, y0+xo, pz)
+  const map=q=>[q[1],y0+q[0],q[2]];
+  for(let i=n0;i<P.faces.length;i++){const f=P.faces[i];f.pts=f.pts.map(map);if(f.edges)f.edges=f.edges.map(([a,b,c,d])=>[map(a),map(b),c,d]);if(f.n)f.n=faceNormal(f.pts);}
+}
+function arc(cy,cz,r,a0,a1,n){const o=[];for(let i=0;i<=n;i++){const a=a0+(a1-a0)*i/n;o.push([cy+r*Math.cos(a),cz+r*Math.sin(a)]);}return o;}
+
+// ---------------------------------------------------------------------
+//  MODELL  (x = Länge, Hebelseite x<0 · y = Breite · z = Höhe, Boden z=0)
+// ---------------------------------------------------------------------
+const RACK={B:[-100,9],T:[0,600],len:640,pitch:50,first:80,teeth:11,depth:18,notch:35,w:60,t:10,gap:160};
+(function(){const dx=RACK.T[0]-RACK.B[0],dz=RACK.T[1]-RACK.B[1],l=Math.hypot(dx,dz);RACK.d=[dx/l,dz/l];RACK.n=[-dz/l,dx/l];})();
+const RP=(u,w,y)=>[RACK.B[0]+RACK.d[0]*u+RACK.n[0]*w, y, RACK.B[1]+RACK.d[1]*u+RACK.n[1]*w];
+// gespiegeltes Zahnstangenpaar an der Radseite
+const RACK2={B:[1100,54]};
+const RP2=(u,w,y)=>[RACK2.B[0]-RACK.d[0]*u-RACK.n[0]*w, y, RACK2.B[1]+RACK.d[1]*u+RACK.n[1]*w];
+// Füllräume (Bögen längs): Mitte x, Bündelmitte z, Radius
+const BAY=[250,750], BC_Z=800, BR=192;
+// Kettenführung Füllraum 1: Tangente vom Kettenrohr an das Bündel
+function chainGeo(){
+  const Y=[RP(YK.tube[0],YK.tube[1],0)[0],RP(YK.tube[0],YK.tube[1],0)[2]];
+  const C=[BAY[0],BC_Z], R=BR+6;
+  let best=null;
+  for(let a=Math.PI*0.55;a<Math.PI*1.4;a+=0.002){const P=[C[0]+R*Math.cos(a),C[1]+R*Math.sin(a)];const v=(P[0]-Y[0])*(P[0]-C[0])+(P[1]-Y[1])*(P[1]-C[1]);if(best===null||Math.abs(v)<best.v)best={a,v:Math.abs(v)};}
+  const Ta=best.a, T=[C[0]+R*Math.cos(Ta),C[1]+R*Math.sin(Ta)];
+  return {Y,C,R,Ta,T,dir:nrm([T[0]-Y[0],0,T[1]-Y[1]])};
+}
+const ANCHOR=[500,612];
+function rackProfile2D(){ // (u,w), w=60 = Zahnseite (außen)
+  const up=[];for(let k=0;k<RACK.teeth;k++){const b=RACK.first+RACK.pitch*k;up.push([b,60],[b+25,60-RACK.depth],[b+RACK.notch,60-RACK.depth],[b+RACK.notch,60]);}
+  return [[0,0],[RACK.len,0],[RACK.len,60],...up.reverse(),[0,60]];
+}
+// Spannhebel, zweiteilig. Beide Teile liegen mit ihren Wangen flach außen an den Zahnstangen
+// und laufen parallel daran entlang (Achse = Zahnstangenrichtung u). Die Zahnstangen liegen innen.
+// Teil 2 = Kettenschlitten (Wangen 13, Kettenrohr 14, Gelenkwelle 15)
+// Teil 1 = Hebelbügel (Wangen 16, Kletterbolzen 17, Steg 18, Hebelrohr 19)
+const YK={k:10};YK.base=RACK.first+RACK.pitch*YK.k;
+YK.tube=[YK.base+18,59];           // Kettenrohr in Zahnlücke k
+YK.rung=[YK.base-22,52];           // Kletterbolzen in Zahnlücke k-1
+YK.hinge=[YK.tube[0]-90,72];       // Gelenkwelle knapp außerhalb der Zahnspitzen
+YK.W=[31,91];                      // Wangenbreite quer zur Zahnstange (w), 60 mm
+YK.p2=[YK.tube[0]-120,YK.tube[0]+80];   // Teil 2 Wange: 200 lang
+YK.p1=[YK.tube[0]-135,YK.rung[0]+20];   // Teil 1 Wange: 115 lang
+YK.steg=YK.p1[0]+4;                // Hebelsteg am unteren Ende von Teil 1
+const TUBE_R=16.85;
+const YW={p2o:85,p2i:77,p1o:60,p1i:52,chainY:68};   // y-Lagen der Wangen (außen/innen) und Ketten
+
+function buildModel(){
+  // 1 Längsholme L50x5
+  [1,-1].forEach((s,i)=>{const P=Part(1,COL.frame,[0,s*60,140],{label:i===0});angle(P,[0,s*150,600],[1,0,0],1000,50,5,[0,-s,0],[0,0,-1]);});
+  // 2 Querträger
+  [[0,1],[1000,-1]].forEach(([x,s],i)=>{const P=Part(2,COL.frame,[s*-90,0,140],{label:i===0});angle(P,[x,-145,600],[0,1,0],290,50,5,[s,0,0],[0,0,-1]);});
+  // 3 Bögen (U längs, vorne und hinten, je Füllraum)
+  const path=[[-196,1000],[-196,704],...arc(-96,704,100,Math.PI,1.5*Math.PI,10).slice(1),[96,604],...arc(96,704,100,1.5*Math.PI,2*Math.PI,10).slice(1),[196,1000]];
+  const fine=[];for(let i=0;i<path.length-1;i++){const a=path[i],b=path[i+1];const n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/45));for(let k=0;k<n;k++)fine.push([a[0]+(b[0]-a[0])*k/n,a[1]+(b[1]-a[1])*k/n]);}fine.push(path[path.length-1]);
+  let ci=0;
+  BAY.forEach((cx,j)=>[-1,1].forEach(s=>{const P=Part(3,COL.cradle,[j?60:-60,s*170,420],{label:ci++===3});P.side=s;sweepXZ(P,s*125,fine.map(([a,z])=>[cx+a,z]),8,40);}));
+  // 4 Verbindungsbleche (H) zwischen den mittleren Bogenschenkeln
+  [-1,1].forEach((s,i)=>{const P=Part(4,COL.cradle,[0,s*240,420],{label:i===1});P.side=s;bar(P,[450,s*125,900],[550,s*125,900],8,40,[0,1,0]);});
+  // 5 Kettenanker (Rundstahl auf den Längsholmen)
+  {const P=Part(5,COL.frame,[0,0,250]);cyl(P,[ANCHOR[0],-150,ANCHOR[1]-2],[ANCHOR[0],150,ANCHOR[1]-2],10);}
+  // 6 Beine
+  const legs=[[[50,125,550],[-100,285,5]],[[950,125,550],[1100,285,50]]];
+  legs.forEach(([a,b],j)=>[1,-1].forEach((s,i)=>{const P=Part(6,COL.frame,[j?140:-140,s*120,-60],{label:j===1&&i===0});bar(P,[a[0],s*a[1],a[2]],[b[0],s*b[1],b[2]],40,40,[0,0,1]);}));
+  // 7 Fußtraversen
+  {const P=Part(7,COL.frame,[-140,0,-200]);angle(P,[-120,-265,5],[0,1,0],530,40,4,[1,0,0],[0,0,1]);}
+  {const P=Part(7,COL.frame,[140,0,-200],{label:false});angle(P,[1080,-265,50],[0,1,0],530,40,4,[1,0,0],[0,0,1]);}
+  // 8 Längsstreben
+  [1,-1].forEach((s,i)=>{const P=Part(8,COL.frame,[0,s*230,-130],{label:i===0});angle(P,[-46,s*252,200],[1,0,0],1101,40,4,[0,-s,0],[0,0,-1]);});
+  // 9 Fußplatten
+  [1,-1].forEach((s,i)=>{const P=Part(9,COL.frame,[-140,s*120,-200],{label:i===0});bar(P,[-100,s*285,0],[-100,s*285,5],60,60,[1,0,0]);});
+  // 10 Räder, 11 Achsschrauben
+  [1,-1].forEach((s,i)=>{const P=Part(10,COL.wheel,[140,s*260,-60],{label:i===0});cyl(P,[1100,s*309,50],[1100,s*344,50],50,24);
+    const Q=Part(11,COL.dark,[140,s*400,-60],{label:i===0});cyl(Q,[1100,s*260,50],[1100,s*362,50],6,10);hexnut(Q,[1100,s*352,50],[1100,s*362,50],10);hexnut(Q,[1100,s*256,50],[1100,s*264,50],10);});
+  // 12 Zahnstangen
+  const rp=rackProfile2D();
+  [1,-1].forEach((s,i)=>{const P=Part(12,COL.tens,[-260,s*40,0],{label:i===0});const y0=s>0?40:-50;prism(P,rp.map(([u,w])=>RP(u,w,y0)),[0,10,0]);});
+  [1,-1].forEach((s,i)=>{const P=Part(12,COL.tens,[260,s*40,0],{label:false});P.end=2;const y0=s>0?40:-50;prism(P,rp.map(([u,w])=>RP2(u,w,y0)),[0,10,0]);});
+  // Spannhebel
+  const EX=[-560,0,40];
+  const T=YK.tube,H=YK.hinge,R=YK.rung;
+  const plate=(P,u0,u1,y0,th)=>{const q=[[u0,YK.W[0]],[u1,YK.W[0]],[u1,YK.W[1]],[u0,YK.W[1]]];prism(P,q.map(([u,w])=>RP(u,w,y0)),[0,th,0]);};
+  // Teil 2: Kettenschlitten
+  [1,-1].forEach((s,i)=>{const P=Part(13,COL.t2,add(EX,[0,s*150,170]),{label:i===0});P.grp=2;P.side=s;plate(P,YK.p2[0],YK.p2[1],s>0?YW.p2i:-YW.p2o,8);});
+  {const P=Part(14,COL.t2,add(EX,[0,0,170]));P.grp=2;cyl(P,RP(T[0],T[1],-YW.p2o),RP(T[0],T[1],YW.p2o),TUBE_R);}
+  {const P=Part(15,COL.dark,add(EX,[0,0,0]));P.grp=2;cyl(P,RP(H[0],H[1],-YW.p2o-12),RP(H[0],H[1],YW.p2o+12),6,10);}
+  // Teil 1: Hebelbügel
+  [1,-1].forEach((s,i)=>{const P=Part(16,COL.tens,add(EX,[0,s*115,-170]),{label:i===0});P.grp=1;P.side=s;plate(P,YK.p1[0],YK.p1[1],s>0?YW.p1i:-YW.p1o,8);});
+  {const P=Part(17,COL.tens,add(EX,[0,0,-170]));P.grp=1;cyl(P,RP(R[0],R[1],-YW.p1o),RP(R[0],R[1],YW.p1o),10);}
+  {const P=Part(18,COL.tens,add(EX,[-40,0,-190]));P.grp=1;const q=[[YK.steg-4,61],[YK.steg+4,61],[YK.steg+4,YK.W[1]],[YK.steg-4,YK.W[1]]];prism(P,q.map(([u,w])=>RP(u,w,-YW.p1i)),[0,2*YW.p1i,0]);}
+  const h0=RP(YK.p1[0],76,0), hdir=nrm(sub(RP(YK.p1[0]-100,76,0),h0)), h1=add(h0,mul(hdir,450));   // Hebel in Verlängerung von Teil 1, mittig am Steg
+  YK.h0=h0;YK.hdir=hdir;
+  {const P=Part(19,COL.tens,add(EX,[-30,0,-250]),{anchor:add(h0,mul(hdir,200))});P.grp=1;cyl(P,h0,h1,13.45);}
+  {const P=Part(20,COL.dark,add(EX,[-40,0,-310]));P.grp=1;cyl(P,add(h0,mul(hdir,320)),add(h0,mul(hdir,455)),17);}
+  // 21 Distanzhülsen auf der Gelenkwelle
+  [1,-1].forEach((s,i)=>{const P=Part(21,COL.dark,add(EX,[0,s*125,0]),{label:i===0});P.grp=2;const ya=s*YW.p1o,yb=s*YW.p2i;cyl(P,RP(H[0],H[1],ya),RP(H[0],H[1],yb),10.6,12);});
+  // 22 Aufhängeringe auf dem Kettenrohr, 23 Verbindungsglieder
+  const g=chainGeo();
+  [1,-1].forEach((s,i)=>{const P=Part(22,COL.dark,add(EX,[80,s*30,290]),{label:i===0});P.grp=2;const c=add(RP(T[0],T[1],s*YW.chainY),mul(g.dir,10));
+    const e2=[0,1,0],e1=g.dir,e3=nrm(cross(e1,e2));for(let k=0;k<12;k++){const a=k/12*Math.PI*2,b=(k+1)/12*Math.PI*2;const p=add(c,add(mul(e1,Math.cos(a)*26),mul(e3,Math.sin(a)*26))),q=add(c,add(mul(e1,Math.cos(b)*26),mul(e3,Math.sin(b)*26)));cyl(P,p,q,4,8);}
+    const Q=Part(23,COL.dark,add(EX,[170,s*30,340]),{label:i===0});Q.grp=2;const c2=add(c,mul(g.dir,40));bar(Q,c2,add(c2,mul(g.dir,22)),12,20,[0,1,0]);});
+  // 25 Einhängehaken am Kettenanker (nur im Zusammenbau)
+  [1,-1].forEach((s,i)=>{const P=Part(25,COL.dark,[0,0,0],{label:false});P.noExplode=true;const y=s*YW.chainY;cyl(P,[ANCHOR[0]-14,y,ANCHOR[1]+4],[ANCHOR[0]-14,y,ANCHOR[1]+60],5,8);cyl(P,[ANCHOR[0]+14,y,ANCHOR[1]-6],[ANCHOR[0]+14,y,ANCHOR[1]+20],5,8);bar(P,[ANCHOR[0]-14,y,ANCHOR[1]-14],[ANCHOR[0]+14,y,ANCHOR[1]-14],10,10,[0,1,0]);});
+}
+// Kette als Gliederfolge entlang Polylinie (Füllraum 1 gespannt)
+function chainPath(){
+  const tubeC=y=>RP(YK.tube[0],YK.tube[1],y);
+  const g=chainGeo();
+  const strands=[];
+  [1,-1].forEach(s=>{
+    const y0=s*YW.chainY, pts=[];
+    pts.push(add(tubeC(y0),mul(g.dir,72)));
+    arc(g.C[0],g.C[1],g.R,g.Ta,0,24).forEach(([x,z])=>pts.push([x,y0,z]));
+    pts.push([ANCHOR[0]-14,y0,ANCHOR[1]+66]);
+    strands.push(pts);
+  });
+  return strands;
+}
+function linksAlong(pts,pitch){
+  const out=[];let carry=0,idx=0;
+  for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1],d=sub(b,a),L=len(d);let t=carry;
+    while(t<L){const c=add(a,mul(d,t/L));out.push({c,dir:nrm(d),k:idx++});t+=pitch;}carry=t-L;}
+  return out;
+}
+
+// ---------------------------------------------------------------------
+//  RENDERER
+// ---------------------------------------------------------------------
+function makeView(az,el){const A=az*Math.PI/180,E=el*Math.PI/180;const v=[Math.cos(E)*Math.cos(A),Math.cos(E)*Math.sin(A),Math.sin(E)];
+  let r=cross([0,0,1],v);if(len(r)<1e-6)r=[0,1,0];r=nrm(r);const u=nrm(cross(v,r));return{v,r,u};}
+const VIEWS={iso:makeView(-130,26),isoE:makeView(-125,24),side:{v:[0,-1,0],r:[1,0,0],u:[0,0,1]},end:{v:[-1,0,0],r:[0,-1,0],u:[0,0,1]},top:{v:[0,0,1],r:[1,0,0],u:[0,1,0]}};
+const LIGHT=nrm([-0.35,-0.55,0.76]);
+const rgb=(c,f)=>`rgb(${Math.min(255,Math.round(c[0]*f))},${Math.min(255,Math.round(c[1]*f))},${Math.min(255,Math.round(c[2]*f))})`;
+
+function render(opts){
+  const V=VIEWS[opts.view], W=opts.w, H=opts.h, exploded=!!opts.exploded, ef=opts.ef||1;
+  const prj=p=>[dot(p,V.r),-dot(p,V.u),dot(p,V.v)];
+  const items=[];
+  let sel=opts.parts?parts.filter(p=>opts.parts.includes(p.no)):parts;
+  if(opts.filter)sel=sel.filter(opts.filter);
+  if(exploded)sel=sel.filter(p=>!p.noExplode);
+  sel.forEach(P=>{const off=exploded?(opts.exf?opts.exf(P):mul(P.ex,ef)):[0,0,0];
+    P.faces.forEach(f=>{const pts=f.pts.map(q=>add(q,off));items.push({type:'f',P,f,pts,off,depth:pts.reduce((s,q)=>s+dot(q,V.v),0)/pts.length});});
+  });
+  // Kette
+  let chainLinks=[];
+  if(opts.chain){
+    chainPath().forEach(st=>{linksAlong(st,24).forEach(L=>chainLinks.push(L));});
+  }
+  if(opts.chainLoose){ // Kette gestreckt neben der Maschine
+    opts.chainLoose.forEach(seg=>linksAlong(seg,24).forEach(L=>chainLinks.push(L)));
+  }
+  chainLinks.forEach(L=>{items.push({type:'c',L,depth:dot(L.c,V.v)+6});});
+  // Projektion / Einpassen
+  let mnx=1e9,mny=1e9,mxx=-1e9,mxy=-1e9;
+  items.forEach(it=>{const ps=it.type==='f'?it.pts:[it.L.c];ps.forEach(q=>{const s=prj(q);mnx=Math.min(mnx,s[0]);mxx=Math.max(mxx,s[0]);mny=Math.min(mny,s[1]);mxy=Math.max(mxy,s[1]);});});
+  const pad=opts.pad||[20,20,20,20]; // oben rechts unten links
+  let sc=opts.scale||Math.min((W-pad[1]-pad[3])/(mxx-mnx),(H-pad[0]-pad[2])/(mxy-mny));
+  let ox=pad[3]+((W-pad[1]-pad[3])-(mxx-mnx)*sc)/2-mnx*sc, oy=pad[0]+((H-pad[0]-pad[2])-(mxy-mny)*sc)/2-mny*sc;
+  if(opts.origin){ox=opts.origin[0];oy=opts.origin[1];}
+  const S=p=>{const s=prj(p);return[ox+s[0]*sc,oy+s[1]*sc];};
+  items.sort((a,b)=>a.depth-b.depth);
+  const out=[];const lw=opts.lw||0.7;
+  const P2=q=>q.map(v=>v.toFixed(1)).join(',');
+  items.forEach(it=>{
+    if(it.type==='f'){
+      const f=it.f,n=f.n||faceNormal(it.pts);
+      const lit=0.62+0.38*Math.abs(dot(n,LIGHT));
+      const col=opts.mono?rgb([255,255,255],0.86+0.14*Math.abs(dot(n,LIGHT))):rgb(it.P.col,lit);
+      const sp=it.pts.map(S);
+      const d='M'+sp.map(P2).join('L')+'Z';
+      if(f.cap){out.push(`<path d="${d}" fill="${col}" stroke="#1f1f1f" stroke-width="${lw}" stroke-linejoin="round"/>`);}
+      else{
+        out.push(`<path d="${d}" fill="${col}" stroke="${col}" stroke-width="0.6"/>`);
+        f.edges&&f.edges.forEach(([a,b,n1,n2])=>{
+          let draw=false;
+          if(f.crease)draw=true;
+          else if(n1&&n2){const c=dot(n1,n2);if(c<0.85)draw=true;else if(dot(n1,V.v)*dot(n2,V.v)<=0)draw=true;}
+          if(draw){const A=S(add(a,it.off)),B=S(add(b,it.off));out.push(`<line x1="${A[0].toFixed(1)}" y1="${A[1].toFixed(1)}" x2="${B[0].toFixed(1)}" y2="${B[1].toFixed(1)}" stroke="#1f1f1f" stroke-width="${lw}" stroke-linecap="round"/>`);}
+        });
+      }
+    }else{
+      const L=it.L;const d=L.dir;let side=L.k%2?[0,1,0]:cross(d,[0,1,0]);if(len(side)<1e-3)side=[0,0,1];side=nrm(side);
+      const pts=[];for(let i=0;i<16;i++){const t=i/16*Math.PI*2;pts.push(add(L.c,add(mul(d,Math.cos(t)*12),mul(side,Math.sin(t)*7.5))));}
+      const sp=pts.map(S);const dd='M'+sp.map(P2).join('L')+'Z';
+      out.push(`<path d="${dd}" fill="none" stroke="#2b2b2b" stroke-width="${(5.2*sc).toFixed(2)}"/>`);
+      out.push(`<path d="${dd}" fill="none" stroke="#9a9a9a" stroke-width="${(2.2*sc).toFixed(2)}"/>`);
+    }
+  });
+  return{svg:out.join(''),S,sc,prj,ox,oy};
+}
+// Bemaßung im 2D-Bildschirmraum
+function dimS(A,B,off,text,o={}){
+  const dx=B[0]-A[0],dy=B[1]-A[1],L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L,nx=-uy,ny=ux;
+  const a=[A[0]+nx*off,A[1]+ny*off],b=[B[0]+nx*off,B[1]+ny*off];const s=Math.sign(off)||1;
+  const ext=(P,Q)=>`<line x1="${(P[0]+nx*s*2).toFixed(1)}" y1="${(P[1]+ny*s*2).toFixed(1)}" x2="${(Q[0]+nx*s*4).toFixed(1)}" y2="${(Q[1]+ny*s*4).toFixed(1)}" stroke="#2a63a8" stroke-width=".5"/>`;
+  const ar=(P,dir)=>{const x=P[0],y=P[1],ax=ux*dir,ay=uy*dir;return`<path d="M${x},${y}L${x+ax*6+nx*2},${y+ay*6+ny*2}L${x+ax*6-nx*2},${y+ay*6-ny*2}Z" fill="#2a63a8"/>`;};
+  let ang=Math.atan2(dy,dx)*180/Math.PI;if(ang>90)ang-=180;if(ang<-90)ang+=180;
+  const mx=(a[0]+b[0])/2+nx*(o.tside?-1:1)*0, my=(a[1]+b[1])/2;
+  const toff=o.toff!=null?o.toff:-3;
+  const tx=mx+nx*toff*(s), ty=my+ny*toff*(s);
+  return ext(A,a)+ext(B,b)+`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="#2a63a8" stroke-width=".7"/>`+ar(a,1)+ar(b,-1)+
+    `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" transform="rotate(${ang.toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)})" text-anchor="middle" dominant-baseline="${(s*toff<0)?'auto':'hanging'}" font-size="${o.fs||9}" fill="#2a63a8" font-weight="600" style="paint-order:stroke" stroke="#fff" stroke-width="2.5">${text}</text>`;
+}
+const svgWrap=(w,h,body)=>`<svg viewBox="0 0 ${w} ${h}" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial">${body}</svg>`;
+function balloon(x,y,tx,ty,no){x=+x;y=+y;tx=+tx;ty=+ty;return`<line x1="${x}" y1="${y}" x2="${tx}" y2="${ty}" stroke="#b3170f" stroke-width=".8"/><circle cx="${x}" cy="${y}" r="1.8" fill="#b3170f"/><circle cx="${tx}" cy="${ty}" r="10.5" fill="#fff" stroke="#b3170f" stroke-width="1.3"/><text x="${tx}" y="${ty+3.8}" text-anchor="middle" font-size="11" font-weight="700" fill="#b3170f">${no}</text>`;}
+
+// =====================================================================
+buildModel();
+
+// ---------- Deckblatt ----------
+(function(){const W=760,H=380;const r=render({view:'iso',w:W,h:H,chain:true,pad:[10,10,10,10]});document.getElementById('hero').innerHTML=svgWrap(W,H,r.svg);})();
+
+// ---------- Ansichten ----------
+(function(){
+  const sc=0.30;
+  // Seitenansicht
+  {const W=760,H=360;const r=render({view:'side',w:W,h:H,scale:sc,origin:[200,335],chain:true,lw:.6});
+   const S=r.S;let d='';
+   d+=dimS(S([-100,0,0]),S([1100,0,0]),16,'1.200 (Fuß – Rad)');
+   d+=dimS(S([0,0,550]),S([1000,0,550]),18,'1.000 Bett');
+   d+=dimS(S([1260,0,0]),S([1260,0,1000]),-12,"1.000");
+   d+=dimS(S([1210,0,0]),S([1210,0,600]),-12,"600");
+   [[0,50],[50,450],[450,550],[550,950],[950,1000]].forEach(([a,b])=>{d+=dimS(S([a,0,1000]),S([b,0,1000]),-22,String(b-a),{fs:8});});
+   {const q=S(add(YK.h0,mul(YK.hdir,250)));d+=`<text x="${q[0]-14}" y="${q[1]}" font-size="9" fill="#555" text-anchor="end">Hebel 450</text>`;}
+   document.getElementById('viewSide').innerHTML=svgWrap(W,H,r.svg+d);}
+  // Stirnansicht
+  {const W=330,H=350;const r=render({view:'end',w:W,h:H,scale:sc,origin:[165,325],lw:.6,parts:[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]});
+   const S=r.S;let d='';
+   d+=dimS(S([0,-285,0]),S([0,285,0]),24,'570 (Fußmitte)');
+   d+=dimS(S([0,-145,1000]),S([0,145,1000]),-14,"290 (Bögen außen)");
+   
+   d+=dimS(S([0,-40,120]),S([0,40,120]),12,'80',{fs:7.5});
+   document.getElementById('viewEnd').innerHTML=svgWrap(W,H,r.svg+d);}
+  // Iso
+  {const W=400,H=350;const r=render({view:'iso',w:W,h:H,chain:true,pad:[10,10,10,10],lw:.6});document.getElementById('viewIso').innerHTML=svgWrap(W,H,r.svg);}
+  // Draufsicht
+  {const W=760,H=235;const r=render({view:'top',w:W,h:H,scale:sc,origin:[200,117],lw:.6,chain:true});
+   const S=r.S;let d='';
+   d+=dimS(S([-160,-345,0]),S([1160,-345,0]),-12,"1.320 (Zahnstange – Zahnstange)");
+   d+=dimS(S([1200,-345,0]),S([1200,345,0]),-12,"690");
+   d+=dimS(S([450,250,0]),S([550,250,0]),-14,"Spalt 100",{fs:8});d+=dimS(S([50,250,0]),S([450,250,0]),-14,"Füllraum 1",{fs:8});d+=dimS(S([550,250,0]),S([950,250,0]),-14,"Füllraum 2",{fs:8});
+   document.getElementById('viewTop').innerHTML=svgWrap(W,H,r.svg+d);}
+})();
+
+// ---------- Explosion ----------
+(function(){
+  const centroid=P=>{if(P.anchor)return P.anchor;let s=[0,0,0],n=0;P.faces.forEach(f=>f.pts.forEach(q=>{s=add(s,q);n++;}));return mul(s,1/n);};
+  const isY=P=>P.no>=13&&P.no<=23;
+  const EXY=[-380,0,40];
+  // --- Gesamtexplosion (Spannhebel als Einheit) ---
+  {const W=760,H=560;
+   const exf=P=>isY(P)?EXY:P.ex;
+   const r=render({view:'isoE',w:W,h:H,exploded:true,exf,pad:[24,24,24,24],lw:.6});
+   const S=r.S;let b='';
+   const lab={1:[-40,-60],2:[-60,-40],3:[40,-60],4:[50,-30],5:[60,30],6:[60,30],7:[-60,40],8:[60,30],9:[-50,30],10:[50,20],11:[50,-30],12:[45,-45]};
+   const done={};
+   parts.forEach(P=>{if(isY(P)||!P.label||done[P.no])return;done[P.no]=1;const a=S(add(centroid(P),P.ex));const o=lab[P.no]||[40,-40];b+=balloon(a[0],a[1],a[0]+o[0],a[1]+o[1],P.no);});
+   const y=S(add(RP(YK.hinge[0],YK.hinge[1],0),EXY));
+   b+=`<line x1="${y[0]}" y1="${y[1]}" x2="${y[0]-40}" y2="${y[1]-70}" stroke="#b3170f" stroke-width=".8"/><circle cx="${y[0]}" cy="${y[1]}" r="1.8" fill="#b3170f"/><rect x="${y[0]-125}" y="${y[1]-92}" width="140" height="22" rx="11" fill="#fff" stroke="#b3170f" stroke-width="1.3"/><text x="${y[0]-55}" y="${y[1]-77}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#b3170f">Spannhebel 13–23 ▼</text>`;
+   document.getElementById('explode').innerHTML=svgWrap(W,H,r.svg+b);}
+  // --- Detail Spannhebel + Kette ---
+  {const W=760,H=390;
+   const exf=P=>sub(P.ex,[-560,0,40]);
+   const tc=RP(YK.tube[0],YK.tube[1],0);
+   const loose=[[add(tc,[250,-420,-300]),add(tc,[750,-420,-300])],[add(tc,[250,-370,-300]),add(tc,[700,-370,-300])]];
+   const r=render({view:'isoE',w:W,h:H,exploded:true,exf,parts:[13,14,15,16,17,18,19,20,21,22,23],chainLoose:loose,pad:[50,40,50,40],lw:.7});
+   const S=r.S;let b='';
+   const lab={13:[-50,-35],14:[50,-35],15:[60,10],16:[-55,30],17:[55,30],18:[-55,15],19:[50,10],20:[50,10],21:[60,-15],22:[-50,-25],23:[50,-25]};
+   const done={};
+   parts.forEach(P=>{if(!isY(P)||!P.label||done[P.no])return;done[P.no]=1;const a=S(add(centroid(P),exf(P)));const o=lab[P.no]||[40,-40];b+=balloon(a[0],a[1],a[0]+o[0],a[1]+o[1],P.no);});
+   const c1=S(add(tc,[500,-420,-300]));b+=balloon(c1[0],c1[1],c1[0]-40,c1[1]-30,24);
+   const c2=S(add(tc,[750,-420,-300]));b+=balloon(c2[0],c2[1],c2[0]+40,c2[1]-15,25);
+   b+=`<text x="12" y="20" font-size="11" font-weight="700" fill="#333">Detail: Spannhebel und Kette</text><text x="12" y="36" font-size="9.5" fill="#8a6d10">■ Teil 2 – Kettenschlitten: 13, 14, 15, 21, 22, 23</text><text x="12" y="50" font-size="9.5" fill="#c06d1a">■ Teil 1 – Hebelbügel: 16, 17, 18, 19, 20</text>`;
+   document.getElementById('explodeY').innerHTML=svgWrap(W,H,r.svg+b);}
+})();
+
+// ---------- Teileliste ----------
+const BOM=[
+ ['Gestell'],
+ [1,'Längsholm','Winkelstahl L 50×50×5','1.000',2,7.5],
+ [2,'Querträger (Kopf/Heck)','Winkelstahl L 50×50×5','290',2,2.2],
+ [5,'Kettenanker (quer auf den Längsholmen)','Rundstahl Ø20','300',1,0.7],
+ [6,'Bein','Quadratrohr 40×40×3','600 (schräg)',4,8.2],
+ [7,'Fußtraverse vorn / hinten','Winkelstahl L 40×40×4','530',2,2.6],
+ [8,'Längsstrebe','Winkelstahl L 40×40×4','1.110',2,5.4],
+ [9,'Fußplatte','Blech 5 mm','60×60',2,0.3],
+ [10,'Rad Ø100, Bohrung 12','Vollgummi oder Nylon, Kaufteil','–',2,1.0],
+ [11,'Achsschraube M12×100 mit 2 Scheiben, Sicherungsmutter','Stahl verzinkt 8.8','–',2,0.3],
+ ['Bögen'],
+ [3,'Bogen, U-förmig gebogen (Zeichnung S. 6)','Flachstahl 40×8','1.120 gestreckt',4,11.3],
+ [4,'Verbindungsblech mittlere Bogenschenkel','Flachstahl 40×8','100',2,0.5],
+ ['Spannwerk'],
+ [12,'Zahnstange, 11 Zähne Teilung 50 (Zeichnung S. 6), je 2 an beiden Enden','Flachstahl 60×10','640',4,11.2],
+ [13,'Wange Kettenschlitten (Teil 2), Zeichnung S. 6','Flachstahl 60×8','200',2,1.5],
+ [14,'Kettenrohr (Teil 2)','Stahlrohr 33,7×4,0','170',1,0.5],
+ [15,'Gelenkwelle mit 2 Scheiben und Splinten (Teil 2)','Rundstahl Ø12 (Original ca. Ø10)','200',1,0.2],
+ [16,'Wange Hebelbügel (Teil 1), Zeichnung S. 6','Flachstahl 60×8','115',2,0.9],
+ [17,'Kletterbolzen (Teil 1)','Rundstahl Ø20','120',1,0.3],
+ [18,'Hebelsteg (Teil 1)','Flachstahl 30×8','104',1,0.2],
+ [19,'Hebelrohr (Teil 1), mittig am Steg in Verlängerung der Wangen','Stahlrohr 26,9×3,2 (¾″)','450',1,0.8],
+ [20,'Griff','Gummischlauch / Fahrradgriff','130',1,0.1],
+ [21,'Distanzhülse auf der Gelenkwelle','Stahlrohr 21,3×3,2','17',2,0.1],
+ [22,'Aufhängering für 8-mm-Kette, innen mind. 40 (vor dem Einschweißen auf das Kettenrohr schieben)','Kaufteil','–',2,0.4],
+ [23,'Verbindungsglied 8 mm (Ring – Kette)','Kaufteil GK 8','–',2,0.2],
+ ['Kette'],
+ [24,'Spannkette, 2 Stränge je 1,4 m','Rundstahlkette 8 mm DIN 766 / GK 8','2 × 1.400',2,3.9],
+ [25,'Einhängehaken (Rundhaken) 8 mm','Kaufteil, je Kette 1','–',2,0.6],
+];
+(function(){
+  let h='<tr><th class="c">Pos.</th><th>Benennung</th><th>Material / Halbzeug</th><th class="n">Länge / Maß</th><th class="c">Stk.</th><th class="n">Gewicht kg</th></tr>';let tot=0;
+  BOM.forEach(r=>{if(r.length===1){h+=`<tr class="grp"><td colspan="6">${r[0]}</td></tr>`;return;}tot+=r[5];
+    h+=`<tr><td class="c"><span class="pos">${r[0]}</span></td><td>${r[1]}</td><td>${r[2]}</td><td class="n">${r[3]}</td><td class="c">${r[4]}</td><td class="n">${r[5].toFixed(1).replace('.',',')}</td></tr>`;});
+  h+=`<tr class="sum"><td colspan="5">Gesamtgewicht ca.</td><td class="n">${Math.round(tot)} kg</td></tr>`;
+  document.getElementById('bom').innerHTML=h;
+})();
+
+// ---------- Einkaufsliste ----------
+const SHOP=[
+ ['Stahl (Zuschnitt beim Stahlhändler)'],
+ ['1, 2','Winkelstahl L 50×50×5','2,6 m','9,8 kg',30,40],
+ ['7, 8','Winkelstahl L 40×40×4','3,3 m','7,9 kg',24,32],
+ ['3, 4','Flachstahl 40×8','4,7 m','11,8 kg',35,47],
+ ['13, 16, 18','Flachstahl 60×8 und 30×8','0,8 m','3,4 kg',10,15],
+ ['6','Quadratrohr 40×40×3','2,4 m','8,2 kg',25,33],
+ ['12','Flachstahl 60×10','2,6 m','12,2 kg',36,48],
+ ['9','Blechzuschnitt 5 mm, 60×60','2 Stück','0,3 kg',3,5],
+ ['14','Stahlrohr 33,7×4,0','0,2 m','0,5 kg',3,5],
+ ['5, 17','Rundstahl Ø20','0,5 m','1,2 kg',4,6],
+ ['15, 21','Rundstahl Ø12 und Rohr 21,3×3,2 (Reststücke)','0,3 m','0,3 kg',2,4],
+ ['19','Stahlrohr 26,9×3,2','0,5 m','0,8 kg',4,6],
+ ['Kaufteile'],
+ ['24','Rundstahlkette 8 mm verzinkt','3 m','',30,45],
+ ['25','Einhängehaken 8 mm','2 Stück','',10,20],
+ ['22','Aufhängering für 8-mm-Kette','2 Stück','',8,14],
+ ['23','Verbindungsglied 8 mm','2 Stück','',8,14],
+ ['10','Rad Ø100, Bohrung 12','2 Stück','',12,20],
+ ['11','Schraube M12×100, Scheiben, Sicherungsmuttern','2 Sätze','',4,6],
+ ['20','Griffschlauch','1 Stück','',2,4],
+ ['Verbrauchsmaterial'],
+ ['–','Schweißdraht oder Elektroden, Schutzgas-Anteil','','',12,18],
+ ['–','Trenn-, Schrupp- und Fächerscheiben','','',10,15],
+ ['–','Grundierung und Lack rot (je 0,75 l), Pinsel','','',30,45],
+];
+(function(){
+  let h='<tr><th class="c">Pos.</th><th>Artikel</th><th>Menge</th><th class="n">Gewicht</th><th class="n">Preis von</th><th class="n">bis</th></tr>';let lo=0,hi=0,glo=0,ghi=0,grp='';
+  const sub=()=>grp?`<tr><td></td><td colspan="3" style="text-align:right;color:#555">Summe ${grp}</td><td class="n">${glo} €</td><td class="n">${ghi} €</td></tr>`:'';
+  SHOP.forEach(r=>{if(r.length===1){h+=sub();glo=ghi=0;grp=r[0].split(' (')[0];h+=`<tr class="grp"><td colspan="6">${r[0]}</td></tr>`;return;}
+    lo+=r[4];hi+=r[5];glo+=r[4];ghi+=r[5];h+=`<tr><td class="c">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="n">${r[3]}</td><td class="n">${r[4]} €</td><td class="n">${r[5]} €</td></tr>`;});
+  h+=sub();
+  h+=`<tr class="sum"><td colspan="4">Gesamtkosten Material ca.</td><td class="n">${lo} €</td><td class="n">${hi} €</td></tr>`;
+  document.getElementById('shop').innerHTML=h;
+})();
+
+// ---------- QR ----------
+(function(){
+  const url='https://kokostheminer.github.io/gridiron-dice/biardlpress/Biardlpress-Bauplan.pdf';
+  try{const q=qrcode(0,'M');q.addData(url);q.make();document.getElementById('qr').innerHTML=q.createSvgTag({cellSize:4,margin:2});}catch(e){document.getElementById('qr').textContent=url;}
+})();
+
+// ---------- Prinzipskizzen ----------
+(function(){
+  // A: Seitenansicht mit Bündeln in beiden Füllräumen
+  const W=760,H=285,sc=0.25,O=[350,276];
+  const front=P=>(P.no===3||P.no===4)&&P.side<0;
+  const r1=render({view:'side',w:W,h:H,scale:sc,origin:O,lw:.6,filter:P=>!front(P)&&P.no!==23});
+  const r2=render({view:'side',w:W,h:H,scale:sc,origin:O,lw:.6,chain:true,parts:[3,4,23],filter:P=>front(P)||P.no===23});
+  const S=r1.S;let s=r1.svg;
+  let seed=7;const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280;};
+  const stick=(x,z,rr)=>{const p=S([x,0,z]);return`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${(rr*sc).toFixed(1)}" fill="#e9d3a8" stroke="#a07a3a" stroke-width=".5"/>`;};
+  for(let i=0;i<260;i++){const a=rnd()*Math.PI*2,rr=Math.sqrt(rnd())*178;const x=BAY[0]+Math.cos(a)*rr,z=BC_Z+Math.sin(a)*rr;s+=stick(x,z,7+rnd()*8);}
+  for(let i=0;i<150;i++){const x=BAY[1]-180+rnd()*360,z=618+Math.pow(rnd(),1.6)*170;const dx=Math.abs(x-BAY[1]);if(z<704&&dx>96&&Math.hypot(dx-96,704-z)>88)continue;s+=stick(x,z,7+rnd()*8);}
+  s+=r2.svg;
+  const lab=(x,z,t,anc,col)=>{const p=S([x,0,z]);return`<text x="${p[0]}" y="${p[1]}" font-size="10.5" font-weight="600" text-anchor="${anc||'middle'}" fill="${col||'#222'}">${t}</text>`;};
+  s+=lab(BAY[0]+190,1075,'Füllraum 1: pressen und binden','end','#b3170f');
+  s+=lab(BAY[1]-150,1075,'Füllraum 2: wird befüllt','start','#2a63a8');
+  const arrow=(x1,z1,x2,z2)=>{const a=S([x1,0,z1]),b=S([x2,0,z2]);const dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy),ux=dx/l,uy=dy/l;return`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]-ux*6}" y2="${b[1]-uy*6}" stroke="#2a63a8" stroke-width="2"/><path d="M${b[0]},${b[1]}L${b[0]-ux*9-uy*4},${b[1]-uy*9+ux*4}L${b[0]-ux*9+uy*4},${b[1]-uy*9-ux*4}Z" fill="#2a63a8"/>`;};
+  s+=arrow(BAY[1]+40,1040,BAY[1]+40,900);
+  const lb=(p,t,dx,dy)=>{const q=S(p);return balloon(q[0],q[1],q[0]+dx,q[1]+dy,t);};
+  s+=lb([BAY[1]+196,0,880],3,40,-20)+lb([ANCHOR[0],0,ANCHOR[1]],5,30,40)+lb([1060,0,350],12,40,10)+lb(RP(YK.tube[0],YK.tube[1],0),14,-35,-35)+lb([BAY[0]-150,0,900],24,-45,10)+lb([ANCHOR[0]-14,0,ANCHOR[1]+40],25,-30,-70)+lb(add(YK.h0,mul(YK.hdir,220)),19,-45,10);
+  document.getElementById('principleA').innerHTML=svgWrap(W,H,s);
+})();
+(function(){
+  // B: Seitenansicht Zahnstange + Spannhebel
+  const r=render({view:'side',w:360,h:330,parts:[12,13,14,15,16,17,18,19,20,21,22,23,7],filter:P=>!((P.no===13||P.no===16)&&P.side<0),scale:0.41,origin:[205,320],lw:.8});
+  const S=r.S;let s=r.svg;
+  // Kettenzug
+  const tc=RP(YK.tube[0],YK.tube[1],0);const a=S(tc),b=S(add(tc,mul(chainGeo().dir,190)));
+  s+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#333" stroke-width="3.5" stroke-dasharray="7 3"/>`;
+  s+=`<text x="${b[0]-4}" y="${b[1]+30}" font-size="10" text-anchor="end" fill="#222">Kette zum Bündel ►</text>`;
+  // Pump-Pfeil am Hebel
+  const hdir=YK.hdir;
+  const h0=YK.h0;const he=S(add(h0,mul(hdir,300)));
+  { // Doppelpfeil quer zum Hebel = Pumpbewegung
+    const q=S(add(h0,mul(hdir,331)));let ux=q[0]-he[0],uy=q[1]-he[1];const l=Math.hypot(ux,uy)||1;ux/=l;uy/=l;const nx=-uy,ny=ux;
+    const A=[he[0]-nx*40,he[1]-ny*40],B=[he[0]+nx*40,he[1]+ny*40];
+    const head=(P,sg)=>`<path d="M${P[0]},${P[1]}L${P[0]-sg*nx*9+ux*4},${P[1]-sg*ny*9+uy*4}L${P[0]-sg*nx*9-ux*4},${P[1]-sg*ny*9-uy*4}Z" fill="#2a63a8"/>`;
+    s+=`<line x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" stroke="#2a63a8" stroke-width="2"/>`+head(A,-1)+head(B,1);
+    s+=`<text x="${B[0]+6}" y="${B[1]+4}" font-size="10" fill="#2a63a8">pumpen</text>`;
+  }
+  // Laufrichtung Bügel
+  const p1=S(RP(YK.tube[0]+40,-30,0)),p2=S(RP(YK.tube[0]-110,-30,0));
+  s+=`<line x1="${p1[0]}" y1="${p1[1]}" x2="${p2[0]}" y2="${p2[1]}" stroke="#b3170f" stroke-width="2"/><path d="M${p2[0]},${p2[1]}l-5,-10h10z" fill="#b3170f"/>`;
+  s+=`<text x="${p1[0]+8}" y="${p1[1]+4}" font-size="9.5" fill="#b3170f">Bügel klettert</text><text x="${p1[0]+8}" y="${p1[1]+16}" font-size="9.5" fill="#b3170f">Zahn für Zahn</text>`;
+  const lb=(p,t,dx,dy)=>{const q=S(p);return balloon(q[0].toFixed(1),q[1].toFixed(1),(q[0]+dx).toFixed(1),(q[1]+dy).toFixed(1),t);};
+  s+=lb(RP(YK.tube[0]+130,30,90),12,40,-10)+lb(RP(YK.tube[0],YK.tube[1],0),14,70,-40)+lb(RP(YK.rung[0],YK.rung[1],0),17,80,10)+lb(RP(YK.hinge[0],YK.hinge[1],0),15,-75,-45)+lb(RP(YK.p2[1]-20,85,0),13,-60,-25)+lb(RP(YK.p1[0]+15,85,0),16,-60,45);
+  document.getElementById('principleB').innerHTML=svgWrap(360,330,s);
+})();
+
+// ---------- Einzelteile ----------
+(function(){
+  // Wiege
+  const W=330,H=330,sc=0.66,ox=165,oy=30;const T=(y,z)=>[ox+y*sc,oy+(1000-z)*sc];
+  const pO=[[-200,1000],[-200,704],...arc(-96,704,104,Math.PI,1.5*Math.PI,14).slice(1),[96,600],...arc(96,704,104,1.5*Math.PI,2*Math.PI,14).slice(1),[200,1000]];
+  const pI=[[192,1000],[192,704],...arc(96,704,96,0,-Math.PI/2,14).slice(1),[-96,608],...arc(-96,704,96,1.5*Math.PI,Math.PI,14).slice(1),[-192,1000]];
+  const d='M'+[...pO,...pI].map(p=>T(...p).map(v=>v.toFixed(1)).join(',')).join('L')+'Z';
+  let s=`<path d="${d}" fill="#f2c9c4" stroke="#222" stroke-width="1"/>`;
+  s+=`<path d="M${[[-196,1000],[-196,704],...arc(-96,704,100,Math.PI,1.5*Math.PI,14).slice(1),[96,604],...arc(96,704,100,1.5*Math.PI,2*Math.PI,14).slice(1),[196,1000]].map(p=>T(...p).map(v=>v.toFixed(1)).join(',')).join('L')}" fill="none" stroke="#888" stroke-width=".6" stroke-dasharray="8 3 2 3"/>`;
+  s+=dimS(T(-200,1000),T(200,1000),-14,'400 außen');
+  s+=dimS(T(-192,760),T(192,760),12,'392 innen');
+  s+=dimS(T(200,600),T(200,1000),-16,'400');
+  s+=dimS(T(-96,600),T(96,600),22,'192 gerade');
+  const rr=T(-96,704),rq=T(-96-96*0.707,704-96*0.707);
+  s+=`<line x1="${rr[0]}" y1="${rr[1]}" x2="${rq[0]}" y2="${rq[1]}" stroke="#2a63a8" stroke-width=".7"/><text x="${rr[0]-4}" y="${rr[1]+16}" font-size="9" fill="#2a63a8" font-weight="600" text-anchor="end">R 96 innen</text>`;
+  s+=`<text x="${ox}" y="${T(0,690)[1]}" font-size="9.5" text-anchor="middle" fill="#333">Flachstahl 40×8</text><text x="${ox}" y="${T(0,690)[1]+13}" font-size="9.5" text-anchor="middle" fill="#333">gestreckte Länge 1.120</text><text x="${ox}" y="${T(0,690)[1]+26}" font-size="9.5" text-anchor="middle" fill="#333">(Schenkel 2×296 + Bögen 2×157 + 192)</text>`;
+  document.getElementById('dWiege').innerHTML=svgWrap(W,H,s);
+})();
+(function(){
+  // Wangen der beiden Spannhebel-Teile (je 2 Stück, Flachstahl 60×8). x = Länge von unten, y = Abstand von der Zahnseite-Kante
+  const W=330,H=330,sc=1.25;
+  let s='';
+  const B=60;
+  const drawPlate=(x0,y0,L,holes,title,col,stegEnd)=>{
+    const X=v=>x0+v*sc,Y=v=>y0+(B-v)*sc;let o='';
+    o+=`<text x="${x0}" y="${y0-26}" font-size="10" font-weight="700" fill="#333">${title}</text>`;
+    o+=`<rect x="${X(0)}" y="${Y(B)}" width="${L*sc}" height="${B*sc}" fill="${col}" stroke="#222" stroke-width="1"/>`;
+    if(stegEnd)o+=`<rect x="${X(0)}" y="${Y(B)}" width="${8*sc}" height="${30*sc}" fill="none" stroke="#555" stroke-width=".8" stroke-dasharray="3 2"/>`;
+    holes.forEach(([px,py,d,t])=>{o+=`<circle cx="${X(px)}" cy="${Y(py)}" r="${d/2*sc}" fill="#fff" stroke="#222" stroke-width="1"/><line x1="${X(px)-d/2*sc-3}" y1="${Y(py)}" x2="${X(px)+d/2*sc+3}" y2="${Y(py)}" stroke="#888" stroke-width=".5"/><line x1="${X(px)}" y1="${Y(py)-d/2*sc-3}" x2="${X(px)}" y2="${Y(py)+d/2*sc+3}" stroke="#888" stroke-width=".5"/>`;
+      o+=`<text x="${X(px)+d/2*sc+3}" y="${Y(py)-d/2*sc+2}" font-size="8" fill="#222">${t}</text>`;});
+    let last=0;holes.slice().sort((a,b)=>a[0]-b[0]).forEach(([px])=>{o+=dimS([X(last),Y(0)],[X(px),Y(0)],13,String(px-last),{fs:8});last=px;});
+    o+=dimS([X(last),Y(0)],[X(L),Y(0)],13,String(L-last),{fs:8});
+    o+=dimS([X(0),Y(0)],[X(L),Y(0)],30,String(L));
+    holes.forEach(([px,py])=>{o+=dimS([X(L),Y(0)],[X(L),Y(py)],-10-(py>35?16:0),String(py),{fs:7.5});});
+    o+=dimS([X(0),Y(0)],[X(0),Y(B)],12,String(B),{fs:8});
+    return o;
+  };
+  const t2=[[30,YK.hinge[1]-YK.W[0],12.5,'Ø12,5 (15)'],[120,YK.tube[1]-YK.W[0],34.5,'Ø34,5 (14)']];
+  const t1=[[YK.hinge[0]-YK.p1[0],YK.hinge[1]-YK.W[0],12.5,'Ø12,5 (15)'],[YK.rung[0]-YK.p1[0],YK.rung[1]-YK.W[0],21,'Ø21 (17)']];
+  s+=drawPlate(28,40,200,t2,'Teil 2 – Kettenschlitten, Pos. 13','#f3e3b0',false);
+  s+=drawPlate(28,205,115,t1,'Teil 1 – Hebelbügel, Pos. 16','#f8dcc0',true);
+  s+=`<text x="${28+115*1.25+40}" y="${205+14}" font-size="8.5" fill="#555">gestrichelt: Hebelsteg 18</text><text x="${28+115*1.25+40}" y="${205+26}" font-size="8.5" fill="#555">unten an die Kante,</text><text x="${28+115*1.25+40}" y="${205+38}" font-size="8.5" fill="#555">Hebelrohr 19 mittig daran,</text><text x="${28+115*1.25+40}" y="${205+50}" font-size="8.5" fill="#555">in Verlängerung der Wangen</text>`;
+  s+=`<text x="10" y="326" font-size="8.5" fill="#555">Untere Kante = Zahnseite · Maße von links und von unten</text>`;
+  document.getElementById('dWange').innerHTML=svgWrap(W,H,s);
+})();
+(function(){
+  // Zahnstange liegend
+  const W=760,H=170,sc=1.08,ox=24,oy=40;const T=(u,w)=>[ox+u*sc,oy+(60-w)*sc];
+  const pr=rackProfile2D();
+  let s=`<path d="M${pr.map(([u,w])=>T(u,w).map(v=>v.toFixed(1)).join(',')).join('L')}Z" fill="#f8dcc0" stroke="#222" stroke-width="1"/>`;
+  s+=dimS(T(0,0),T(RACK.len,0),22,'640');
+  s+=dimS(T(0,60),T(RACK.first,60),-12,'80',{fs:8});
+  s+=dimS(T(RACK.first,60),T(RACK.first+RACK.pitch,60),-12,'Teilung 50',{fs:8});
+  const b=RACK.first+RACK.pitch*2;
+  s+=dimS(T(b,60),T(b+25,60),-12,'25',{fs:8});s+=dimS(T(b+25,60),T(b+35,60),-12,'10',{fs:8});
+  s+=dimS(T(RACK.len,0),T(RACK.len,60),-14,'60');
+  s+=dimS(T(b+35,42),T(b+35,60),-10,'18',{fs:8});
+  s+=`<text x="${T(320,30)[0]}" y="${T(320,30)[1]+4}" font-size="10" text-anchor="middle" fill="#333">Flachstahl 60×10 · 11 Zahnlücken · Teilung 50 · Zahngrund Ø10 vorbohren</text>`;
+  s+=`<text x="${T(0,0)[0]}" y="${T(0,0)[1]+40}" font-size="9" fill="#555">◄ unten (auf Fußtraverse 7)</text><text x="${T(RACK.len,0)[0]}" y="${T(RACK.len,0)[1]+40}" font-size="9" fill="#555" text-anchor="end">oben (an Querträger 2) ►</text>`;
+  s+=`<text x="${T(RACK.len,60)[0]+0}" y="${T(RACK.len,60)[1]-6}" font-size="8.5" fill="#555" text-anchor="end">Zahnseite zeigt nach außen (vom Bett weg) · steile Flanke oben</text>`;
+  document.getElementById('dRack').innerHTML=svgWrap(W,H,s);
+})();
+(function(){
+  const r=render({view:"iso",w:360,h:260,parts:[13,14,15,16,17,18,19,20,21,22,23],pad:[20,20,20,20],lw:.7});
+  const S=r.S;let s=r.svg;
+  document.getElementById('dYoke').innerHTML=svgWrap(360,260,s);
+})();
+window.__READY=true;
+if(/^#p\d$/.test(location.hash)){const k=+location.hash[2];document.querySelectorAll('.page').forEach((p,i)=>{if(i!==k-1)p.style.display='none';else p.style.margin='0';});document.body.style.background='#fff';}
+</script>
+</body>
+</html>
