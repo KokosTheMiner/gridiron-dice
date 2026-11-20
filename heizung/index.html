@@ -495,7 +495,7 @@ const CONFIG = {
   BASE: "tippspiel/heizung",     // Pfad in der Datenbank (liegt im freigegebenen Bereich)
   HAUS: "eta-twin"               // gleicher Code auf allen Geräten = gleiche Daten
 };
-const DEFAULT_CFG = { kgFuell: 60, kwhHolz: 4.1, kwhPellet: 4.8, sackKg: 15, kgRm: 480,
+const DEFAULT_CFG = { maschRm: 3, kgFuell: 60, kwhHolz: 4.1, kwhPellet: 4.8, sackKg: 15, kgRm: 480,
                       kistenG: 64, volG: 1.584, kistenK: 28, volK: 1.287, srmRm: 1.4, rmFm: 1.4, traktor: 0, trocken: 18, bunkerG: 3, sackPreis: 9, pelBunkerS: 15, kesselL: 60, pelDichte: 0.65, reserve: 1, invMonat: 6, invOn: true, tractors: [{ name: "LS", lh: 2.83 }, { name: "International", lh: 3.2 }],
                       jahr: "heiz", hjStart: 8, saegVon: 7, saegBis: 8,
                       ort: "Großrußbach (A-2114)", lat: 48.47412, lon: 16.41649 };
@@ -1295,6 +1295,7 @@ const LAGER_FIELDS = [
   ["bunkerG", "Bunker fasst (große Kisten)", 1],
   ["srmRm", "Schüttraummeter je Raummeter", 0.05, "1 rm Meterholz ergibt geschnitten (33 cm, lose geworfen) ca. 1,4 srm. Daraus folgt: 1 srm ≈ kg/rm ÷ 1,4."],
   ["rmFm", "Raummeter je Festmeter", 0.05, "1 fm (Auktion) ≈ 1,4 rm geschlichtetes Meterholz."],
+  ["maschRm", "Pauschale Motorsäge, Spalter, Kettenöl, Verschleiß (€ je rm)", 0.5, "Wird bei jedem Holzlos je rm am Stoß dazugerechnet."],
   ["traktor", "Zusatzkosten je Traktorstunde (€)", 1, "Verschleiß, Versicherung usw. – der Diesel wird extra über den Verbrauch je Traktor gerechnet. 0 = nur Diesel."],
   ["trocken", "Trocknungszeit am Meterstoß (Monate)", 1, "Mindestens 1,5 Jahre = 18 Monate, bevor das Holz gesägt und in Kisten kommt."],
   ["saegVon", "Sägezeit von Monat (1–12)", 1, "Gesägt wird nur im Hochsommer: 7 = Juli"],
@@ -1315,14 +1316,14 @@ function lager(until) {   // until = Stichtag (für Jahresbericht), sonst jetzt
   const Y = t => (years[yearKey(t)] ||= { buy: 0, mach: 0, other: 0, rm: 0, h: 0, mrm: 0, mcost: 0 });
   for (const e of src) if (e.k === "buy") {
     const rm = e.einheit === "rm" ? (+e.menge || 0) : (+e.menge || 0) * c.rmFm, k = (+e.preis || 0) + (+e.neben || 0);
-    lose[e.id] = { id: e.id, e, rmKauf: rm, holRm: 0, hol: 0, h: 0, sawnSrm: 0, g: 0, kl: 0, cost: k, firstHol: null };
+    lose[e.id] = { id: e.id, e, rmKauf: rm, holRm: 0, hol: 0, h: 0, holCost: 0, sawnSrm: 0, g: 0, kl: 0, cost: k, firstHol: null };
     const y = Y(e.t); y.buy += k; y.rm += rm;
   }
   for (const e of src) {
     const L = e.los && lose[e.los];
     if (e.k === "hol") {
       const k = holCost(e), y = Y(e.t); y.mach += k; y.h += +e.h || 0;
-      if (L) { L.holRm += +e.rm || 0; L.hol++; L.h += +e.h || 0; L.cost += k; L.firstHol ??= e.t; }
+      if (L) { L.holRm += +e.rm || 0; L.hol++; L.h += +e.h || 0; L.cost += k; L.holCost += k; L.firstHol ??= e.t; }
     } else if (e.k === "cost") {
       Y(e.t).other += +e.eur || 0; if (L) L.cost += +e.eur || 0;
     } else if (e.k === "saeg") {
@@ -1363,8 +1364,26 @@ function lager(until) {   // until = Stichtag (für Jahresbericht), sonst jetzt
     l.cutAt = sawReady(l.dryAt);                                         // erster Sommer nach der Trocknung
     l.done = l.measured && l.sawnSrm > 0 && l.stoss <= l.basis * 0.03;
     l.yield = l.measured && l.e.einheit !== "rm" && +l.e.menge ? l.basis / +l.e.menge : null;   // rm je gekauftem fm
-    if (l.measured) { const y = years[yearKey(l.e.t)]; y.mrm += l.basis; y.mcost += l.cost; }
   }
+  // Unbekannte Kaufpreise und fehlende Traktorfahrten: Ø der letzten 2 Versteigerungen (je rm am Stoß).
+  // Dazu je rm eine Pauschale für Motorsäge, Spalter, Kettenöl und Verschleiß.
+  const refs = L.filter(l => l.measured && +l.e.preis > 0 && !l.e.preisEst).sort((a, b) => b.e.t - a.e.t).slice(0, 2);
+  const refRm = refs.reduce((s, l) => s + l.basis, 0);
+  const refPrice = refRm ? refs.reduce((s, l) => s + (+l.e.preis || 0) + (+l.e.neben || 0), 0) / refRm : null;
+  const dRefs = refs.filter(l => l.hol), dRm = dRefs.reduce((s, l) => s + l.basis, 0);
+  const refDiesel = dRm ? dRefs.reduce((s, l) => s + l.holCost, 0) / dRm : null;
+  for (const l of L) {
+    if (!(l.measured || l.hol)) continue;
+    const y = Y(l.e.t);
+    if (l.e.preisEst && refPrice != null) {
+      const d = refPrice * l.basis - ((+l.e.preis || 0) + (+l.e.neben || 0));
+      l.cost += d; y.buy += d; l.priceEst = refPrice;
+    }
+    if (l.measured && !l.hol && refDiesel != null) { const d = refDiesel * l.basis; l.cost += d; y.mach += d; l.dieselEst = refDiesel; }
+    const m = (+c.maschRm || 0) * l.basis; if (m) { l.cost += m; y.mach += m; l.masch = m; }
+  }
+  for (const l of L) if (l.measured) { const y = years[yearKey(l.e.t)]; y.mrm += l.basis; y.mcost += l.cost; }
+  const ref = { price: refPrice, diesel: refDiesel, names: refs.map(l => losName(l.id)) };
   // Verbrauch: Ø Kesselfüllungen pro Tag (letzte 60 Tage, sonst letztes Jahr)
   const now = until ? Math.min(until, Date.now()) : Date.now();
   const f60 = totals(now - 60 * 864e5, now).fills, f365 = totals(now - 365 * 864e5, now).fills;
@@ -1431,7 +1450,7 @@ function lager(until) {   // until = Stichtag (für Jahresbericht), sonst jetzt
     const added = src.filter(e => e.k === "sack" && e.t > standP.t).reduce((s, e) => s + (+e.n || 0) * c.sackKg, 0);
     pellets = { stand: standP, kgAt, added, kg: kgAt + added };
   }
-  return { lose: L, years, full, fullG, fullK, resG, resK, resFor, emptyG: c.kistenG - fullG, emptyK: c.kistenK - fullK, srm, kg, perDay, bunker, measured, burned, bunks, leers, gifts, stands, lastStand, pellets };
+  return { lose: L, ref, years, full, fullG, fullK, resG, resK, resFor, emptyG: c.kistenG - fullG, emptyK: c.kistenK - fullK, srm, kg, perDay, bunker, measured, burned, bunks, leers, gifts, stands, lastStand, pellets };
 }
 
 /* ---------- Holz-Kreislauf: reicht der Vorrat? Wie viel muss diesen Winter gemacht werden? ---------- */
@@ -1570,12 +1589,13 @@ function renderLager() {
       : now >= l.dryAt ? `<span class="pill ok">trocken ✓</span> <span class="pill">✂ ab Sommer ${new Date(l.cutAt).getFullYear()}</span>`
       : `<span class="pill wait">trocknet bis ${fmtMonYear(l.dryAt)}</span> <span class="pill">✂ ab Sommer ${new Date(l.cutAt).getFullYear()}</span>`;
     return `<div class="los"><div class="hd">🌲 ${esc(losName(l.id))} ${e.art ? `<span class="pill">${esc(e.art)}</span>` : ""} ${status}<button data-edit="${l.id}" title="Ändern">✎</button></div>
-      <div class="meta">Gekauft ${fmtDayShort.format(e.t)} · <b>${num(e.menge || 0, 1)} ${e.einheit || "fm"}</b> · Kauf ${eur(e.preis)}${+e.neben ? ` + ${eur(e.neben)} Nebenkosten` : ""}</div>
+      <div class="meta">Gekauft ${fmtDayShort.format(e.t)} · <b>${num(e.menge || 0, 1)} ${e.einheit || "fm"}</b> · Kauf ${l.priceEst ? `unbekannt, ≈ ${eur(l.priceEst * l.basis)}` : eur(e.preis)}${+e.neben ? ` + ${eur(e.neben)} Nebenkosten` : ""}</div>
       ${l.hol ? `<div class="meta">Geholt: ${l.hol}× ab ${fmtDayShort.format(l.firstHol)}${l.h ? ` · Traktor ${num(l.h, 1)} h` : ""}</div>` : ""}
       ${l.measured
         ? `<div class="meta">📏 Vermessen ${e.tMess ? fmtDayShort.format(e.tMess) : ""}: <b>${num(l.basis, 1)} rm</b> am Stoß${l.yield ? ` · Ausbeute ${num(l.yield, 2)} rm je fm` : ""}</div>
            <div class="meta">Am Meterstoß noch: <b>${num(l.stoss, 1)} rm</b>${l.g || l.kl ? ` · gesägt: ${kistenTxt(l.g, l.kl)}` : ""}</div>
-           <div class="meta">Kosten gesamt <b>${eur(l.cost)}</b> · <b style="color:var(--holz)">${eur(lc.perRm)}/rm</b> · ≈ ${num(lc.perFill, 2)} € je Kesselfüllung · ${num(lc.ctKwh, 1)} ct/kWh</div>`
+           <div class="meta">Kosten gesamt <b>${eur(l.cost)}</b> · <b style="color:var(--holz)">${eur(lc.perRm)}/rm</b> · ≈ ${num(lc.perFill, 2)} € je Kesselfüllung · ${num(lc.ctKwh, 1)} ct/kWh</div>
+           ${l.priceEst || l.dieselEst || l.masch ? `<div class="meta" style="color:var(--muted)">darin ${[l.priceEst ? `≈ Kaufpreis ${eur(l.priceEst)}/rm (Ø der letzten 2 Versteigerungen)` : "", l.dieselEst ? `≈ Traktorsprit ${eur(l.dieselEst * l.basis)} (Ø ${num(l.dieselEst, 2)} €/rm der letzten 2 Versteigerungen)` : "", l.masch ? `Pauschale Motorsäge/Spalter ${eur(l.masch)}` : ""].filter(Boolean).join(" · ")}</div>` : ""}`
         : `<div class="meta">Kosten bisher <b>${eur(l.cost)}</b> · Preis je rm erst nach dem Vermessen (geschätzt ≈ ${num(l.rmKauf, 1)} rm)</div>
            ${l.g || l.kl ? `<div class="meta">gesägt: ${kistenTxt(l.g, l.kl)}</div>` : ""}
            <button class="big b-plain" data-mess="${l.id}" style="margin-top:8px;padding:12px;font-size:15px">📏 Fertig aufgearbeitet – jetzt vermessen</button>`}
@@ -1869,7 +1889,7 @@ function buildReport(year, mode) {
           ${SVP.net != null && (SVP.T.kg || SVP.T.pkg) ? `<br>Vorjahr: ${eur(SVP.net)}` : ""}</div>
       </div>
       ${cumN > 1 ? `<div class="rp-box good" style="margin-top:6px">Seit Beginn der Aufzeichnung (${cumN} ${mode === "saison" ? "Heizjahre" : "Jahre"}) insgesamt gespart: <b style="font-size:1.15em">${cumEst ? "≈ " : ""}${eur(cum)}</b></div>` : ""}
-      <div class="rp-note">Pelletspreis: ${prTxt}. Umrechnung über den Heizwert: 1 kg Holz (${num(S.cfg.kwhHolz, 1)} kWh) ersetzt ${num(S.cfg.kwhHolz / S.cfg.kwhPellet, 2)} kg Pellets (${num(S.cfg.kwhPellet, 1)} kWh). Holzkosten = Kauf, Auktion, Traktor und Maschinen der verheizten Lose. Die eigene Arbeitszeit ist nicht eingerechnet.</div>`;
+      <div class="rp-note">Pelletspreis: ${prTxt}. Umrechnung über den Heizwert: 1 kg Holz (${num(S.cfg.kwhHolz, 1)} kWh) ersetzt ${num(S.cfg.kwhHolz / S.cfg.kwhPellet, 2)} kg Pellets (${num(S.cfg.kwhPellet, 1)} kWh). Holzkosten = Kauf, Auktion, Traktor und Maschinen der verheizten Lose, dazu ${num(S.cfg.maschRm, 2)} € je rm Pauschale für Motorsäge, Spalter und Kettenöl. Unbekannte Kaufpreise und fehlende Traktorfahrten: Ø der letzten 2 Versteigerungen. Die eigene Arbeitszeit ist nicht eingerechnet.</div>`;
     })()}
   </div>
 
@@ -2130,6 +2150,7 @@ function lagerForm(kind, id) {
     <div class="hint">fm = Festmeter (wie bei der Auktion), rm = Raummeter geschlichtet</div>
     ${numIn("fPreis", "Kaufpreis (€)", e?.preis)}
     ${numIn("fNeben", "Auktions-/Nebenkosten (€)", e?.neben)}
+    <label style="display:flex;gap:10px;align-items:center;font-size:14px;cursor:pointer"><input type="checkbox" id="fPEst" style="width:20px;height:20px;accent-color:var(--holz)" ${e?.preisEst ? "checked" : ""}> Preis unbekannt – Ø der letzten 2 Versteigerungen nehmen</label>
     ${e ? `<div class="measure" style="display:block;margin-top:14px">
       <label style="display:flex;gap:10px;align-items:center;margin:0;color:var(--text);font-size:15px;cursor:pointer"><input type="checkbox" id="fDone" style="width:22px;height:22px;accent-color:var(--holz)" ${e.done ? "checked" : ""}> Aufarbeitung abgeschlossen & vermessen</label>
       <div id="fMessBox" style="display:${e.done ? "block" : "none"}">
@@ -2171,6 +2192,7 @@ function lagerForm(kind, id) {
     if ($("fNote").value.trim()) ne.note = $("fNote").value.trim();
     if (kind === "buy") {
       Object.assign(ne, { name: $("fName").value.trim(), art: document.querySelector("#fArt .chip.on")?.dataset.art || "", menge: n("fMenge"), einheit: $("fEinh").value, preis: n("fPreis"), neben: n("fNeben") });
+      if ($("fPEst").checked) ne.preisEst = true;
       if ($("fDone")?.checked) {
         if (!n("fRmMess")) { alert("Bitte die gemessenen Raummeter eingeben."); return; }
         Object.assign(ne, { done: true, rmMess: n("fRmMess"), tMess: $("fTMess").value === dkey(e.tMess || 0) ? e.tMess : +new Date($("fTMess").value + "T12:00") });
