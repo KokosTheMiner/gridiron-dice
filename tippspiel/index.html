@@ -12,7 +12,7 @@
   --pix:"Press Start 2P",monospace; --txt:"VT323",ui-monospace,monospace;
   --panel:#1f2740; --panel2:#262f4d; --hi:#46527a; --lo:#0f1326; --ink:#0b0f2e;
   --yellow:#ffd400; --cyan:#2ce8f5; --magenta:#ff3eb5; --lime:#7dff3c; --orange:#ff8a00;
-  --red:#ff2a2a; --green:#33e05a; --white:#f4f6ff; --muted:#a9b4ff; --gold:#ffcf3a; --half:#c08bff;
+  --red:#ff2a2a; --green:#33e05a; --white:#f4f6ff; --muted:#a9b4ff; --gold:#ffcf3a; --half:#ff7a3d;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -90,7 +90,7 @@ main{max-width:1180px;margin:0 auto;padding:6px 16px 120px}
 .stat .v{font-size:32px;line-height:1;margin-top:4px;color:var(--orange);text-shadow:0 0 8px rgba(255,120,0,.7)}
 .stat .v.cy{color:var(--cyan);text-shadow:0 0 8px rgba(44,232,245,.6)}
 .stat .v.gd{color:var(--gold);text-shadow:0 0 8px rgba(255,207,58,.6)}
-.stat .v.pu{color:var(--half);text-shadow:0 0 8px rgba(192,139,255,.6)}
+.stat .v.pu{color:var(--half);text-shadow:0 0 8px rgba(255,122,61,.6)}
 .stat .v.gr{color:var(--lime);text-shadow:0 0 8px rgba(125,255,60,.6)}
 .hint{margin-top:10px;font-size:20px;color:var(--yellow)}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:18px;color:var(--muted);margin:4px 2px 10px}
@@ -103,7 +103,7 @@ main{max-width:1180px;margin:0 auto;padding:6px 16px 120px}
 .games{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px}
 .game{padding:0;position:relative}
 .game.dbl{border-color:#e8d48a #6e5a14 #6e5a14 #e8d48a;background:#36321f}
-.game.half{border-color:#cdb6ec #43305e #43305e #cdb6ec;background:#2d2645}
+.game.half{border-color:#ffb08a #6e2a10 #6e2a10 #ffb08a;background:#3a2418}
 .ghead{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px;background:rgba(0,0,0,.75);font-size:20px}
 .ghead .t{color:var(--cyan)}
 .ghead .st{font:9px/1 var(--pix);padding:5px 6px;color:#000;background:var(--cyan)}
@@ -283,7 +283,8 @@ const CONFIG = {
   GROUP: "freunde",      // Name der Tipprunde (mehrere Runden in einer DB möglich)
   LOCK_MINUTES: 60,      // Sperre X Minuten vor dem ersten Spiel der Woche
   DOUBLE_MAX: 2,         // Anzahl Doppelt-Spiele
-  HALF_MAX: 1,           // Anzahl Halb-Spiele
+  HALF_MAX: 1,           // Anzahl Spezial-Spiele ("Must-Watch")
+  TRIPLE_FROM: "2-12",   // ab dieser Woche zählt das Spezial-Spiel 3-fach, vorher ½
   REFRESH_SECONDS: 60    // Live-Aktualisierung
 };
 const ESPN = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
@@ -456,9 +457,16 @@ async function loadWeek(key, force = false) {
 
 /* ---------------- Wertung ---------------- */
 const isLocked = wk => wk.lock !== null && Date.now() >= wk.lock;
-function multiplier(tip, eid) {
+// Spezial-Spiel: ab CONFIG.TRIPLE_FROM "3× Must-Watch", in früheren Wochen "½ Halb"
+// (gespeichert wird es weiterhin im Feld "half")
+function sp(key = S.key) {
+  return weekOrder(key) >= weekOrder(CONFIG.TRIPLE_FROM)
+    ? {mult: 3, short: "3×", label: "3× Must-Watch", word: "Must-Watch"}
+    : {mult: 0.5, short: "½", label: "½ Halb", word: "Halb"};
+}
+function multiplier(tip, eid, key = S.key) {
   if ((tip.dbl || []).includes(eid)) return 2;
-  if (tip.half === eid) return 0.5;
+  if (tip.half === eid) return sp(key).mult;
   return 1;
 }
 function scoreTip(tip, wk) {
@@ -471,7 +479,7 @@ function scoreTip(tip, wk) {
     if (!ev.completed) continue;
     res.decided++;
     const ok = !!pick && pick === ev.winner && !res.late;
-    const p = ok ? multiplier(tip, ev.id) : 0;
+    const p = ok ? multiplier(tip, ev.id, wk.key) : 0;
     res.per[ev.id] = {ok, p, pick};
     if (ok) { res.correct++; res.pts += p; }
   }
@@ -484,16 +492,16 @@ function scoreTip(tip, wk) {
      Durchschnitt der vergebenen Punkte dieser Woche ("Ø").
    - Hat in einer Woche niemand getippt: ALLE bekommen die halbe mögliche Punktzahl,
      aufgerundet auf eine ganze Zahl ("~"). */
-function maxPoints(n) {
+function maxPoints(n, key) {
   const d = Math.min(n, CONFIG.DOUBLE_MAX), h = Math.min(Math.max(n - d, 0), CONFIG.HALF_MAX);
-  return (n - d - h) + 2 * d + 0.5 * h;
+  return (n - d - h) + 2 * d + sp(key).mult * h;
 }
 const joinedAfter = (pid, wk) => wk.lock !== null && (S.players[pid]?.joined || 0) > wk.lock;
 // liefert für einen Spieler ohne Tipp {p, kind:"avg"|"half"} oder null
 function fillFor(pid, wk, tipsMap) {
   if (!isLocked(wk) || !wk.events.length) return null;
   const pts = Object.entries(tipsMap || {}).filter(([id]) => S.players[id]).map(([, t]) => scoreTip(t, wk).pts);
-  if (!pts.length) return {p: Math.ceil(maxPoints(wk.events.length) / 2), kind: "half"};
+  if (!pts.length) return {p: Math.ceil(maxPoints(wk.events.length, wk.key) / 2), kind: "half"};
   if (!joinedAfter(pid, wk)) return null;
   return {p: Math.round(pts.reduce((a, b) => a + b, 0) / pts.length * 10) / 10, kind: "avg"};
 }
@@ -643,7 +651,7 @@ function renderTippen() {
   if (S.me && wk.events.length) {
     html += `<div class="stat"><div class="k">Getippt</div><div class="v cy">${nPicked}/${wk.events.length}</div></div>
       <div class="stat"><div class="k">Doppelt 2×</div><div class="v gd">${(src.dbl || []).length}/${CONFIG.DOUBLE_MAX}</div></div>
-      <div class="stat"><div class="k">Halb ½</div><div class="v pu">${src.half ? 1 : 0}/${CONFIG.HALF_MAX}</div></div>`;
+      <div class="stat"><div class="k">${sp().label}</div><div class="v pu">${src.half ? 1 : 0}/${CONFIG.HALF_MAX}</div></div>`;
     if (sc) html += `<div class="stat"><div class="k">Punkte</div><div class="v gr">${fmtPts(sc.pts)}</div></div>
       <div class="stat"><div class="k">Richtig</div><div class="v cy">${sc.correct}/${sc.decided}</div></div>`;
   }
@@ -651,10 +659,10 @@ function renderTippen() {
   if (!S.me) html += `<div class="row"><button class="rbtn y" id="loginBtn">▶ Anmelden / Mitspielen</button></div>`;
   if (sc?.late) html += `<div class="hint" style="color:var(--red)">⚠ Tipps nach der Sperre gespeichert – ungültig</div>`;
   if (S.me && locked && !myTip && wk.events.length) html += `<div class="hint" style="color:var(--red)">Du hast diese Woche nicht getippt.</div>`;
-  if (S.me && !locked && wk.events.length) html += `<div class="hint">▶ Sieger antippen · 2× und ½ vergeben · speichern</div>`;
+  if (S.me && !locked && wk.events.length) html += `<div class="hint">▶ Sieger antippen · 2× und ${sp().short} vergeben · speichern</div>`;
   html += `</div>`;
 
-  html += `<div class="legend"><span><i style="background:var(--red)"></i>Heimteam</span><span><i style="background:var(--yellow)"></i>Dein Tipp</span><span><i style="background:var(--gold)"></i>2× Doppelt</span><span><i style="background:var(--half)"></i>½ Halb</span></div>`;
+  html += `<div class="legend"><span><i style="background:var(--red)"></i>Heimteam</span><span><i style="background:var(--yellow)"></i>Dein Tipp</span><span><i style="background:var(--gold)"></i>2× Doppelt</span><span><i style="background:var(--half)"></i>${sp().label}</span></div>`;
 
   let lastDay = "";
   for (const ev of wk.events) {
@@ -682,7 +690,7 @@ function renderTippen() {
     if (ev.state === "in") st = `<span class="st live">● LIVE ${esc(ev.detail)}</span>`;
     else if (ev.completed) st = `<span class="st fin">${ev.winner === "TIE" ? "Remis" : "Endstand"}</span>`;
     else if (isD) st = `<span class="st mul">2× Doppelt</span>`;
-    else if (isH) st = `<span class="st mul h">½ Halb</span>`;
+    else if (isH) st = `<span class="st mul h">${sp().label}</span>`;
     else st = ev.neutral ? `<span class="st">Neutral</span>` : "";
     let ptsHtml = "";
     if (sc && sc.per[ev.id]) { const p = sc.per[ev.id]; ptsHtml = `<span class="pts ${p.ok ? "gp" : "rp"}">${p.ok ? "+" + fmtPts(p.p) : "0"}</span>`; }
@@ -694,7 +702,7 @@ function renderTippen() {
       ${oddsHtml(ev)}
       ${S.me ? `<div class="mods">
         <button class="rbtn y ${isD ? "on" : ""}" data-mod="d" data-e="${ev.id}" ${canEdit ? "" : "disabled"}>2× Doppelt</button>
-        <button class="rbtn m ${isH ? "on" : ""}" data-mod="h" data-e="${ev.id}" ${canEdit ? "" : "disabled"}>½ Halb</button>
+        <button class="rbtn m ${isH ? "on" : ""}" data-mod="h" data-e="${ev.id}" ${canEdit ? "" : "disabled"}>${sp().label}</button>
         ${ptsHtml}</div>` : `<div style="height:10px"></div>`}
     </div>`;
   }
@@ -741,7 +749,7 @@ function renderTippen() {
 
 function pickChip(ev, pick, mult, state) {
   const t = pick === ev.home.abbr ? ev.home : ev.away;
-  const sup = mult === 2 ? `<sup>2×</sup>` : mult === 0.5 ? `<sup class="h">½</sup>` : "";
+  const sup = mult === 2 ? `<sup>2×</sup>` : mult === 3 ? `<sup class="h">3×</sup>` : mult === 0.5 ? `<sup class="h">½</sup>` : "";
   return `<span class="chip ${state}" style="${tvars(t)}">${pick}${sup}</span>`;
 }
 
@@ -791,7 +799,7 @@ function renderWoche() {
     }
     if (!rows.length) html += `<tr><td colspan="2" class="muted">Noch keine Tipper angemeldet.</td></tr>`;
     html += `</tbody></table></div>`;
-    html += `<div class="legend"><span><i style="background:var(--lime)"></i>grün = richtig</span><span><i style="background:#555"></i>grau = falsch</span><span><i style="background:var(--gold)"></i>2×</span><span><i style="background:var(--half)"></i>½</span>${fillLegend}</div>`;
+    html += `<div class="legend"><span><i style="background:var(--lime)"></i>grün = richtig</span><span><i style="background:#555"></i>grau = falsch</span><span><i style="background:var(--gold)"></i>2×</span><span><i style="background:var(--half)"></i>${sp().short}</span>${fillLegend}</div>`;
     $("#view").innerHTML = html;
     bindWeekBar(); bindView();
     return;
@@ -821,7 +829,7 @@ function renderWoche() {
   });
   if (!rows.length) html += `<tr><td colspan="${wk.events.length + 3}" class="muted">Noch keine Tipper angemeldet.</td></tr>`;
   html += `</tbody></table></div>
-    <div class="legend"><span><i style="background:var(--lime)"></i>grüner Rahmen = richtig</span><span><i style="background:#555"></i>grau = falsch</span><span><i style="background:var(--gold)"></i>2×</span><span><i style="background:var(--half)"></i>½</span>${fillLegend}</div>`;
+    <div class="legend"><span><i style="background:var(--lime)"></i>grüner Rahmen = richtig</span><span><i style="background:#555"></i>grau = falsch</span><span><i style="background:var(--gold)"></i>2×</span><span><i style="background:var(--half)"></i>${sp().short}</span>${fillLegend}</div>`;
   $("#view").innerHTML = html;
   bindWeekBar(); bindView();
 }
@@ -896,7 +904,7 @@ function renderSetup() {
   <div class="panel card"><h3>📜 Regeln</h3><ul>
     <li>Pro Spiel tippst du den <b>Sieger</b>. Richtig = <b>1 Punkt</b>, falsch = 0 Punkte.</li>
     <li><b>${CONFIG.DOUBLE_MAX} Spiele</b> als <b style="color:var(--gold)">2× Doppelt</b> markieren → 2 Punkte bei richtigem Tipp.</li>
-    <li><b>${CONFIG.HALF_MAX} Spiel</b> als <b style="color:var(--half)">½ Halb</b> markieren → 0,5 Punkte bei richtigem Tipp.</li>
+    <li><b>${CONFIG.HALF_MAX} Spiel</b> als <b style="color:var(--half)">3× Must-Watch</b> markieren → <b>3 Punkte</b> bei richtigem Tipp (gilt ab ${weekLabel(CONFIG.TRIPLE_FROM)}; davor war es ein ½-Spiel).</li>
     <li><b>${CONFIG.LOCK_MINUTES} Minuten vor dem ersten Spiel</b> der Woche wird die Tippabgabe für die ganze Woche gesperrt.</li>
     <li>Nicht getippte Spiele und Unentschieden geben 0 Punkte.</li>
     <li>Nach der Sperre sieht jeder die Tipps der anderen. Nach dem letzten Spiel ist die Woche abgerechnet – die meisten Punkte gewinnen die Woche 🏆.</li>
