@@ -4,10 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NFL Tippspiel</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
+/* Schriften lokal (SIL Open Font License) – keine Verbindung zu Google Fonts */
+@font-face{font-family:"Press Start 2P";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/pressstart2p-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Press Start 2P";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/pressstart2p-latin.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"VT323";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/vt323-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"VT323";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/vt323-latin.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 :root{
   --pix:"Press Start 2P",monospace; --txt:"VT323",ui-monospace,monospace;
   --panel:#1f2740; --panel2:#262f4d; --hi:#46527a; --lo:#0f1326; --ink:#0b0f2e;
@@ -125,6 +127,7 @@ main{max-width:1180px;margin:0 auto;padding:6px 16px 120px}
 .team.home .tag{background:var(--red);color:#fff}
 .team .crest{width:44px;height:44px;border-radius:50%;background:#fff;border:2px solid #000;display:grid;place-items:center;box-shadow:2px 2px 0 rgba(0,0,0,.6)}
 .team .crest img{width:32px;height:32px}
+.team .crest .ab{display:block;width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--c1) 0 45%,var(--c2) 45% 70%,var(--c3) 70%)}
 .team b{font:12px/1.2 var(--pix);color:#fff;text-shadow:2px 2px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000;margin-top:4px}
 .team small{font-size:17px;color:#fff;text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000;text-align:center;line-height:1}
 .team .score{margin-top:3px;font-size:28px;line-height:1;min-width:46px;text-align:center;border-radius:4px}
@@ -214,6 +217,7 @@ td.ptsc{font-size:28px;color:var(--yellow);text-shadow:0 0 6px rgba(255,212,0,.6
 .modal{width:100%;max-width:420px;padding:18px}
 .modal h3{margin:0 0 12px;font:13px/1.4 var(--pix);color:var(--yellow);text-shadow:2px 2px 0 #000}
 .modal label{display:block;color:var(--cyan);margin:10px 0 4px}
+.modal details summary{color:var(--muted);margin-top:4px}
 .modal hr{border:0;border-top:3px dashed var(--hi);margin:18px 0}
 #toast{position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:45;display:none;font:10px/1.4 var(--pix);background:var(--yellow);color:#000;padding:12px 16px;border:3px solid #000;box-shadow:4px 4px 0 #000;max-width:90vw;text-align:center}
 .loading{padding:40px;text-align:center;font:11px var(--pix);color:var(--yellow)}
@@ -304,6 +308,7 @@ const TEAMC = {
   TEN:["0C2340","4B92DB","C8102E"], WSH:["5A1414","FFB612","FFFFFF"]
 };
 const tc = t => TEAMC[t.abbr] || [t.color || "444444", t.alt || "888888", "FFFFFF"];
+const logoImg = t => S.logos ? `<img src="${t.logo}" alt="">` : "";
 const tvars = t => { const [a, b, c] = tc(t); return `--c1:#${a};--c2:#${b};--c3:#${c}`; };
 
 /* ---------------- TV-Sender im deutschsprachigen Raum (Saison 2026/27) ----------------
@@ -566,11 +571,29 @@ function updateHeader() {
 $("#userChip").onclick = () => {
   if (!S.me) return openLogin();
   $("#modalBox").innerHTML = `<h3>👤 ${esc(meName())}</h3><p class="muted">Angemeldet auf diesem Gerät.</p>
-    <div class="row"><button class="rbtn r" id="lo">Abmelden</button><button class="rbtn g" id="mClose">Schließen</button></div>`;
+    <div class="row"><button class="rbtn y" id="lo">Abmelden</button><button class="rbtn g" id="mClose">Schließen</button></div>
+    <hr><details><summary>Nicht mehr mitspielen?</summary>
+      <p class="muted">Löscht dein Profil und alle deine Tipps endgültig. Das kann nicht rückgängig gemacht werden.</p>
+      <label>Zur Bestätigung deine PIN</label><input id="delPin" type="password" inputmode="numeric" autocomplete="off">
+      <div class="row"><button class="rbtn r" id="delMe">🗑 Mich löschen</button></div></details>`;
   $("#modal").classList.add("show");
   $("#mClose").onclick = closeModal;
   $("#lo").onclick = () => { if (S.dirty && !confirm("Ungespeicherte Tipps verwerfen?")) return; S.dirty = false; setMe(null); closeModal(); };
+  $("#delMe").onclick = async () => {
+    const id = S.me, p = S.players[id];
+    if (p.pin !== await hash(id + $("#delPin").value)) return toast("Falsche PIN");
+    if (!confirm(`${p.name}: Profil und alle Tipps wirklich endgültig löschen?`)) return;
+    try { await deletePlayer(id); } catch (e) { return toast("Fehler: " + e.message); }
+    S.dirty = false; setMe(null); closeModal(); toast("Dein Profil wurde gelöscht. Tschüss! 👋");
+  };
 };
+// Spieler samt aller Tipps (alle Wochen der Saison) löschen
+async function deletePlayer(id) {
+  const keys = await DB.keys("tips").catch(() => []);
+  for (const k of keys) await DB.put(`tips/${k}/${id}`, null);
+  await DB.put(`players/${id}`, null);
+  delete S.players[id]; delete S.tips[id];
+}
 $("#modal").onclick = e => { if (e.target.id === "modal") closeModal(); };
 
 let toastT;
@@ -636,7 +659,7 @@ function oddsHtml(ev) {
   if (o.fav) parts.push(`Favorit <b class="fav">${o.fav}</b>`);
   if (o.details && o.details !== "EVEN") parts.push(esc(o.details));
   if (o.ou) parts.push(`O/U ${o.ou}`);
-  return `<div class="odds">${bar}${parts.join(" · ")} <span class="muted">(${esc(o.provider)})</span></div>`;
+  return `<div class="odds">${bar}${parts.join(" · ")}</div>`;
 }
 
 function renderTippen() {
@@ -681,7 +704,7 @@ function renderTippen() {
       return `<button class="${cls}" style="${tvars(t)}" data-e="${ev.id}" data-t="${t.abbr}" ${canEdit ? "" : "disabled"} aria-label="${esc(t.name)} ${side === "home" ? "(Heim)" : "(Gast)"}">
         <span class="tag">${side === "home" ? "HEIM" : "GAST"}</span>
         ${stamp ? `<span class="stamp">${stamp}</span>` : ""}
-        <span class="crest"><img src="${t.logo}" alt="" loading="lazy"></span>
+        <span class="crest">${S.logos ? `<img src="${t.logo}" alt="" loading="lazy">` : `<span class="ab"></span>`}</span>
         <b>${t.abbr}</b><small>${esc(t.name)}</small>${t.record ? `<small>${t.record}</small>` : ""}
         ${showScore ? `<span class="score led">${t.score}</span>` : ""}
         ${pick === t.abbr ? `<span class="pick">TIPP</span>` : ""}</button>`;
@@ -793,7 +816,7 @@ function renderWoche() {
     html += `</tr></thead><tbody>`;
     for (const ev of wk.events) {
       const res = ev.state !== "pre" ? `<span class="${ev.winner === ev.away.abbr ? "w" : ""}">${ev.away.score}</span>:<span class="${ev.winner === ev.home.abbr ? "w" : ""}">${ev.home.score}</span>` : fmtTime.format(ev.date);
-      html += `<tr><td class="stick l gcell"><div class="gl"><img src="${ev.away.logo}" alt="">${ev.away.abbr}<i>@</i><img src="${ev.home.logo}" alt="">${ev.home.abbr}</div><div class="gr">${res}</div></td>`;
+      html += `<tr><td class="stick l gcell"><div class="gl">${logoImg(ev.away)}${ev.away.abbr}<i>@</i>${logoImg(ev.home)}${ev.home.abbr}</div><div class="gr">${res}</div></td>`;
       rows.forEach(r => html += cell(r, ev));
       html += `</tr>`;
     }
@@ -809,7 +832,7 @@ function renderWoche() {
   for (const ev of wk.events) {
     const res = ev.state !== "pre"
       ? `<span class="th-res"><span class="${ev.winner === ev.away.abbr ? "w" : ""}">${ev.away.score}</span>:<span class="${ev.winner === ev.home.abbr ? "w" : ""}">${ev.home.score}</span></span>` : "";
-    html += `<th title="${esc(ev.away.name)} @ ${esc(ev.home.name)}"><div class="th-team"><img src="${ev.away.logo}" alt="">${ev.away.abbr}<span>@</span><img src="${ev.home.logo}" alt="">${ev.home.abbr}${res}</div></th>`;
+    html += `<th title="${esc(ev.away.name)} @ ${esc(ev.home.name)}"><div class="th-team">${logoImg(ev.away)}${ev.away.abbr}<span>@</span>${logoImg(ev.home)}${ev.home.abbr}${res}</div></th>`;
   }
   html += `</tr></thead><tbody>`;
   rows.forEach(r => {
@@ -914,10 +937,21 @@ function renderSetup() {
     <li>Das Heimteam steht immer rechts und hat einen <b style="color:var(--red)">roten Rahmen</b>.</li>
   </ul></div>
   ${share ? `<div class="panel card"><h3>📨 Freunde einladen</h3><div class="row"><input readonly value="${esc(share)}" id="shareIn"><button class="rbtn c" id="shareBtn">Link kopieren</button></div></div>` : ""}
-  <div class="panel card"><h3>ℹ️ Datenquellen</h3>
-    <p class="muted">Spielplan, Live-Ergebnisse und Quoten kommen von ESPN (Quoten von DraftKings, nur als Info, wer Favorit ist – Prozent = Siegchance laut Wettquote). Für vergangene Spiele gibt es meist keine Quoten mehr.</p>
-    <p class="muted">Spaß-Tippspiel unter Freunden: Die PIN schützt nur vor Versehen. Tipps, die laut Server-Zeit nach der Sperre gespeichert wurden, zählen nicht.</p>
+  <div class="panel card"><h3>🏆 Gespielt wird um die Ehre</h3>
+    <p>Mitmachen ist <b>kostenlos</b>, es gibt <b>keinen Geldeinsatz</b> und keine Geldgewinne – nur Ruhm, Ehre und einen virtuellen Pokal.</p>
+    <p class="muted">Kein offizielles Angebot der NFL. Teamnamen und -logos gehören ihren jeweiligen Inhabern und dienen nur zur Kennzeichnung der Spiele.</p>
   </div>
+  <div class="panel card"><h3>ℹ️ Datenquellen</h3>
+    <p class="muted">Spielplan, Live-Ergebnisse und Quoten kommen von der öffentlichen ESPN-Schnittstelle. Die Quoten dienen nur als Info, wer Favorit ist (Prozent = Siegchance laut Buchmacher) – keine Werbung für Wettanbieter. Für vergangene Spiele gibt es meist keine Quoten mehr.</p>
+    <p class="muted">Die PIN schützt nur vor Versehen. Tipps, die laut Server-Zeit nach der Sperre gespeichert wurden, zählen nicht.</p>
+  </div>
+  <div class="panel card"><h3>🔒 Datenschutz</h3><ul>
+    <li><b>Was gespeichert wird:</b> dein Spitzname, deine PIN (nur verschlüsselt als Prüfwert, nicht lesbar), deine Tipps und der Zeitpunkt der Abgabe. Keine E-Mail, kein echter Name nötig.</li>
+    <li><b>Wo:</b> in einer Google-Firebase-Datenbank mit Serverstandort in Belgien (EU). Spitzname und Tipps sind für alle Mitspieler sichtbar (Tipps erst nach der Sperre).</li>
+    <li><b>Auf deinem Gerät</b> merkt sich der Browser, wer angemeldet ist, und deine Ansicht-Einstellungen (localStorage). Keine Cookies, kein Tracking, keine Werbung.</li>
+    <li><b>Externe Abrufe:</b> Spielplan, Ergebnisse${S.logos ? " und Teamlogos" : ""} werden direkt von ESPN geladen, dabei sieht ESPN deine IP-Adresse. Die Seite selbst liegt bei GitHub Pages.</li>
+    <li><b>Löschen:</b> Jederzeit selbst – oben auf deinen Namen tippen → „Nicht mehr mitspielen?“ → „Mich löschen“. Profil und alle Tipps werden dann endgültig entfernt. Alternativ den Admin fragen.</li>
+  </ul></div>
   <div class="panel card"><h3>📺 Wo läuft's? (DE · AT · CH)</h3><ul>
     <li><span class="tv tv-rtl">RTL</span> + <span class="tv tv-sky">Sky</span>: Thursday, Sunday und Monday Night Game (Nachtspiele), Super Bowl. RTL zeigt außerdem alle Europa-Spiele.</li>
     <li>Sonntag 19:00: <span class="tv tv-sky">Sky Konferenz</span> plus je 1 Spiel auf <span class="tv tv-rtl maybe">RTL?</span> und <span class="tv tv-rtlp maybe">RTL+?</span></li>
@@ -942,6 +976,7 @@ function adminCard() {
   const pl = Object.entries(S.players).sort((a, b) => a[1].name.localeCompare(b[1].name));
   return `<div class="panel card"><h3>⚙ Admin-Bereich</h3>
     <label style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="admTv" style="width:auto" ${isAdmin() ? "checked" : ""}> TV-Sender bei den Spielen selbst eintragen (✎-Knopf)</label>
+    <label style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="admLogo" style="width:auto" ${S.logos ? "checked" : ""}> Teamlogos anzeigen (gilt für alle)</label>
     <h3 style="margin-top:16px">👥 Spieler (${pl.length})</h3>
     ${pl.length ? `<div class="adm-pl">${pl.map(([id, p]) => `<div class="adm-row"><span>${esc(p.name)}</span>
       <button class="rbtn c" data-pin="${id}">PIN neu</button><button class="rbtn r" data-del="${id}">Löschen</button></div>`).join("")}</div>` : `<p class="muted">Noch keine Spieler.</p>`}
@@ -973,6 +1008,10 @@ function bindAdmin() {
     localStorage.setItem("tip-adm", h); toast("Admin angemeldet ✓"); render();
   });
   if (!adminIn()) return;
+  $("#admLogo").onchange = async e => {
+    try { await DB.put("settings/logos", e.target.checked, GROUP_BASE()); } catch (err) { return toast("Fehler: " + err.message); }
+    S.logos = e.target.checked; toast(S.logos ? "Logos an" : "Logos aus – nur Teamfarben & Kürzel");
+  };
   $("#admTv").onchange = e => { localStorage.setItem("tip-admin", e.target.checked ? "1" : "0"); toast(e.target.checked ? "✎ Sender-Eingabe an" : "Sender-Eingabe aus"); };
   on("#adOut", () => { localStorage.removeItem("tip-adm"); localStorage.removeItem("tip-admin"); toast("Admin abgemeldet"); render(); });
   on("#adChg", async () => {
@@ -993,9 +1032,8 @@ function bindAdmin() {
   });
   document.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
     const id = b.dataset.del, p = S.players[id];
-    if (!confirm(`${p.name} wirklich löschen?\nDer Spieler verschwindet aus allen Tabellen. Das kann nicht rückgängig gemacht werden.`)) return;
-    try { await DB.put(`players/${id}`, null); } catch (e) { return toast("Fehler: " + e.message); }
-    delete S.players[id];
+    if (!confirm(`${p.name} wirklich löschen?\nProfil und alle Tipps werden gelöscht. Das kann nicht rückgängig gemacht werden.`)) return;
+    try { await deletePlayer(id); } catch (e) { return toast("Fehler: " + e.message); }
     if (S.me === id) setMe(null);
     toast(`${p.name} gelöscht`); render();
   });
@@ -1023,6 +1061,8 @@ document.querySelectorAll("nav .rbtn").forEach(b => b.onclick = () => { S.tab = 
 async function reloadData() {
   const [players, tips, tv, tipKeys, adminPin] = await Promise.all([DB.get("players"), DB.get(`tips/${S.key}`), DB.get(`tv/${S.key}`).catch(() => null), DB.keys("tips").catch(() => []), DB.get("admin/pin", GROUP_BASE()).catch(() => null)]);
   S.players = players || {}; S.tips = tips || {}; S.tv = tv || {}; S.adminPin = adminPin || null;
+  const logos = await DB.get("settings/logos", GROUP_BASE()).catch(() => null);
+  S.logos = logos !== false;   // Standard: Logos an
   S.firstKey = tipKeys.sort((a, b) => weekOrder(a) - weekOrder(b))[0] || null;
   if (S.me && !S.players[S.me]) { S.me = null; localStorage.removeItem("tip-me"); }
   if (!S.dirty) resetDraft();
