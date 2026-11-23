@@ -1,0 +1,14 @@
+[Unit]
+Description=NFL-Tippspiel -> Discord (Webhook-Nachrichten)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=heimserver
+WorkingDirectory=/opt/tippspiel-discord
+ExecStart=/usr/bin/node /opt/tippspiel-discord/bot.js
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
