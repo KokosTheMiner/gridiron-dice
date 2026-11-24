@@ -1,0 +1,14 @@
+[Unit]
+Description=Bundesliga-Tippspiel -> Discord (Webhook-Nachrichten)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=heimserver
+WorkingDirectory=/opt/bundesliga-discord
+ExecStart=/usr/bin/node /opt/bundesliga-discord/bot.js
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

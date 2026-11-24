@@ -1,0 +1,1112 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bundesliga Tippspiel</title>
+<style>
+/* Schriften lokal (SIL Open Font License) – liegen beim NFL-Tippspiel */
+@font-face{font-family:"Press Start 2P";font-style:normal;font-weight:400;font-display:swap;src:url(../tippspiel/fonts/pressstart2p-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Press Start 2P";font-style:normal;font-weight:400;font-display:swap;src:url(../tippspiel/fonts/pressstart2p-latin.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"VT323";font-style:normal;font-weight:400;font-display:swap;src:url(../tippspiel/fonts/vt323-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"VT323";font-style:normal;font-weight:400;font-display:swap;src:url(../tippspiel/fonts/vt323-latin.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+:root{
+  --pix:"Press Start 2P",monospace; --txt:"VT323",ui-monospace,monospace;
+  --panel:#1f2740; --panel2:#262f4d; --hi:#46527a; --lo:#0f1326;
+  --yellow:#ffd400; --cyan:#2ce8f5; --magenta:#ff3eb5; --lime:#7dff3c; --orange:#ff8a00;
+  --red:#ff2a2a; --white:#f4f6ff; --muted:#a9b4ff; --gold:#ffcf3a; --half:#ff7a3d;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;color:var(--white);font:21px/1.15 var(--txt);
+  background:
+    linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,.55)),
+    repeating-linear-gradient(0deg,#1f7a2e 0 70px,#26893a 70px 140px);
+  background-attachment:fixed;min-height:100vh;
+}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.10) 0 1px,transparent 1px 3px)}
+button{font:inherit;color:inherit;cursor:pointer}
+input,select{font:20px var(--txt);background:#000;color:var(--lime);border:3px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo);padding:8px 10px;width:100%;border-radius:0}
+a{color:var(--cyan)}
+
+/* ---------- Retro-Bausteine ---------- */
+.panel{background:var(--panel);border:3px solid;border-color:var(--hi) var(--lo) var(--lo) var(--hi);box-shadow:4px 4px 0 rgba(0,0,0,.5);border-radius:8px}
+.panel.game{overflow:hidden}
+.panel.tbl-wrap{overflow-x:auto}
+.rbtn{font:11px/1.2 var(--pix);text-transform:uppercase;padding:11px 14px;min-height:42px;color:#000;
+  background:var(--b,#c8c8c8);border:3px solid;border-color:var(--bh,#fff) var(--bl,#444) var(--bl,#444) var(--bh,#fff);box-shadow:3px 3px 0 #000}
+.rbtn:active:not(:disabled),.rbtn.on{border-color:var(--bl,#444) var(--bh,#fff) var(--bh,#fff) var(--bl,#444);transform:translate(2px,2px);box-shadow:1px 1px 0 #000}
+.rbtn:disabled{opacity:.45;cursor:default}
+.y{--b:#ffd400;--bh:#fff59a;--bl:#8a6f00}
+.c{--b:#2ce8f5;--bh:#c4fbff;--bl:#0a6d75}
+.m{--b:#ff3eb5;--bh:#ffb3e1;--bl:#7a0a50}
+.l{--b:#7dff3c;--bh:#d5ffb8;--bl:#2e7a0a}
+.r{--b:#ff4a4a;--bh:#ffb0b0;--bl:#7a0a0a}
+.g{--b:#b9b9c9;--bh:#fff;--bl:#4a4a5a}
+.ny{--b:#d8bb52;--bh:#f1e2a8;--bl:#6e5a14}
+.nc{--b:#6fb7c0;--bh:#c3e6ea;--bl:#2b5a60}
+.nm{--b:#c47aa3;--bh:#ecc6dc;--bl:#5e2a48}
+.nl{--b:#8fbf6a;--bh:#d3e9c3;--bl:#3d5e26}
+.nr{--b:#d9776f;--bh:#f2c4bf;--bl:#6a2620}
+nav .rbtn{border-radius:6px} nav .rbtn.on{filter:brightness(1.12) saturate(1.15)}
+/* TV-Sender */
+.tvs{display:flex;gap:4px;flex-wrap:wrap;align-items:center;flex:1}
+.tv{display:inline-block;font:8px/1 var(--pix);padding:4px 5px;border-radius:4px;color:#fff;border:1px solid rgba(0,0,0,.6);text-shadow:1px 1px 0 rgba(0,0,0,.6);white-space:nowrap}
+.tv-sky{background:linear-gradient(135deg,#0072c9,#7b2fbe)}
+.tv-dazn{background:#0c161c;color:#f8fc00;border-color:#f8fc00}
+.tv-sat1{background:linear-gradient(90deg,#e2001a,#ffd200)}
+.tv-x{background:#555b75}
+.tv.maybe{opacity:.7;border-style:dashed;border-color:#ccc}
+.tvedit{background:none;border:1px dashed var(--muted);color:var(--muted);border-radius:4px;padding:0 5px;font-size:16px}
+.led{font-family:var(--txt);color:var(--orange);text-shadow:0 0 8px rgba(255,120,0,.8);background:#120700;border:3px solid;border-color:#000 #3a2a10 #3a2a10 #000;padding:2px 8px}
+
+/* ---------- Kopf ---------- */
+header{position:sticky;top:0;z-index:10;background:#000;border-bottom:4px solid var(--gold);box-shadow:0 4px 0 var(--red)}
+.hwrap{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:10px 16px}
+.logo{flex:1;min-width:0}
+.logo h1{margin:0;font:18px/1.3 var(--pix);color:var(--yellow);text-shadow:3px 3px 0 var(--red),6px 6px 0 #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.logo .sub{color:var(--cyan);font-size:19px;margin-top:4px;letter-spacing:1px}
+#userChip{font-size:9px;padding:9px 10px;max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+nav{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:10px 16px 12px}
+nav .rbtn{font-size:10px;padding:10px 4px;white-space:nowrap}
+nav .rbtn .ic{display:block;font-size:18px;margin-bottom:4px}
+main{max-width:1180px;margin:0 auto;padding:6px 16px 120px}
+
+/* ---------- Spieltagsleiste & Status ---------- */
+.weekbar{display:flex;gap:8px;align-items:stretch;margin-bottom:12px;flex-wrap:wrap}
+.weekbar select{width:auto;flex:1;min-width:150px;font-size:22px;color:var(--yellow)}
+.weekbar .rbtn{padding:8px 14px}
+.status{padding:12px;margin-bottom:14px}
+.status .lockline{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:22px}
+.badge{font:10px/1 var(--pix);padding:7px 9px;color:#000;border:2px solid #000;white-space:nowrap}
+.b-open{background:var(--lime)} .b-closed{background:var(--red);color:#fff} .b-done{background:var(--gold)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px}
+.stat{background:#000;border:3px solid;border-color:#000 #333 #333 #000;padding:6px 8px;text-align:center}
+.stat .k{font:8px/1.3 var(--pix);color:var(--muted);text-transform:uppercase}
+.stat .v{font-size:32px;line-height:1;margin-top:4px;color:var(--orange);text-shadow:0 0 8px rgba(255,120,0,.7)}
+.stat .v.cy{color:var(--cyan);text-shadow:0 0 8px rgba(44,232,245,.6)}
+.stat .v.gd{color:var(--gold);text-shadow:0 0 8px rgba(255,207,58,.6)}
+.stat .v.pu{color:var(--half);text-shadow:0 0 8px rgba(255,122,61,.6)}
+.stat .v.gr{color:var(--lime);text-shadow:0 0 8px rgba(125,255,60,.6)}
+.hint{margin-top:10px;font-size:20px;color:var(--yellow)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:18px;color:var(--muted);margin:4px 2px 10px}
+.legend i{display:inline-block;width:16px;height:16px;vertical-align:-2px;margin-right:5px;border:2px solid #000}
+
+/* ---------- Spiele ---------- */
+.day{display:flex;align-items:center;gap:10px;margin:20px 0 10px;font:11px/1.3 var(--pix);color:var(--yellow);text-transform:uppercase}
+.day::before{content:"";width:14px;height:14px;background:var(--magenta);box-shadow:3px 3px 0 #000}
+.day::after{content:"";flex:1;height:4px;background:repeating-linear-gradient(90deg,var(--yellow) 0 8px,transparent 8px 14px)}
+.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+.game{padding:0;position:relative}
+.game.dbl{border-color:#e8d48a #6e5a14 #6e5a14 #e8d48a;background:#36321f}
+.game.half{border-color:#ffb08a #6e2a10 #6e2a10 #ffb08a;background:#3a2418}
+.ghead{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px;background:rgba(0,0,0,.75);font-size:20px}
+.ghead .t{color:var(--cyan)}
+.ghead .st{font:9px/1 var(--pix);padding:5px 6px;color:#000;background:var(--cyan)}
+.ghead .st.live{background:var(--red);color:#fff;animation:blink 1s steps(2) infinite}
+.ghead .st.fin{background:#888}
+.ghead .st.mul{background:var(--gold)} .ghead .st.mul.h{background:var(--half)}
+@keyframes blink{50%{opacity:.35}}
+.match{display:grid;grid-template-columns:1fr 58px 1fr;gap:8px;align-items:stretch;padding:10px 10px 4px}
+
+.team{position:relative;overflow:hidden;min-height:122px;padding:20px 6px 7px;display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:8px;
+  background:var(--c1);border:2px solid #000;box-shadow:inset 0 0 0 2px rgba(255,255,255,.2),3px 3px 0 #000;transition:transform .08s}
+.team::before{content:"";position:absolute;inset:0;z-index:0;
+  background:linear-gradient(115deg,transparent 0 56%,var(--c2) 56% 67%,var(--c3) 67% 73%,transparent 73%)}
+.team::after{content:"";position:absolute;inset:0;z-index:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.08) 0 2px,transparent 2px 4px)}
+.team>*{position:relative;z-index:1}
+.team.home{box-shadow:0 0 0 4px var(--red),inset 0 0 0 2px rgba(255,255,255,.2),5px 5px 0 #000}
+.team .tag{position:absolute;top:0;left:0;font:7px/1 var(--pix);padding:5px 6px;background:#000;color:#ccc;z-index:2;border-radius:0 0 6px 0}
+.team.home .tag{background:var(--red);color:#fff}
+.team .crest{width:44px;height:44px;border-radius:50%;background:#fff;border:2px solid #000;display:grid;place-items:center;box-shadow:2px 2px 0 rgba(0,0,0,.6)}
+.team .crest img{width:32px;height:32px;object-fit:contain}
+.team .crest .ab{display:block;width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--c1) 0 45%,var(--c2) 45% 70%,var(--c3) 70%)}
+.team b{font:12px/1.2 var(--pix);color:#fff;text-shadow:2px 2px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000;margin-top:4px}
+.team small{font-size:17px;color:#fff;text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000;text-align:center;line-height:1}
+.team .score{margin-top:3px;font-size:28px;line-height:1;min-width:46px;text-align:center;border-radius:4px}
+.team.won .score{color:var(--lime);text-shadow:0 0 8px rgba(125,255,60,.8)}
+.team:disabled,.draw:disabled{cursor:default}
+.team:not(:disabled):hover,.draw:not(:disabled):hover{transform:translateY(-2px)}
+.team.dim,.draw.dim{filter:grayscale(.6) brightness(.7)}
+.team.sel,.draw.sel{outline:3px solid var(--yellow);outline-offset:-8px}
+.team .pick,.draw .pick{position:absolute;right:0;bottom:0;font:7px/1 var(--pix);background:var(--yellow);color:#000;padding:5px 6px;z-index:2;border-radius:6px 0 0 0}
+.team .stamp,.draw .stamp{position:absolute;top:4px;right:6px;z-index:3;font:20px var(--pix);text-shadow:2px 2px 0 #000}
+.right .stamp{color:var(--lime)} .wrong .stamp{color:var(--red)}
+.team.right,.draw.right{outline-color:var(--lime)} .team.wrong,.draw.wrong{outline-color:var(--red)}
+.draw{position:relative;overflow:hidden;border-radius:8px;border:2px solid #000;background:#3b4160;box-shadow:inset 0 0 0 2px rgba(255,255,255,.15),3px 3px 0 #000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:4px 2px;transition:transform .08s}
+.draw b{font:18px var(--pix);color:#fff;text-shadow:2px 2px 0 #000}
+.draw small{font:7px/1.3 var(--pix);color:var(--muted);text-transform:uppercase}
+.draw.won{background:#4b5a3a}
+.mods{display:flex;gap:8px;align-items:center;padding:10px}
+.mods .rbtn{font-size:8px;padding:7px 9px;min-height:34px;border-radius:5px}
+.pts{margin-left:auto;font:14px var(--pix);text-shadow:2px 2px 0 #000}
+.pts.gp{color:var(--lime)} .pts.rp{color:var(--red)}
+.goals{padding:2px 12px 0;font-size:16px;color:var(--muted);line-height:1.15}
+
+/* ---------- Speicherleiste ---------- */
+.savebar{position:fixed;left:0;right:0;bottom:0;z-index:12;background:#000;border-top:4px solid var(--yellow);padding:10px 16px;display:flex;justify-content:center;gap:14px;align-items:center}
+.savebar .msg{font-size:20px;color:var(--muted)}
+.savebar .msg.dirty{color:var(--yellow);animation:blink 1.2s steps(2) infinite}
+
+/* ---------- Tabellen ---------- */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%}
+th{font:8px/1.4 var(--pix);color:var(--yellow);background:#000;padding:9px 6px;text-transform:uppercase;white-space:nowrap;position:sticky;top:0}
+td{padding:6px 7px;text-align:center;white-space:nowrap;border-bottom:2px solid var(--lo);font-size:21px}
+tbody tr:nth-child(odd) td{background:var(--panel)} tbody tr:nth-child(even) td{background:var(--panel2)}
+.l{text-align:left}
+.stick{position:sticky;left:0;z-index:1}
+th.stick{z-index:2}
+tr.me td{background:#4a3a00!important}
+.rank{display:inline-block;min-width:34px;font:11px/1 var(--pix);padding:6px 4px;color:#000;background:#9aa4d8;border:2px solid #000}
+.rk1 .rank{background:var(--gold)} .rk2 .rank{background:#d8dde8} .rk3 .rank{background:#d08a4a}
+td.ptsc{font-size:28px;color:var(--yellow);text-shadow:0 0 6px rgba(255,212,0,.6)}
+.chip{display:inline-block;font:9px/1 var(--pix);padding:5px 5px;color:#fff;background:var(--c1);border:2px solid #000;text-shadow:1px 1px 0 #000;position:relative;border-radius:4px}
+.chip.ok{box-shadow:0 0 0 2px var(--lime)}
+.chip.no{filter:grayscale(.8) brightness(.6)}
+.chip sup{font:7px var(--pix);background:var(--gold);color:#000;padding:2px;margin-left:3px;text-shadow:none}
+.chip sup.h{background:var(--half)}
+.dash{color:#6b74b8}
+.vtoggle{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.vtoggle span{color:var(--cyan);font:9px var(--pix);text-transform:uppercase}
+.vtoggle .rbtn{font-size:8px;padding:8px 10px;min-height:34px;border-radius:5px}
+.wk-hoch th{padding:6px 2px;font-size:7px;vertical-align:bottom}
+.wk-hoch th .rank{min-width:22px;font-size:8px;padding:3px 2px}
+.wk-hoch th .pn{font:15px/1 var(--txt);color:var(--white);text-transform:none;margin:3px auto 0;max-width:40px;overflow:hidden;text-overflow:clip}
+.wk-hoch th .pp{font:20px/1 var(--txt);color:var(--yellow);margin-top:2px}
+.wk-hoch th.meh{background:#4a3a00}
+.wk-hoch td{padding:6px 2px 3px;font-size:17px}
+.wk-hoch .chip{font:15px/1 var(--txt);padding:2px 3px;border-width:1px;border-radius:3px}
+.wk-hoch .chip sup{position:absolute;top:-7px;right:-7px;font:11px/1 var(--txt);padding:1px 2px;margin:0;border-radius:3px;z-index:1}
+.gcell{text-align:left;padding:3px 4px!important}
+.gcell .gl{display:flex;align-items:center;gap:1px;font-size:15px;white-space:nowrap}
+.gcell .gl img{width:14px;height:14px;object-fit:contain}
+.gcell .gl i{font-style:normal;color:var(--muted);margin:0 2px}
+.gcell .gr{font-size:15px;color:var(--muted);line-height:1}
+.gcell .gr .w{color:var(--lime)}
+.fillv{color:var(--cyan);font-style:italic}
+.th-team{display:flex;flex-direction:column;align-items:center;gap:2px}
+.th-team img{width:22px;height:22px;object-fit:contain}
+.th-res{font:18px var(--txt);color:var(--white)} .th-res .w{color:var(--lime)}
+.winner{padding:12px;margin-bottom:14px;text-align:center;font:12px/1.6 var(--pix);color:var(--gold);text-shadow:2px 2px 0 #000;background:#3a2a00}
+/* Bundesliga-Tabelle */
+.liga td{font-size:21px}
+.liga td.zone{width:8px;padding:0;background:transparent!important}
+.liga td.zone.z-cl{background:#ffd400!important} .liga td.zone.z-el{background:#8a8a8a!important} .liga td.zone.z-uecl{background:#c4c4c4!important}
+.liga td.zone.z-rel{background:#e07a7a!important} .liga td.zone.z-ab{background:#c8161d!important}
+.liga .tn{display:flex;align-items:center;gap:8px;text-align:left}
+.liga .tn img{width:24px;height:24px;object-fit:contain;background:#fff;border-radius:50%;padding:2px}
+.liga .tn .ab{width:24px;height:24px;border-radius:50%;border:2px solid #000;background:linear-gradient(135deg,var(--c1) 0 50%,var(--c2) 50%)}
+.liga td.pk{font-size:26px;color:var(--yellow)}
+.zleg{display:flex;gap:14px;flex-wrap:wrap;font-size:18px;color:var(--muted);margin:8px 2px}
+.zleg i{display:inline-block;width:16px;height:16px;vertical-align:-2px;margin-right:5px;border:2px solid #000}
+
+/* ---------- Karten / Modal ---------- */
+.card{padding:16px;margin-bottom:14px}
+.card h3{margin:0 0 10px;font:12px/1.4 var(--pix);color:var(--yellow);text-shadow:2px 2px 0 #000}
+.card ul{margin:0;padding-left:22px} .card li{margin:6px 0}
+.card label{display:block;color:var(--cyan);margin:10px 0 4px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px} .row>*{flex:1;min-width:140px}
+.muted{color:var(--muted)}
+.adm-pl{display:flex;flex-direction:column;gap:6px}
+.adm-row{display:flex;gap:8px;align-items:center;background:rgba(0,0,0,.25);padding:6px 8px;border-radius:6px}
+.adm-row span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adm-row .rbtn{font-size:8px;padding:7px 8px;min-height:32px;border-radius:5px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,20,.8);display:none;align-items:center;justify-content:center;z-index:40;padding:16px}
+.modal-bg.show{display:flex}
+.modal{width:100%;max-width:420px;padding:18px}
+.modal h3{margin:0 0 12px;font:13px/1.4 var(--pix);color:var(--yellow);text-shadow:2px 2px 0 #000}
+.modal label{display:block;color:var(--cyan);margin:10px 0 4px}
+.modal hr{border:0;border-top:3px dashed var(--hi);margin:18px 0}
+#toast{position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:45;display:none;font:10px/1.4 var(--pix);background:var(--yellow);color:#000;padding:12px 16px;border:3px solid #000;box-shadow:4px 4px 0 #000;max-width:90vw;text-align:center}
+.loading{padding:40px;text-align:center;font:11px var(--pix);color:var(--yellow)}
+details summary{cursor:pointer;color:var(--cyan)}
+
+/* ---------- Handy ---------- */
+@media (max-width:640px){
+  body{font-size:20px}
+  header{position:static}
+  .hwrap{padding:8px 10px;gap:8px}
+  .logo h1{font-size:9px}
+  .logo .sub{font-size:17px}
+  nav{padding:8px 10px 10px;gap:5px}
+  nav .rbtn{font-size:7px;padding:8px 1px}
+  nav .rbtn .ic{font-size:20px}
+  main{padding:4px 10px 110px}
+  .games{grid-template-columns:1fr}
+  .match{grid-template-columns:1fr 52px 1fr;gap:6px;padding:10px 8px 4px}
+  .team{min-height:112px}
+  .team b{font-size:11px}
+  .team small{font-size:16px}
+  .ghead{flex-wrap:wrap;gap:6px}
+  .stats{grid-template-columns:repeat(3,1fr);gap:6px}
+  .stat{padding:4px}
+  .stat.cdw{grid-column:1/-1;display:flex;justify-content:center;align-items:center;gap:12px}
+  .stat .k{font-size:7px}
+  .stat .v{font-size:26px}
+  .stat.cdw .v{margin-top:0}
+  .status{padding:10px}
+  .status .lockline{font-size:19px;gap:8px}
+  .weekbar{flex-wrap:nowrap;gap:6px}
+  .weekbar select{min-width:0;font-size:20px}
+  .weekbar .rbtn{padding:8px 10px}
+  .legend{font-size:16px;gap:10px}
+  .savebar{padding:8px 10px;gap:10px}
+  .savebar .msg{font-size:17px}
+  td{font-size:19px;padding:5px 5px}
+  .liga td{font-size:18px;padding:5px 3px}
+  .liga .hide-s{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="hwrap">
+    <div class="logo"><h1>⚽ BUNDESLIGA TIPPSPIEL</h1><div class="sub" id="sub">LADE SPIELPLAN …</div></div>
+    <button id="userChip" class="rbtn nc" style="border-radius:6px">Anmelden</button>
+  </div>
+  <nav>
+    <button class="rbtn ny" data-tab="tippen"><span class="ic">⚽</span>Tippen</button>
+    <button class="rbtn nc" data-tab="woche"><span class="ic">📋</span>Spieltag</button>
+    <button class="rbtn nm" data-tab="tabelle"><span class="ic">🏆</span>Tipper</button>
+    <button class="rbtn nr" data-tab="liga"><span class="ic">📊</span>Liga</button>
+    <button class="rbtn nl" data-tab="setup"><span class="ic">📜</span>Regeln</button>
+  </nav>
+</header>
+<main id="view"><div class="loading">LADE BUNDESLIGA-SPIELPLAN …</div></main>
+<div id="savebar" class="savebar" hidden></div>
+<div id="modal" class="modal-bg"><div class="modal panel" id="modalBox"></div></div>
+<div id="toast"></div>
+
+<script>
+/* =====================================================================
+   KONFIGURATION – hier anpassen
+   ===================================================================== */
+const CONFIG = {
+  // Gleiche Firebase-Datenbank wie das NFL-Tippspiel, eigener Bereich "bl"
+  FIREBASE_URL: "https://nfl-tippspiel-df32c-default-rtdb.europe-west1.firebasedatabase.app",
+  BASE: "tippspiel/freunde/bl",   // Pfad in der Datenbank (Spieler, Tipps, Admin)
+  LOCK_MINUTES: 60,      // Sperre X Minuten vor dem ersten Spiel des Spieltags
+  DOUBLE_MAX: 2,         // Anzahl Doppelt-Spiele
+  MW_MAX: 1,             // Anzahl "3× Must-Watch"-Spiele
+  MW_MULT: 3,
+  MATCHDAYS: 34,
+  REFRESH_SECONDS: 60    // Live-Aktualisierung
+};
+const OLDB = "https://api.openligadb.de";
+
+// Vereine (OpenLigaDB teamId): [Kürzel, Hauptfarbe, Zweitfarbe, Akzent]
+const TEAMC = {
+  6:["B04","E32221","000000","FFFFFF"],   7:["BVB","FDE100","000000","FFFFFF"],  9:["S04","004D9D","FFFFFF","000000"],
+  16:["VFB","E32219","FFFFFF","000000"], 31:["SCP","005CA9","000000","FFFFFF"], 40:["FCB","DC052D","0066B2","FFFFFF"],
+  65:["KOE","ED1C24","FFFFFF","000000"], 80:["FCU","D4011D","FFD900","FFFFFF"], 81:["M05","C3141E","FFFFFF","000000"],
+  87:["BMG","1A1A1A","FFFFFF","00A651"], 91:["SGE","E1000F","000000","FFFFFF"], 95:["FCA","BA3733","46714D","FFFFFF"],
+  100:["HSV","0A3F86","FFFFFF","000000"],112:["SCF","1A1A1A","E2001A","FFFFFF"],134:["SVW","1D9053","FFFFFF","000000"],
+  175:["TSG","1961B5","FFFFFF","000000"],198:["SVE","1A1A1A","FFFFFF","8A8A8A"],1635:["RBL","DD0741","001F47","FFFFFF"]
+  // neue Aufsteiger ohne Eintrag bekommen automatisch Kürzel + graue Farben
+};
+const tvars = t => `--c1:#${t.c[0]};--c2:#${t.c[1]};--c3:#${t.c[2]}`;
+const logoImg = t => S.logos && t.logo ? `<img src="${esc(t.logo)}" alt="" loading="lazy">` : "";
+function mkTeam(x) {
+  const c = TEAMC[x.teamId] || TEAMC[x.teamInfoId];
+  const short = x.shortName && x.shortName.length > 3 ? x.shortName : (x.teamName || "").replace(/^(1\.\s*)?(FC|SV|SC|TSG|VfB|VfL|FSV|RB)\s+/, "");
+  return {id: x.teamId ?? x.teamInfoId, abbr: c ? c[0] : (x.shortName || x.teamName || "?").slice(0, 3).toUpperCase(),
+    name: short, full: x.teamName, logo: x.teamIconUrl, c: c ? c.slice(1) : ["444444", "888888", "FFFFFF"]};
+}
+
+/* ---------------- TV-Sender (DE, Rechte 2025/26–2028/29) ----------------
+   Fr 20:30 Sky · Sa 15:30 Sky (Einzelspiele) + DAZN (Konferenz) · Sa 18:30 Sky · So DAZN.
+   Sat.1 zeigt einzelne Spiele frei (u.a. 1., 17., 18. Spieltag). Admin kann pro Spiel ✎ überschreiben. */
+const berlinFmt = new Intl.DateTimeFormat("en-GB", {timeZone:"Europe/Berlin", weekday:"short", hour:"2-digit", minute:"2-digit", hour12:false});
+function tvFor(ev, md) {
+  const o = S.tv?.["e" + ev.id];
+  if (o) return o.split(",").map(s => s.trim()).filter(Boolean).map(n => ({n, sure: true}));
+  const p = Object.fromEntries(berlinFmt.formatToParts(new Date(ev.date)).map(x => [x.type, x.value]));
+  const h = (+p.hour % 24) + (+p.minute) / 60, wd = p.weekday;
+  const sat1 = [1, 17, 18].includes(+md);
+  if (wd === "Fri") return sat1 ? [{n:"Sky", sure:true}, {n:"Sat.1", sure:false}] : [{n:"Sky", sure:true}];
+  if (wd === "Sat" && h < 17) return [{n:"Sky", sure:true}, {n:"DAZN Konferenz", sure:true}];
+  if (wd === "Sat" && h < 20) return [{n:"Sky", sure:true}];
+  if (wd === "Sun") return [{n:"DAZN", sure:true}];
+  if (wd === "Sat") return [{n:"DAZN", sure:false}];
+  return [{n:"Sky", sure:false}, {n:"DAZN", sure:false}];        // englische Woche
+}
+const tvClass = n => /sky/i.test(n) ? "tv-sky" : /dazn/i.test(n) ? "tv-dazn" : /sat\.?\s*1/i.test(n) ? "tv-sat1" : "tv-x";
+
+/* ---------------- Admin ---------------- */
+const adminHash = pin => hash(`admin:bl:${pin}`);
+const adminIn = () => !!S.adminPin && localStorage.getItem("bl-adm") === S.adminPin;
+const isAdmin = () => adminIn() && localStorage.getItem("bl-admin") === "1";
+
+/* ===================================================================== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtPts = n => (Math.round(n * 10) / 10).toString().replace(".", ",");
+const fmtDay = new Intl.DateTimeFormat("de-DE", {weekday:"long", day:"2-digit", month:"2-digit"});
+const fmtTime = new Intl.DateTimeFormat("de-DE", {hour:"2-digit", minute:"2-digit"});
+const fmtFull = new Intl.DateTimeFormat("de-DE", {weekday:"short", day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit"});
+
+const qs = new URLSearchParams(location.search);
+if (qs.get("db")) { localStorage.setItem("bl-db", qs.get("db")); history.replaceState(null, "", location.pathname); }
+let dbUrl = (localStorage.getItem("bl-db") || CONFIG.FIREBASE_URL || "").trim().replace(/\/+$/, "");
+
+// Saison: ab Juli gilt das laufende Jahr (2026 = Saison 2026/27)
+const nowD = new Date();
+const SEASON = nowD.getMonth() >= 6 ? nowD.getFullYear() : nowD.getFullYear() - 1;
+const seasonLabel = s => `${s}/${String(s + 1).slice(2)}`;
+
+const S = {
+  season: SEASON, curKey: null, key: null, week: null, table: [],
+  players: {}, tips: {}, tv: {}, me: localStorage.getItem("bl-me"),
+  draft: null, dirty: false, tab: "tippen",
+  view: localStorage.getItem("bl-view") || (matchMedia("(orientation: portrait)").matches && innerWidth < 760 ? "hoch" : "quer")
+};
+
+/* ---------------- Speicher: Firebase REST oder localStorage ---------------- */
+const DB = {
+  remote: () => !!dbUrl,
+  root: () => `${CONFIG.BASE}/${S.season}`,
+  async get(path, base = this.root()) {
+    if (this.remote()) {
+      const r = await fetch(`${dbUrl}/${base}/${path}.json`);
+      if (!r.ok) throw new Error("Datenbank-Fehler " + r.status);
+      return await r.json();
+    }
+    let o = JSON.parse(localStorage.getItem("bl-local") || "{}");
+    for (const p of `${base}/${path}`.split("/")) o = o?.[p];
+    return o ?? null;
+  },
+  async keys(path, base = this.root()) {
+    if (this.remote()) {
+      const r = await fetch(`${dbUrl}/${base}/${path}.json?shallow=true`);
+      if (!r.ok) throw new Error("Datenbank-Fehler " + r.status);
+      return Object.keys((await r.json()) || {});
+    }
+    return Object.keys((await this.get(path, base)) || {});
+  },
+  async put(path, val, base = this.root()) {
+    if (this.remote()) {
+      const r = await fetch(`${dbUrl}/${base}/${path}.json`, {method:"PUT", body:JSON.stringify(val)});
+      if (!r.ok) throw new Error("Datenbank-Fehler " + r.status);
+      return await r.json();
+    }
+    const all = JSON.parse(localStorage.getItem("bl-local") || "{}");
+    const parts = `${base}/${path}`.split("/");
+    let o = all;
+    for (const p of parts.slice(0, -1)) o = (o[p] ??= {});
+    const json = JSON.stringify(val).replace(/\{"\.sv":"timestamp"\}/g, Date.now());
+    if (val === null) delete o[parts.at(-1)]; else o[parts.at(-1)] = JSON.parse(json);
+    localStorage.setItem("bl-local", JSON.stringify(all));
+    return val;
+  }
+};
+const SERVER_TS = {".sv": "timestamp"};
+
+/* ---------------- Spieltage (OpenLigaDB) ----------------
+   Schlüssel in der Datenbank: "md1" … "md34" (keine reinen Zahlen, sonst macht Firebase ein Array daraus) */
+const WEEKS = Array.from({length: CONFIG.MATCHDAYS}, (_, i) => ({key: `md${i + 1}`, label: `${i + 1}. Spieltag`}));
+const mdNum = k => +String(k).slice(2);
+const weekLabel = k => `${mdNum(k)}. Spieltag`;
+const weekShort = k => `${mdNum(k)}.`;
+const weekOrder = k => mdNum(k);
+
+function parseMatch(m) {
+  const date = new Date(m.matchDateTimeUTC || m.matchDateTime).getTime();
+  const home = mkTeam(m.team1), away = mkTeam(m.team2);
+  const fin = m.matchResults?.find(r => r.resultTypeID === 2);
+  const lastGoal = (m.goals || []).filter(g => g.scoreTeam1 != null).at(-1);
+  const now = Date.now();
+  let state = m.matchIsFinished ? "post" : now >= date ? "in" : "pre";
+  if (state === "in" && now > date + 3.5 * 36e5) state = "pre";      // verlegt / noch nicht gewertet
+  let gh = null, ga = null;
+  if (fin) { gh = fin.pointsTeam1; ga = fin.pointsTeam2; }
+  else if (lastGoal) { gh = lastGoal.scoreTeam1; ga = lastGoal.scoreTeam2; }
+  else if (state !== "pre") { gh = 0; ga = 0; }
+  home.score = gh; away.score = ga;
+  const winner = m.matchIsFinished && gh !== null ? (gh > ga ? "H" : gh < ga ? "A" : "D") : null;
+  const goals = (m.goals || []).filter(g => g.goalGetterName).map(g => ({min: g.matchMinute, name: g.goalGetterName, sc: `${g.scoreTeam1}:${g.scoreTeam2}`, pen: g.isPenalty, og: g.isOwnGoal}));
+  const minute = state === "in" ? Math.min(90, Math.floor((now - date) / 6e4) - (now - date > 62 * 6e4 ? 15 : 0)) : null;
+  return {id: String(m.matchID), date, state, completed: !!m.matchIsFinished, home, away, winner, goals, minute,
+    stadium: m.location?.locationStadium || ""};
+}
+
+const sbCache = {};
+async function loadWeek(key, force = false) {
+  if (!force && sbCache[key]) return sbCache[key];
+  const lsKey = `bl-md-${S.season}-${key}`;
+  if (!force) {
+    const c = localStorage.getItem(lsKey);
+    if (c) return (sbCache[key] = JSON.parse(c));
+  }
+  const r = await fetch(`${OLDB}/getmatchdata/bl1/${S.season}/${mdNum(key)}`);
+  if (!r.ok) throw new Error("OpenLigaDB nicht erreichbar (" + r.status + ")");
+  const events = ((await r.json()) || []).map(parseMatch).sort((a, b) => a.date - b.date || a.home.name.localeCompare(b.home.name));
+  const wk = {
+    key, events,
+    lock: events.length ? events[0].date - CONFIG.LOCK_MINUTES * 60000 : null,
+    done: events.length > 0 && events.every(e => e.completed)
+  };
+  sbCache[key] = wk;
+  if (wk.done) localStorage.setItem(lsKey, JSON.stringify(wk));
+  return wk;
+}
+async function loadTable() {
+  try {
+    const r = await fetch(`${OLDB}/getbltable/bl1/${S.season}`);
+    if (!r.ok) throw 0;
+    S.table = ((await r.json()) || []).map((t, i) => ({...t, pos: i + 1, team: mkTeam(t)}));
+  } catch { S.table = S.table || []; }
+}
+const tablePos = teamId => S.table.find(t => t.teamInfoId === teamId || t.teamId === teamId);
+
+/* ---------------- Wertung ---------------- */
+const isLocked = wk => wk.lock !== null && Date.now() >= wk.lock;
+const SP = {mult: CONFIG.MW_MULT, short: "3×", label: "3× Must-Watch"};
+function multiplier(tip, eid) {
+  if ((tip.dbl || []).includes(eid)) return 2;
+  if (tip.mw === eid) return SP.mult;
+  return 1;
+}
+function scoreTip(tip, wk) {
+  const res = {pts: 0, correct: 0, decided: 0, picked: 0, late: false, per: {}};
+  if (!tip) return res;
+  res.late = !!(tip.ts && wk.lock && tip.ts > wk.lock);
+  for (const ev of wk.events) {
+    const pick = tip.picks?.["e" + ev.id];
+    if (pick) res.picked++;
+    if (!ev.completed) continue;
+    res.decided++;
+    const ok = !!pick && pick === ev.winner && !res.late;
+    const p = ok ? multiplier(tip, ev.id) : 0;
+    res.per[ev.id] = {ok, p, pick};
+    if (ok) { res.correct++; res.pts += p; }
+  }
+  return res;
+}
+
+/* ---------------- Ersatzpunkte (wie beim NFL-Tippspiel) ---------------- */
+function maxPoints(n) {
+  const d = Math.min(n, CONFIG.DOUBLE_MAX), h = Math.min(Math.max(n - d, 0), CONFIG.MW_MAX);
+  return (n - d - h) + 2 * d + SP.mult * h;
+}
+const joinedAfter = (pid, wk) => wk.lock !== null && (S.players[pid]?.joined || 0) > wk.lock;
+function fillFor(pid, wk, tipsMap) {
+  if (!isLocked(wk) || !wk.events.length) return null;
+  const pts = Object.entries(tipsMap || {}).filter(([id]) => S.players[id]).map(([, t]) => scoreTip(t, wk).pts);
+  if (!pts.length) return {p: Math.ceil(maxPoints(wk.events.length) / 2), kind: "half"};
+  if (!joinedAfter(pid, wk)) return null;
+  return {p: Math.round(pts.reduce((a, b) => a + b, 0) / pts.length * 10) / 10, kind: "avg"};
+}
+const fillTxt = f => f.kind === "avg"
+  ? `<span class="fillv" title="Später eingestiegen – Durchschnitt des Spieltags">Ø${fmtPts(f.p)}</span>`
+  : `<span class="fillv" title="Niemand hat getippt – halbe Punktzahl für alle">~${fmtPts(f.p)}</span>`;
+
+/* ---------------- Spieler / Login ---------------- */
+async function hash(s) {
+  if (crypto?.subtle) {
+    const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+    return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
+  }
+  let h = 0; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) | 0; return "x" + h;
+}
+const meName = () => S.players[S.me]?.name;
+
+function openLogin() {
+  const opts = Object.entries(S.players).sort((a, b) => a[1].name.localeCompare(b[1].name))
+    .map(([id, p]) => `<option value="${id}">${esc(p.name)}</option>`).join("");
+  $("#modalBox").innerHTML = `
+    ${opts ? `<h3>▶ Anmelden</h3><label>Spieler</label><select id="lgP">${opts}</select>
+      <label>PIN</label><input id="lgPin" type="password" inputmode="numeric" autocomplete="off">
+      <div class="row"><button class="rbtn y" id="lgGo">Anmelden</button></div><hr>` : ""}
+    <h3>▶ Neu dabei?</h3>
+    <label>Dein Name</label><input id="nwName" maxlength="20">
+    <label>PIN wählen (mind. 4 Zeichen)</label><input id="nwPin" type="password" inputmode="numeric" autocomplete="off">
+    <div class="row"><button class="rbtn l" id="nwGo">Mitspielen</button><button class="rbtn g" id="mClose">Abbrechen</button></div>`;
+  $("#modal").classList.add("show");
+  $("#mClose").onclick = closeModal;
+  if (opts) $("#lgGo").onclick = async () => {
+    const id = $("#lgP").value, p = S.players[id];
+    if (p.pin !== await hash(id + $("#lgPin").value)) return toast("Falsche PIN");
+    setMe(id); closeModal(); toast(`Hallo ${p.name}!`);
+  };
+  $("#nwGo").onclick = async () => {
+    const name = $("#nwName").value.trim(), pin = $("#nwPin").value;
+    if (!name) return toast("Bitte Namen eingeben");
+    if (pin.length < 4) return toast("PIN zu kurz");
+    if (Object.values(S.players).some(p => p.name.toLowerCase() === name.toLowerCase())) return toast("Name schon vergeben");
+    const id = "p" + Math.random().toString(36).slice(2, 10);
+    const player = {name, pin: await hash(id + pin), joined: SERVER_TS};
+    try { await DB.put(`players/${id}`, player); } catch (e) { return toast(e.message); }
+    S.players[id] = {...player, joined: Date.now()};
+    setMe(id); closeModal(); toast(`Willkommen ${name}!`);
+  };
+}
+function setMe(id) {
+  S.me = id;
+  if (id) localStorage.setItem("bl-me", id); else localStorage.removeItem("bl-me");
+  resetDraft(); updateHeader(); render();
+}
+function closeModal() { $("#modal").classList.remove("show"); }
+function updateHeader() {
+  $("#userChip").textContent = meName() ? `👤 ${meName()}` : "Anmelden";
+  const parts = [`SAISON ${seasonLabel(S.season)}`];
+  if (S.key) parts.push(weekLabel(S.key).toUpperCase());
+  if (!DB.remote()) parts.push("TESTMODUS");
+  $("#sub").textContent = parts.join(" · ");
+}
+$("#userChip").onclick = () => {
+  if (!S.me) return openLogin();
+  $("#modalBox").innerHTML = `<h3>👤 ${esc(meName())}</h3><p class="muted">Angemeldet auf diesem Gerät.</p>
+    <div class="row"><button class="rbtn y" id="lo">Abmelden</button><button class="rbtn g" id="mClose">Schließen</button></div>
+    <hr><details><summary>Nicht mehr mitspielen?</summary>
+      <p class="muted">Löscht dein Profil und alle deine Tipps endgültig. Das kann nicht rückgängig gemacht werden.</p>
+      <label>Zur Bestätigung deine PIN</label><input id="delPin" type="password" inputmode="numeric" autocomplete="off">
+      <div class="row"><button class="rbtn r" id="delMe">🗑 Mich löschen</button></div></details>`;
+  $("#modal").classList.add("show");
+  $("#mClose").onclick = closeModal;
+  $("#lo").onclick = () => { if (S.dirty && !confirm("Ungespeicherte Tipps verwerfen?")) return; S.dirty = false; setMe(null); closeModal(); };
+  $("#delMe").onclick = async () => {
+    const id = S.me, p = S.players[id];
+    if (p.pin !== await hash(id + $("#delPin").value)) return toast("Falsche PIN");
+    if (!confirm(`${p.name}: Profil und alle Tipps wirklich endgültig löschen?`)) return;
+    try { await deletePlayer(id); } catch (e) { return toast("Fehler: " + e.message); }
+    S.dirty = false; setMe(null); closeModal(); toast("Dein Profil wurde gelöscht. Tschüss! 👋");
+  };
+};
+async function deletePlayer(id) {
+  const keys = await DB.keys("tips").catch(() => []);
+  for (const k of keys) await DB.put(`tips/${k}/${id}`, null);
+  await DB.put(`players/${id}`, null);
+  delete S.players[id]; delete S.tips[id];
+}
+$("#modal").onclick = e => { if (e.target.id === "modal") closeModal(); };
+
+let toastT;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toastT); toastT = setTimeout(() => t.style.display = "none", 2600); }
+
+/* ---------------- Tipp-Entwurf ---------------- */
+function resetDraft() {
+  const t = S.tips[S.me];
+  S.draft = t ? {picks: {...(t.picks || {})}, dbl: [...(t.dbl || [])], mw: t.mw ?? null} : {picks: {}, dbl: [], mw: null};
+  S.dirty = false;
+}
+async function saveTips() {
+  if (!S.me) return openLogin();
+  if (isLocked(S.week)) return toast("Tippabgabe ist gesperrt");
+  const btn = $("#saveBtn"); if (btn) btn.disabled = true;
+  try {
+    const val = {picks: S.draft.picks, dbl: S.draft.dbl, mw: S.draft.mw, ts: SERVER_TS};
+    await DB.put(`tips/${S.key}/${S.me}`, val);
+    S.tips[S.me] = {...val, ts: Date.now()};
+    S.dirty = false; toast("Tipps gespeichert ✓"); render();
+  } catch (e) { toast("Fehler: " + e.message); if (btn) btn.disabled = false; }
+}
+window.addEventListener("beforeunload", e => { if (S.dirty) { e.preventDefault(); e.returnValue = ""; } });
+
+/* ---------------- Rendering ---------------- */
+function weekBar() {
+  const opts = WEEKS.map(w => `<option value="${w.key}" ${w.key === S.key ? "selected" : ""}>${w.label}${w.key === S.curKey ? " ★" : ""}</option>`).join("");
+  return `<div class="weekbar">
+    <button class="rbtn g" data-wk="-1" aria-label="Vorheriger Spieltag">◀</button><select id="wkSel">${opts}</select><button class="rbtn g" data-wk="1" aria-label="Nächster Spieltag">▶</button>
+    ${S.key !== S.curKey ? `<button class="rbtn nc" data-wk="0" title="Aktueller Spieltag">★ Jetzt</button>` : ""}
+  </div>`;
+}
+function bindWeekBar() {
+  document.querySelectorAll("[data-wk]").forEach(b => b.onclick = () => {
+    const d = +b.dataset.wk, i = WEEKS.findIndex(w => w.key === S.key);
+    const k = d === 0 ? S.curKey : WEEKS[Math.min(WEEKS.length - 1, Math.max(0, i + d))].key;
+    selectWeek(k);
+  });
+  const sel = $("#wkSel"); if (sel) sel.onchange = () => selectWeek(sel.value);
+}
+const pad = n => String(n).padStart(2, "0");
+function countdown(ms) {
+  if (ms <= 0) return "00:00:00";
+  const d = Math.floor(ms / 864e5), h = Math.floor(ms / 36e5) % 24, m = Math.floor(ms / 6e4) % 60, s = Math.floor(ms / 1000) % 60;
+  return (d ? `${d}T ` : "") + `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+function lockLine() {
+  const wk = S.week;
+  if (!wk.events.length) return `<span class="badge b-closed">Keine Spiele</span><span>Spielplan noch nicht da.</span>`;
+  if (wk.done) return `<span class="badge b-done">🏁 Abgerechnet</span><span>Alle Spiele beendet.</span>`;
+  if (isLocked(wk)) return `<span class="badge b-closed">🔒 Gesperrt</span><span class="muted">seit ${fmtFull.format(wk.lock)}</span>`;
+  return `<span class="badge b-open">🟢 Offen</span><span>Abgabe bis <b>${fmtFull.format(wk.lock)}</b></span>`;
+}
+const PICKNAME = {H: "Heimsieg", D: "Unentschieden", A: "Auswärtssieg"};
+
+function renderTippen() {
+  const wk = S.week, locked = isLocked(wk), d = S.draft, myTip = S.tips[S.me];
+  const sc = locked && myTip ? scoreTip(myTip, wk) : null;
+  const src = locked ? (myTip || {picks:{}, dbl:[], mw:null}) : d;
+  const nPicked = Object.keys(src.picks || {}).length;
+  let html = weekBar();
+
+  html += `<div class="panel status"><div class="lockline">${lockLine()}</div><div class="stats">`;
+  if (!locked && wk.events.length) html += `<div class="stat cdw"><div class="k">Eingabe wird gesperrt in</div><div class="v" id="cd">${countdown(wk.lock - Date.now())}</div></div>`;
+  if (S.me && wk.events.length) {
+    html += `<div class="stat"><div class="k">Getippt</div><div class="v cy">${nPicked}/${wk.events.length}</div></div>
+      <div class="stat"><div class="k">Doppelt 2×</div><div class="v gd">${(src.dbl || []).length}/${CONFIG.DOUBLE_MAX}</div></div>
+      <div class="stat"><div class="k">${SP.label}</div><div class="v pu">${src.mw ? 1 : 0}/${CONFIG.MW_MAX}</div></div>`;
+    if (sc) html += `<div class="stat"><div class="k">Punkte</div><div class="v gr">${fmtPts(sc.pts)}</div></div>
+      <div class="stat"><div class="k">Richtig</div><div class="v cy">${sc.correct}/${sc.decided}</div></div>`;
+  }
+  html += `</div>`;
+  if (!S.me) html += `<div class="row"><button class="rbtn y" id="loginBtn">▶ Anmelden / Mitspielen</button></div>`;
+  if (sc?.late) html += `<div class="hint" style="color:var(--red)">⚠ Tipps nach der Sperre gespeichert – ungültig</div>`;
+  if (S.me && locked && !myTip && wk.events.length) html += `<div class="hint" style="color:var(--red)">Du hast diesen Spieltag nicht getippt.</div>`;
+  if (S.me && !locked && wk.events.length) html += `<div class="hint">▶ Heimsieg, X (Remis) oder Auswärtssieg antippen · 2× und 3× vergeben · speichern</div>`;
+  html += `</div>`;
+
+  html += `<div class="legend"><span><i style="background:var(--red)"></i>Heimteam (links)</span><span><i style="background:var(--yellow)"></i>Dein Tipp</span><span><i style="background:var(--gold)"></i>2× Doppelt</span><span><i style="background:var(--half)"></i>${SP.label}</span></div>`;
+
+  let lastDay = "";
+  for (const ev of wk.events) {
+    const day = fmtDay.format(ev.date);
+    if (day !== lastDay) { if (lastDay) html += `</div>`; html += `<div class="day">${day}</div><div class="games">`; lastDay = day; }
+    const pick = S.me ? src.picks?.["e" + ev.id] : null;
+    const isD = !!S.me && (src.dbl || []).includes(ev.id), isH = !!S.me && src.mw === ev.id;
+    const canEdit = !!S.me && !locked;
+    const markCls = (val) => {
+      let cls = "";
+      if (pick === val) cls += " sel"; else if (pick) cls += " dim";
+      if (ev.completed && ev.winner === val) cls += " won";
+      let stamp = "";
+      if (pick === val && ev.completed) { const ok = ev.winner === val && !sc?.late; cls += ok ? " right" : " wrong"; stamp = ok ? "✔" : "✘"; }
+      return {cls, stamp};
+    };
+    const teamBtn = (t, val) => {
+      const {cls, stamp} = markCls(val);
+      const tp = tablePos(t.id);
+      return `<button class="team${val === "H" ? " home" : ""}${cls}" style="${tvars(t)}" data-e="${ev.id}" data-t="${val}" ${canEdit ? "" : "disabled"} aria-label="${esc(t.full)} ${val === "H" ? "(Heim)" : "(Gast)"}">
+        <span class="tag">${val === "H" ? "HEIM" : "GAST"}</span>
+        ${stamp ? `<span class="stamp">${stamp}</span>` : ""}
+        <span class="crest">${S.logos && t.logo ? `<img src="${esc(t.logo)}" alt="" loading="lazy">` : `<span class="ab"></span>`}</span>
+        <b>${t.abbr}</b><small>${esc(t.name)}</small>${tp ? `<small>${tp.pos}. · ${tp.points} Pkt</small>` : ""}
+        ${ev.state !== "pre" ? `<span class="score led">${t.score ?? "-"}</span>` : ""}
+        ${pick === val ? `<span class="pick">TIPP</span>` : ""}</button>`;
+    };
+    const dm = markCls("D");
+    const drawBtn = `<button class="draw${dm.cls}" data-e="${ev.id}" data-t="D" ${canEdit ? "" : "disabled"} aria-label="Unentschieden">
+      ${dm.stamp ? `<span class="stamp">${dm.stamp}</span>` : ""}<b>X</b><small>Remis</small>${pick === "D" ? `<span class="pick">TIPP</span>` : ""}</button>`;
+    let st;
+    if (ev.state === "in") st = `<span class="st live">● LIVE${ev.minute > 0 ? " ~" + ev.minute + "'" : ""}</span>`;
+    else if (ev.completed) st = `<span class="st fin">Endstand</span>`;
+    else if (isD) st = `<span class="st mul">2× Doppelt</span>`;
+    else if (isH) st = `<span class="st mul h">${SP.label}</span>`;
+    else st = "";
+    let ptsHtml = "";
+    if (sc && sc.per[ev.id]) { const p = sc.per[ev.id]; ptsHtml = `<span class="pts ${p.ok ? "gp" : "rp"}">${p.ok ? "+" + fmtPts(p.p) : "0"}</span>`; }
+    const goals = ev.goals.length ? `<div class="goals">⚽ ${ev.goals.map(g => `${g.min ?? "?"}' ${esc(g.name)}${g.pen ? " (Elfm.)" : ""}${g.og ? " (ET)" : ""} ${g.sc}`).join(" · ")}</div>` : "";
+    html += `<div class="panel game ${isD ? "dbl" : ""} ${isH ? "half" : ""}">
+      <div class="ghead"><span class="t">${fmtTime.format(ev.date)}</span>
+        <span class="tvs">${tvFor(ev, mdNum(S.key)).map(t => `<span class="tv ${tvClass(t.n)} ${t.sure ? "" : "maybe"}" title="${t.sure ? "Live" : "Ohne Gewähr"}">${esc(t.n)}${t.sure ? "" : "?"}</span>`).join("")}
+        ${isAdmin() ? `<button class="tvedit" data-tv="${ev.id}" title="Sender eintragen">✎</button>` : ""}</span>${st}</div>
+      <div class="match">${teamBtn(ev.home, "H")}${drawBtn}${teamBtn(ev.away, "A")}</div>
+      ${goals}
+      ${S.me ? `<div class="mods">
+        <button class="rbtn y ${isD ? "on" : ""}" data-mod="d" data-e="${ev.id}" ${canEdit ? "" : "disabled"}>2× Doppelt</button>
+        <button class="rbtn m ${isH ? "on" : ""}" data-mod="h" data-e="${ev.id}" ${canEdit ? "" : "disabled"}>${SP.label}</button>
+        ${ptsHtml}</div>` : `<div style="height:10px"></div>`}
+    </div>`;
+  }
+  if (lastDay) html += `</div>`;
+  $("#view").innerHTML = html;
+  bindWeekBar();
+  if ($("#loginBtn")) $("#loginBtn").onclick = openLogin;
+
+  document.querySelectorAll("[data-e][data-t]").forEach(b => b.onclick = () => {
+    const k = "e" + b.dataset.e;
+    if (d.picks[k] === b.dataset.t) delete d.picks[k]; else d.picks[k] = b.dataset.t;
+    S.dirty = true; render();
+  });
+  document.querySelectorAll("[data-tv]").forEach(b => b.onclick = async () => {
+    const k = "e" + b.dataset.tv;
+    const v = prompt("TV-Sender für dieses Spiel (mit Komma trennen, z.B. Sky, Sat.1).\nLeer lassen = automatische Regel.", S.tv[k] || "");
+    if (v === null) return;
+    try {
+      await DB.put(`tv/${S.key}/${k}`, v.trim() || null);
+      if (v.trim()) S.tv[k] = v.trim(); else delete S.tv[k];
+      toast("Sender gespeichert"); render();
+    } catch (e) { toast("Fehler: " + e.message); }
+  });
+  document.querySelectorAll("[data-mod]").forEach(b => b.onclick = () => {
+    const id = b.dataset.e;
+    if (b.dataset.mod === "d") {
+      if (d.dbl.includes(id)) d.dbl = d.dbl.filter(x => x !== id);
+      else { if (d.dbl.length >= CONFIG.DOUBLE_MAX) return toast(`Maximal ${CONFIG.DOUBLE_MAX} Doppelt-Spiele`); d.dbl.push(id); if (d.mw === id) d.mw = null; }
+    } else {
+      if (d.mw === id) d.mw = null;
+      else { d.mw = id; d.dbl = d.dbl.filter(x => x !== id); }
+    }
+    S.dirty = true; render();
+  });
+
+  const sb = $("#savebar");
+  if (S.me && !locked && wk.events.length) {
+    sb.hidden = false;
+    sb.innerHTML = `<span class="msg ${S.dirty ? "dirty" : ""}">${S.dirty ? "▶ Nicht gespeichert!" : myTip ? "✔ Gespeichert" : "Noch nichts gespeichert"}</span>
+      <button class="rbtn y" id="saveBtn" ${S.dirty ? "" : "disabled"}>💾 Speichern</button>`;
+    $("#saveBtn").onclick = saveTips;
+  } else sb.hidden = true;
+}
+
+function pickChip(ev, pick, mult, state) {
+  const sup = mult === 2 ? `<sup>2×</sup>` : mult === 3 ? `<sup class="h">3×</sup>` : "";
+  if (pick === "D") return `<span class="chip ${state}" style="--c1:#5a6080">X${sup}</span>`;
+  const t = pick === "H" ? ev.home : ev.away;
+  return `<span class="chip ${state}" style="${tvars(t)}">${t.abbr}${sup}</span>`;
+}
+const resTxt = (ev, cls = "") => ev.state !== "pre"
+  ? `<span class="${cls}"><span class="${ev.winner === "H" ? "w" : ""}">${ev.home.score ?? "-"}</span>:<span class="${ev.winner === "A" ? "w" : ""}">${ev.away.score ?? "-"}</span></span>` : "";
+
+function renderWoche() {
+  const wk = S.week, locked = isLocked(wk);
+  const fillAllowed = S.firstKey && weekOrder(S.key) >= weekOrder(S.firstKey);
+  const rows = Object.keys(S.players).map(id => {
+    const tip = S.tips[id], sc = scoreTip(tip, wk);
+    const fill = !tip && fillAllowed ? fillFor(id, wk, S.tips) : null;
+    return {id, name: S.players[id].name, tip, sc, fill, pts: tip ? sc.pts : (fill?.p ?? 0)};
+  }).sort((a, b) => b.pts - a.pts || b.sc.correct - a.sc.correct || a.name.localeCompare(b.name));
+  const best = Math.max(0, ...rows.filter(r => r.tip).map(r => r.sc.pts));
+  const ptsTxt = r => r.tip ? fmtPts(r.sc.pts) : r.fill ? fillTxt(r.fill) : "–";
+  const fillLegend = (rows.some(r => r.fill?.kind === "avg") ? "<span>Ø = Durchschnitt (später eingestiegen)</span>" : "")
+    + (rows.some(r => r.fill?.kind === "half") ? "<span>~ = halbe Punktzahl (niemand hat getippt)</span>" : "");
+  const toggle = `<div class="vtoggle"><span>Ansicht</span>
+    <button class="rbtn ${S.view === "hoch" ? "nc on" : "g"}" data-view="hoch">📱 Hochformat</button>
+    <button class="rbtn ${S.view === "quer" ? "nc on" : "g"}" data-view="quer"><span style="display:inline-block;transform:rotate(90deg)">📱</span> Querformat</button></div>`;
+  let html = toggle + weekBar() + `<div class="panel status"><div class="lockline">${lockLine()}</div>
+    ${!locked ? `<div class="hint">Die Tipps der anderen werden erst nach der Sperre sichtbar.</div>` : ""}
+    ${!wk.done && locked ? `<div class="hint">Punkte sind vorläufig, bis alle Spiele beendet sind.</div>` : ""}</div>`;
+  if (wk.done && best > 0) {
+    const winners = rows.filter(r => r.tip && r.sc.pts === best).map(r => esc(r.name)).join(", ");
+    html += `<div class="panel winner">🏆 Spieltagssieg: ${winners}<br>${fmtPts(best)} Punkte</div>`;
+  }
+  let rk = 0, pv = null;
+  rows.forEach((r, i) => { if (r.pts !== pv) { rk = i + 1; pv = r.pts; } r.rank = rk; });
+  const cell = (r, ev) => {
+    const pick = r.tip?.picks?.["e" + ev.id];
+    if (!r.tip || !pick) return `<td class="dash">–</td>`;
+    if (!(locked || r.id === S.me)) return `<td style="color:var(--lime)">✓</td>`;
+    const state = ev.completed ? (r.sc.per[ev.id]?.ok ? "ok" : "no") : "";
+    return `<td>${pickChip(ev, pick, multiplier(r.tip, ev.id), state)}</td>`;
+  };
+  const legend = `<div class="legend"><span><i style="background:var(--lime)"></i>grün = richtig</span><span><i style="background:#555"></i>grau = falsch</span><span>X = Remis</span><span><i style="background:var(--gold)"></i>2×</span><span><i style="background:var(--half)"></i>3×</span>${fillLegend}</div>`;
+
+  if (S.view === "hoch") {
+    html += `<div class="panel tbl-wrap"><table class="wk-hoch"><thead><tr><th class="stick l">Spiel</th>`;
+    rows.forEach(r => html += `<th class="${r.id === S.me ? "meh" : ""} rk${r.rank}" title="${esc(r.name)}"><span class="rank">${r.rank}</span><div class="pn">${esc(r.name.slice(0, 6))}</div><div class="pp">${ptsTxt(r)}</div></th>`);
+    html += `</tr></thead><tbody>`;
+    for (const ev of wk.events) {
+      const res = ev.state !== "pre" ? resTxt(ev) : fmtTime.format(ev.date);
+      html += `<tr><td class="stick l gcell"><div class="gl">${logoImg(ev.home)}${ev.home.abbr}<i>–</i>${logoImg(ev.away)}${ev.away.abbr}</div><div class="gr">${res}</div></td>`;
+      rows.forEach(r => html += cell(r, ev));
+      html += `</tr>`;
+    }
+    if (!rows.length) html += `<tr><td colspan="2" class="muted">Noch keine Tipper angemeldet.</td></tr>`;
+    html += `</tbody></table></div>` + legend;
+    $("#view").innerHTML = html;
+    bindWeekBar(); bindView();
+    return;
+  }
+
+  html += `<div class="panel tbl-wrap"><table><thead><tr><th class="stick l">Tipper</th><th>Pkt</th><th>✔</th>`;
+  for (const ev of wk.events) {
+    html += `<th title="${esc(ev.home.full)} – ${esc(ev.away.full)}"><div class="th-team">${logoImg(ev.home)}${ev.home.abbr}<span>–</span>${logoImg(ev.away)}${ev.away.abbr}${resTxt(ev, "th-res")}</div></th>`;
+  }
+  html += `</tr></thead><tbody>`;
+  rows.forEach(r => {
+    const crown = wk.done && r.tip && r.sc.pts === best && best > 0 ? " 🏆" : "";
+    html += `<tr class="${r.id === S.me ? "me" : ""} rk${r.rank}"><td class="stick l"><span class="rank">${r.rank}</span> ${esc(r.name)}${crown}${r.sc.late ? ' <span style="color:var(--red)" title="nach Sperre gespeichert">⚠</span>' : ""}</td>
+      <td class="ptsc">${ptsTxt(r)}</td><td>${r.tip ? `${r.sc.correct}/${r.sc.decided}` : "–"}</td>`;
+    for (const ev of wk.events) html += cell(r, ev);
+    html += `</tr>`;
+  });
+  if (!rows.length) html += `<tr><td colspan="${wk.events.length + 3}" class="muted">Noch keine Tipper angemeldet.</td></tr>`;
+  html += `</tbody></table></div>` + legend;
+  $("#view").innerHTML = html;
+  bindWeekBar(); bindView();
+}
+function bindView() {
+  document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => {
+    S.view = b.dataset.view; localStorage.setItem("bl-view", S.view); render();
+  });
+}
+
+async function renderTabelle() {
+  $("#view").innerHTML = `<div class="loading">BERECHNE TABELLE …</div>`;
+  let all;
+  try { all = (await DB.get("tips")) || {}; } catch (e) { $("#view").innerHTML = `<div class="panel card">${esc(e.message)}</div>`; return; }
+  const tipped = Object.keys(all).filter(k => /^md\d+$/.test(k)).sort((a, b) => weekOrder(a) - weekOrder(b));
+  let keys = [], weeks = [];
+  if (tipped.length) {
+    const from = weekOrder(tipped[0]), to = Math.max(weekOrder(tipped.at(-1)), weekOrder(S.curKey));
+    const cand = WEEKS.map(w => w.key).filter(k => weekOrder(k) >= from && weekOrder(k) <= to);
+    const loaded = await Promise.all(cand.map(k => loadWeek(k, k === S.curKey).catch(() => null)));
+    cand.forEach((k, i) => { const wk = loaded[i]; if (wk && wk.events.length && (all[k] || isLocked(wk))) { keys.push(k); weeks.push(wk); } });
+  }
+  const st = {};
+  for (const id of Object.keys(S.players)) st[id] = {id, name: S.players[id].name, pts: 0, correct: 0, decided: 0, wins: 0, per: {}};
+  keys.forEach((k, i) => {
+    const wk = weeks[i];
+    let best = 0; const scores = {};
+    for (const [pid, tip] of Object.entries(all[k] || {})) {
+      if (!st[pid]) continue;
+      const sc = scoreTip(tip, wk); scores[pid] = sc.pts;
+      st[pid].pts += sc.pts; st[pid].correct += sc.correct; st[pid].decided += sc.decided;
+      st[pid].per[k] = {p: sc.pts}; best = Math.max(best, sc.pts);
+    }
+    if (wk.done && best > 0) for (const [pid, p] of Object.entries(scores)) if (p === best) st[pid].wins++;
+    for (const pid of Object.keys(st)) {
+      if (st[pid].per[k]) continue;
+      const f = fillFor(pid, wk, all[k]);
+      if (!f) continue;
+      st[pid].per[k] = {p: f.p, fill: f}; st[pid].pts += f.p;
+    }
+  });
+  const rows = Object.values(st).sort((a, b) => b.pts - a.pts || b.wins - a.wins || b.correct - a.correct || a.name.localeCompare(b.name));
+  const lead = rows[0]?.pts || 0;
+  let html = `<div class="panel card"><h3>🏆 Tipper-Tabelle ${seasonLabel(S.season)}</h3><span class="muted">Spieltagssiege zählen nur für abgeschlossene Spieltage. * = Spieltag läuft noch.</span></div>
+    <div class="panel tbl-wrap"><table><thead><tr><th class="stick l">Tipper</th><th>Punkte</th><th>Rückst.</th><th>Siege</th><th>Quote</th>`;
+  keys.forEach((k, i) => html += `<th title="${weekLabel(k)}">${weekShort(k)}${weeks[i] && !weeks[i].done ? "*" : ""}</th>`);
+  html += `</tr></thead><tbody>`;
+  let rank = 0, prev = null;
+  rows.forEach((r, i) => {
+    if (r.pts !== prev) { rank = i + 1; prev = r.pts; }
+    const q = r.decided ? Math.round(r.correct / r.decided * 100) + "%" : "–";
+    html += `<tr class="${r.id === S.me ? "me" : ""} rk${rank}"><td class="stick l"><span class="rank">${rank}</span> ${esc(r.name)}</td>
+      <td class="ptsc">${fmtPts(r.pts)}</td><td class="muted">${r.pts === lead ? "–" : "−" + fmtPts(lead - r.pts)}</td>
+      <td>${r.wins ? (r.wins > 3 ? "🏆×" + r.wins : "🏆".repeat(r.wins)) : "0"}</td><td>${q}</td>`;
+    keys.forEach(k => {
+      const c = r.per[k];
+      html += `<td>${!c ? '<span class="dash">–</span>' : c.fill ? fillTxt(c.fill) : fmtPts(c.p)}</td>`;
+    });
+    html += `</tr>`;
+  });
+  if (!rows.length) html += `<tr><td colspan="${5 + keys.length}" class="muted">Noch keine Tipper.</td></tr>`;
+  html += `</tbody></table></div>`;
+  const fl = rows.flatMap(r => Object.values(r.per).filter(c => c.fill).map(c => c.fill.kind));
+  if (fl.length) html += `<div class="legend">${fl.includes("avg") ? "<span>Ø = Durchschnitt des Spieltags (später eingestiegen)</span>" : ""}${fl.includes("half") ? "<span>~ = halbe mögliche Punktzahl (niemand hat getippt)</span>" : ""}</div>`;
+  if (S.tab === "tabelle") $("#view").innerHTML = html;
+}
+
+// Tabellenzonen der Bundesliga
+const zone = pos => pos <= 4 ? "z-cl" : pos === 5 ? "z-el" : pos === 6 ? "z-uecl" : pos === 16 ? "z-rel" : pos >= 17 ? "z-ab" : "";
+async function renderLiga() {
+  if (!S.table.length) $("#view").innerHTML = `<div class="loading">LADE TABELLE …</div>`;
+  await loadTable();
+  if (S.tab !== "liga") return;
+  if (!S.table.length) { $("#view").innerHTML = `<div class="panel card">Tabelle konnte nicht geladen werden.</div>`; return; }
+  let html = `<div class="panel card"><h3>📊 Bundesliga-Tabelle ${seasonLabel(S.season)}</h3><span class="muted">Live-Stand laut OpenLigaDB.</span></div>
+    <div class="panel tbl-wrap"><table class="liga"><thead><tr><th></th><th>#</th><th class="l">Verein</th><th>Sp</th><th class="hide-s">S</th><th class="hide-s">U</th><th class="hide-s">N</th><th>Tore</th><th>Diff</th><th>Pkt</th></tr></thead><tbody>`;
+  for (const t of S.table) {
+    const tm = t.team;
+    html += `<tr><td class="zone ${zone(t.pos)}"></td><td>${t.pos}.</td>
+      <td class="l"><span class="tn" style="${tvars(tm)}">${S.logos && tm.logo ? `<img src="${esc(tm.logo)}" alt="" loading="lazy">` : `<span class="ab"></span>`}${esc(t.teamName)}</span></td>
+      <td>${t.matches}</td><td class="hide-s">${t.won}</td><td class="hide-s">${t.draw}</td><td class="hide-s">${t.lost}</td>
+      <td>${t.goals}:${t.opponentGoals}</td><td>${t.goalDiff > 0 ? "+" : ""}${t.goalDiff}</td><td class="pk">${t.points}</td></tr>`;
+  }
+  html += `</tbody></table></div>
+    <div class="zleg"><span><i style="background:#ffd400"></i>Champions League</span><span><i style="background:#8a8a8a"></i>Europa League</span><span><i style="background:#c4c4c4"></i>Conference-League-Quali</span><span><i style="background:#e07a7a"></i>Relegation</span><span><i style="background:#c8161d"></i>Abstieg</span></div>`;
+  $("#view").innerHTML = html;
+}
+
+function renderSetup() {
+  const share = dbUrl ? `${location.origin}${location.pathname}` : "";
+  $("#view").innerHTML = `
+  <div class="panel card"><h3>📜 Regeln</h3><ul>
+    <li>Pro Spiel tippst du <b>Heimsieg</b>, <b>X = Unentschieden</b> oder <b>Auswärtssieg</b>. Richtig = <b>1 Punkt</b>, falsch = 0 Punkte.</li>
+    <li><b>${CONFIG.DOUBLE_MAX} Spiele</b> als <b style="color:var(--gold)">2× Doppelt</b> markieren → 2 Punkte bei richtigem Tipp.</li>
+    <li><b>${CONFIG.MW_MAX} Spiel</b> als <b style="color:var(--half)">3× Must-Watch</b> markieren → <b>3 Punkte</b> bei richtigem Tipp.</li>
+    <li><b>${CONFIG.LOCK_MINUTES} Minuten vor dem ersten Spiel</b> des Spieltags wird die Tippabgabe für den ganzen Spieltag gesperrt (meist Freitag 19:30).</li>
+    <li>Gewertet wird das Ergebnis nach 90 Minuten (plus Nachspielzeit). Nicht getippte Spiele geben 0 Punkte.</li>
+    <li>Nach der Sperre sieht jeder die Tipps der anderen. Nach dem letzten Spiel ist der Spieltag abgerechnet – die meisten Punkte gewinnen den Spieltag 🏆.</li>
+    <li>Gesamtwertung: Summe aller Spieltagspunkte.</li>
+    <li><b>Später einsteigen:</b> Wer während der Saison dazukommt, bekommt für jeden verpassten Spieltag den <b>Durchschnitt der vergebenen Punkte</b> (in der Tabelle mit <span class="fillv">Ø</span> markiert).</li>
+    <li><b>Niemand hat getippt:</b> Hat an einem Spieltag keiner getippt, bekommen <b>alle</b> die <b>halbe mögliche Punktzahl</b>, aufgerundet (markiert mit <span class="fillv">~</span>).</li>
+    <li>Das Heimteam steht immer <b>links</b> und hat einen <b style="color:var(--red)">roten Rahmen</b>. Unter dem Namen steht der aktuelle Tabellenplatz.</li>
+  </ul></div>
+  ${share ? `<div class="panel card"><h3>📨 Freunde einladen</h3><div class="row"><input readonly value="${esc(share)}" id="shareIn"><button class="rbtn c" id="shareBtn">Link kopieren</button></div></div>` : ""}
+  <div class="panel card"><h3>🏆 Gespielt wird um die Ehre</h3>
+    <p>Mitmachen ist <b>kostenlos</b>, es gibt <b>keinen Geldeinsatz</b> und keine Geldgewinne – nur Ruhm, Ehre und einen virtuellen Pokal.</p>
+    <p class="muted">Kein offizielles Angebot der DFL oder der Vereine. Vereinsnamen und -wappen gehören ihren jeweiligen Inhabern und dienen nur zur Kennzeichnung der Spiele.</p>
+  </div>
+  <div class="panel card"><h3>ℹ️ Datenquellen</h3>
+    <p class="muted">Spielplan, Live-Tore und Tabelle kommen von der freien Community-Datenbank <a href="https://www.openligadb.de" target="_blank" rel="noopener">OpenLigaDB</a>. Die Spielminute bei LIVE ist geschätzt.</p>
+    <p class="muted">Die PIN schützt nur vor Versehen. Tipps, die laut Server-Zeit nach der Sperre gespeichert wurden, zählen nicht.</p>
+  </div>
+  <div class="panel card"><h3>🔒 Datenschutz</h3><ul>
+    <li><b>Was gespeichert wird:</b> dein Spitzname, deine PIN (nur verschlüsselt als Prüfwert, nicht lesbar), deine Tipps und der Zeitpunkt der Abgabe. Keine E-Mail, kein echter Name nötig.</li>
+    <li><b>Wo:</b> in einer Google-Firebase-Datenbank mit Serverstandort in Belgien (EU). Spitzname und Tipps sind für alle Mitspieler sichtbar (Tipps erst nach der Sperre).</li>
+    <li><b>Auf deinem Gerät</b> merkt sich der Browser, wer angemeldet ist, und deine Ansicht-Einstellungen (localStorage). Keine Cookies, kein Tracking, keine Werbung.</li>
+    <li><b>Externe Abrufe:</b> Spielplan und Ergebnisse von OpenLigaDB${S.logos ? ", Vereinswappen von Wikimedia, Imgur bzw. DFB" : ""} – dabei sehen diese Dienste deine IP-Adresse. Die Seite selbst liegt bei GitHub Pages.</li>
+    <li><b>Löschen:</b> Jederzeit selbst – oben auf deinen Namen tippen → „Nicht mehr mitspielen?“ → „Mich löschen“. Alternativ den Admin fragen.</li>
+  </ul></div>
+  <div class="panel card"><h3>📺 Wo läuft's? (Deutschland)</h3><ul>
+    <li>Freitag 20:30: <span class="tv tv-sky">Sky</span> (einzelne Spiele auch frei auf <span class="tv tv-sat1">Sat.1</span>, z.B. Saisoneröffnung, 17. und 18. Spieltag)</li>
+    <li>Samstag 15:30: alle Einzelspiele auf <span class="tv tv-sky">Sky</span>, die Konferenz auf <span class="tv tv-dazn">DAZN</span></li>
+    <li>Samstag 18:30 (Topspiel): <span class="tv tv-sky">Sky</span></li>
+    <li>Sonntag: <span class="tv tv-dazn">DAZN</span></li>
+  </ul><p class="muted">Ohne Gewähr – die Sender werden nach Anstoßzeit ermittelt. In Österreich und der Schweiz gelten andere Sender.</p></div>
+  ${adminCard()}`;
+  if ($("#shareBtn")) $("#shareBtn").onclick = () => { navigator.clipboard?.writeText($("#shareIn").value); $("#shareIn").select(); toast("Link kopiert"); };
+  bindAdmin();
+}
+
+function adminCard() {
+  if (!S.adminPin) return `<div class="panel card"><details><summary><b>⚙ Admin einrichten</b></summary>
+    <p class="muted">Noch kein Admin festgelegt. Wer hier zuerst eine Admin-PIN festlegt, ist Admin.</p>
+    <label>Admin-PIN (mind. 6 Zeichen)</label><input id="adP1" type="password" autocomplete="new-password">
+    <label>PIN wiederholen</label><input id="adP2" type="password" autocomplete="new-password">
+    <div class="row"><button class="rbtn y" id="adSet">Admin-PIN festlegen</button></div></details></div>`;
+  if (!adminIn()) return `<div class="panel card"><details><summary><b>🔑 Admin-Login</b></summary>
+    <label>Admin-PIN</label><input id="adPin" type="password" autocomplete="current-password">
+    <div class="row"><button class="rbtn y" id="adLogin">Als Admin anmelden</button></div></details></div>`;
+  const pl = Object.entries(S.players).sort((a, b) => a[1].name.localeCompare(b[1].name));
+  return `<div class="panel card"><h3>⚙ Admin-Bereich</h3>
+    <label style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="admTv" style="width:auto" ${isAdmin() ? "checked" : ""}> TV-Sender bei den Spielen selbst eintragen (✎-Knopf)</label>
+    <label style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="admLogo" style="width:auto" ${S.logos ? "checked" : ""}> Vereinswappen anzeigen (gilt für alle)</label>
+    <h3 style="margin-top:16px">👥 Spieler (${pl.length})</h3>
+    ${pl.length ? `<div class="adm-pl">${pl.map(([id, p]) => `<div class="adm-row"><span>${esc(p.name)}</span>
+      <button class="rbtn c" data-pin="${id}">PIN neu</button><button class="rbtn r" data-del="${id}">Löschen</button></div>`).join("")}</div>` : `<p class="muted">Noch keine Spieler.</p>`}
+    <details style="margin-top:16px"><summary><b>Datenbank</b></summary>
+      <p>Aktuell: <b>${DB.remote() ? "Online-Datenbank (Firebase)" : "Lokaler Testmodus – nur dieser Browser"}</b></p>
+      <div class="row"><input id="dbIn" placeholder="https://xxxx-default-rtdb.europe-west1.firebasedatabase.app" value="${esc(dbUrl)}"></div>
+      <div class="row"><button class="rbtn y" id="dbSave">Speichern & testen</button><button class="rbtn g" id="dbLocal">Testmodus</button></div>
+    </details>
+    <div class="row" style="margin-top:16px"><button class="rbtn g" id="adChg">Admin-PIN ändern</button><button class="rbtn r" id="adOut">Admin abmelden</button></div>
+  </div>`;
+}
+
+function bindAdmin() {
+  const on = (sel, fn) => { const el = $(sel); if (el) el.onclick = fn; };
+  on("#adSet", async () => {
+    const a = $("#adP1").value, b = $("#adP2").value;
+    if (a.length < 6) return toast("PIN zu kurz (mind. 6 Zeichen)");
+    if (a !== b) return toast("PINs stimmen nicht überein");
+    const h = await adminHash(a);
+    try {
+      if (await DB.get("admin/pin", CONFIG.BASE)) { toast("Es gibt schon einen Admin"); await reloadData(); return render(); }
+      await DB.put("admin/pin", h, CONFIG.BASE);
+    } catch (e) { return toast("Fehler: " + e.message); }
+    S.adminPin = h; localStorage.setItem("bl-adm", h); toast("Du bist jetzt Admin ✓"); render();
+  });
+  on("#adLogin", async () => {
+    const h = await adminHash($("#adPin").value);
+    if (h !== S.adminPin) return toast("Falsche Admin-PIN");
+    localStorage.setItem("bl-adm", h); toast("Admin angemeldet ✓"); render();
+  });
+  if (!adminIn()) return;
+  $("#admLogo").onchange = async e => {
+    try { await DB.put("settings/logos", e.target.checked, CONFIG.BASE); } catch (err) { return toast("Fehler: " + err.message); }
+    S.logos = e.target.checked; toast(S.logos ? "Wappen an" : "Wappen aus – nur Vereinsfarben & Kürzel");
+  };
+  $("#admTv").onchange = e => { localStorage.setItem("bl-admin", e.target.checked ? "1" : "0"); toast(e.target.checked ? "✎ Sender-Eingabe an" : "Sender-Eingabe aus"); };
+  on("#adOut", () => { localStorage.removeItem("bl-adm"); localStorage.removeItem("bl-admin"); toast("Admin abgemeldet"); render(); });
+  on("#adChg", async () => {
+    const a = prompt("Neue Admin-PIN (mind. 6 Zeichen):");
+    if (a === null) return;
+    if (a.length < 6) return toast("PIN zu kurz");
+    const h = await adminHash(a);
+    try { await DB.put("admin/pin", h, CONFIG.BASE); } catch (e) { return toast("Fehler: " + e.message); }
+    S.adminPin = h; localStorage.setItem("bl-adm", h); toast("Admin-PIN geändert ✓");
+  });
+  document.querySelectorAll("[data-pin]").forEach(b => b.onclick = async () => {
+    const id = b.dataset.pin, p = S.players[id];
+    const pin = prompt(`Neue PIN für ${p.name} (mind. 4 Zeichen):`);
+    if (pin === null) return;
+    if (pin.length < 4) return toast("PIN zu kurz");
+    try { await DB.put(`players/${id}/pin`, await hash(id + pin)); } catch (e) { return toast("Fehler: " + e.message); }
+    p.pin = await hash(id + pin); toast(`Neue PIN für ${p.name} gespeichert`);
+  });
+  document.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
+    const id = b.dataset.del, p = S.players[id];
+    if (!confirm(`${p.name} wirklich löschen?\nProfil und alle Tipps werden gelöscht. Das kann nicht rückgängig gemacht werden.`)) return;
+    try { await deletePlayer(id); } catch (e) { return toast("Fehler: " + e.message); }
+    if (S.me === id) setMe(null);
+    toast(`${p.name} gelöscht`); render();
+  });
+  $("#dbSave").onclick = async () => {
+    const u = $("#dbIn").value.trim().replace(/\/+$/, "");
+    if (!/^https:\/\/.+/.test(u)) return toast("Bitte gültige https-URL eingeben");
+    try {
+      const r = await fetch(`${u}/${CONFIG.BASE}/ping.json`, {method:"PUT", body: JSON.stringify(SERVER_TS)});
+      if (!r.ok) throw new Error("Status " + r.status);
+    } catch (e) { return toast("Verbindung fehlgeschlagen: " + e.message); }
+    dbUrl = u; localStorage.setItem("bl-db", u); toast("Datenbank verbunden ✓"); await reloadData(); updateHeader(); render();
+  };
+  $("#dbLocal").onclick = async () => { dbUrl = ""; localStorage.removeItem("bl-db"); toast("Lokaler Testmodus"); await reloadData(); updateHeader(); render(); };
+}
+
+function render() {
+  document.querySelectorAll("nav .rbtn").forEach(b => b.classList.toggle("on", b.dataset.tab === S.tab));
+  if (S.tab !== "tippen") $("#savebar").hidden = true;
+  if (!S.week) return;
+  ({tippen: renderTippen, woche: renderWoche, tabelle: renderTabelle, liga: renderLiga, setup: renderSetup})[S.tab]();
+}
+document.querySelectorAll("nav .rbtn").forEach(b => b.onclick = () => { S.tab = b.dataset.tab; render(); window.scrollTo(0, 0); });
+
+/* ---------------- Laden ---------------- */
+async function reloadData() {
+  const [players, tips, tv, tipKeys, adminPin, logos] = await Promise.all([DB.get("players"), DB.get(`tips/${S.key}`), DB.get(`tv/${S.key}`).catch(() => null),
+    DB.keys("tips").catch(() => []), DB.get("admin/pin", CONFIG.BASE).catch(() => null), DB.get("settings/logos", CONFIG.BASE).catch(() => null)]);
+  S.players = players || {}; S.tips = tips || {}; S.tv = tv || {}; S.adminPin = adminPin || null;
+  S.logos = logos !== false;
+  S.firstKey = tipKeys.filter(k => /^md\d+$/.test(k)).sort((a, b) => weekOrder(a) - weekOrder(b))[0] || null;
+  if (S.me && !S.players[S.me]) { S.me = null; localStorage.removeItem("bl-me"); }
+  if (!S.dirty) resetDraft();
+}
+async function selectWeek(key) {
+  if (S.dirty && !confirm("Ungespeicherte Tipps verwerfen?")) return render();
+  S.dirty = false; S.key = key; updateHeader();
+  $("#view").innerHTML = `<div class="loading">LADE ${weekLabel(key).toUpperCase()} …</div>`;
+  try {
+    S.week = await loadWeek(key, !sbCache[key]?.done);
+    await reloadData();
+  } catch (e) { $("#view").innerHTML = `<div class="panel card">Fehler: ${esc(e.message)}</div>`; return; }
+  if (S.tab === "tabelle" || S.tab === "setup" || S.tab === "liga") S.tab = "tippen";
+  render();
+}
+
+// aktueller Spieltag: OpenLigaDB meldet den zuletzt gespielten – ist der fertig, gilt der nächste
+async function currentKey() {
+  const g = await (await fetch(`${OLDB}/getcurrentgroup/bl1`)).json();
+  let n = Math.min(CONFIG.MATCHDAYS, Math.max(1, g.groupOrderID || 1));
+  const wk = await loadWeek(`md${n}`, true);
+  if (wk.done && n < CONFIG.MATCHDAYS) n++;
+  return `md${n}`;
+}
+
+async function init() {
+  updateHeader();
+  try {
+    [S.curKey] = await Promise.all([currentKey(), loadTable()]);
+  } catch (e) {
+    $("#view").innerHTML = `<div class="panel card">Spielplan konnte nicht geladen werden: ${esc(e.message)}</div>`; return;
+  }
+  await selectWeek(S.curKey);
+  updateHeader();
+
+  setInterval(() => {
+    if (!S.week || S.week.lock === null) return;
+    const el = $("#cd"); const left = S.week.lock - Date.now();
+    if (el) el.textContent = countdown(left);
+    if (left <= 0 && left > -1500 && S.tab === "tippen") render();
+  }, 1000);
+  setInterval(async () => {
+    if (!S.week || S.week.done || document.hidden || S.tab === "setup" || S.tab === "tabelle" || S.tab === "liga") return;
+    if (Date.now() < S.week.events[0]?.date - 5 * 6e4 && S.tab === "tippen") return;   // vor Anpfiff ändert sich nichts
+    try {
+      S.week = await loadWeek(S.key, true); await reloadData();
+      if (S.week.events.some(e => e.state === "in")) loadTable();
+      if (!S.dirty || S.tab !== "tippen") render();
+    } catch {}
+  }, CONFIG.REFRESH_SECONDS * 1000);
+}
+init();
+</script>
+</body>
+</html>
