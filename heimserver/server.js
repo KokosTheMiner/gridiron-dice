@@ -6,6 +6,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const reise = require("./reise");
 
 const ROOT = __dirname;
 const PORT = Number(process.env.PORT || 80);
@@ -207,6 +208,7 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, "http://x");
     if (req.method === "OPTIONS") return send(res, 204, "");
     if (url.pathname === "/db" || url.pathname.startsWith("/db/")) return await handleDb(req, res, url);
+    if (url.pathname.startsWith("/reise-api/")) return await reise.handle(req, res, url);
     if (url.pathname === "/status") return json(res, 200, { ok: true, uptime: process.uptime(), size: JSON.stringify(db).length });
     if (req.method !== "GET" && req.method !== "HEAD") return json(res, 405, { error: "nur GET" });
     return handleStatic(req, res, url);
@@ -216,8 +218,8 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-process.on("SIGINT", () => { saveNow(); process.exit(0); });
-process.on("SIGTERM", () => { saveNow(); process.exit(0); });
+process.on("SIGINT", () => { saveNow(); reise.flush(); process.exit(0); });
+process.on("SIGTERM", () => { saveNow(); reise.flush(); process.exit(0); });
 process.on("exit", () => { if (saveTimer) saveNow(); });
 
 server.listen(PORT, () => log(`Heimserver läuft auf Port ${PORT}`));

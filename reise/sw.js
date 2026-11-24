@@ -1,5 +1,5 @@
-// Reisetagebuch – Offline-Speicher: App-Dateien und angesehene Kartenkacheln
-const APP = "rt-app-v1", TILES = "rt-tiles-v1", MAX_TILES = 3000;
+// Reisetagebuch – Offline-Speicher (App, Karten) und Benachrichtigungen
+const APP = "rt-app-v2", TILES = "rt-tiles-v1", MAX_TILES = 3000;
 const CORE = ["./", "index.html", "manifest.webmanifest", "icon.svg", "icon-192.png", "icon-512.png",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css", "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
   "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png", "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png"];
@@ -16,7 +16,7 @@ async function trimTiles(c) { const ks = await c.keys(); for (let i = 0; i < ks.
 self.addEventListener("fetch", e => {
   const req = e.request; if (req.method !== "GET") return;
   const url = new URL(req.url);
-  // Kartenkacheln: zuerst aus dem Speicher (offline nutzbar), immer als CORS-Antwort
+  if (url.pathname.includes("/reise-api/")) return; // Abgleich + Fotos immer direkt
   if (url.hostname === "tile.openstreetmap.org") {
     e.respondWith(caches.open(TILES).then(async c => {
       const hit = await c.match(url.href); if (hit) return hit;
@@ -25,12 +25,10 @@ self.addEventListener("fetch", e => {
     }));
     return;
   }
-  // Leaflet: zuerst Speicher
-  if (url.hostname === "unpkg.com") {
-    e.respondWith(caches.match(req).then(h => h || fetch(req).then(r => { const cl = r.clone(); caches.open(APP).then(c => c.put(req, cl)); return r; })));
+  if (url.hostname === "unpkg.com" || url.hostname === "cdn.jsdelivr.net") {
+    e.respondWith(caches.match(req).then(h => h || fetch(req).then(r => { if (r.ok) { const cl = r.clone(); caches.open(APP).then(c => c.put(req, cl)); } return r; })));
     return;
   }
-  // App selbst: sofort aus dem Speicher, im Hintergrund aktualisieren
   if (url.origin === location.origin) {
     e.respondWith(caches.open(APP).then(async c => {
       const hit = await c.match(req, { ignoreSearch: true });
@@ -38,5 +36,17 @@ self.addEventListener("fetch", e => {
       return hit || net;
     }));
   }
-  // alles andere (Firebase, Wetter, Ortssuche) geht direkt ins Netz
+});
+
+self.addEventListener("push", e => {
+  let m = {}; try { m = e.data.json(); } catch (x) { m = { title: "Reisetagebuch", body: e.data && e.data.text() }; }
+  e.waitUntil(self.registration.showNotification(m.title || "Reisetagebuch", { body: m.body || "", icon: "icon-192.png", badge: "icon-192.png", tag: m.tag || "rt", renotify: true, data: { url: m.url || "./" } }));
+});
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+  const url = new URL((e.notification.data && e.notification.data.url) || "./", self.registration.scope).href;
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
+    for (const c of list) if (c.url.startsWith(self.registration.scope)) { c.postMessage({ url }); return c.focus(); }
+    return self.clients.openWindow(url);
+  }));
 });
