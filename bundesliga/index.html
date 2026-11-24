@@ -145,6 +145,12 @@ main{max-width:1180px;margin:0 auto;padding:6px 16px 120px}
 .mods .rbtn{font-size:8px;padding:7px 9px;min-height:34px;border-radius:5px}
 .pts{margin-left:auto;font:14px var(--pix);text-shadow:2px 2px 0 #000}
 .pts.gp{color:var(--lime)} .pts.rp{color:var(--red)}
+.odds{padding:4px 10px 0;font-size:18px;color:var(--muted)}
+.odds b{color:var(--white);font-weight:normal}
+.obar{display:flex;height:20px;border:2px solid #000;border-radius:5px;overflow:hidden;margin-bottom:4px;font:8px/1 var(--pix)}
+.obar span{display:flex;align-items:center;padding:0 5px;white-space:nowrap;overflow:hidden;color:#fff;text-shadow:1px 1px 0 #000,-1px -1px 0 #000}
+.obar .h{background:var(--ch)} .obar .x{background:#5a6080;justify-content:center} .obar .a{background:var(--ca);flex:1;justify-content:flex-end}
+.odds .fav{color:var(--gold)}
 .goals{padding:2px 12px 0;font-size:16px;color:var(--muted);line-height:1.15}
 
 /* ---------- Speicherleiste ---------- */
@@ -434,6 +440,51 @@ function parseMatch(m) {
     stadium: m.location?.locationStadium || ""};
 }
 
+/* ---------------- Quoten (ESPN / DraftKings, nur für kommende Spiele) ---------------- */
+const ESPN = "https://site.api.espn.com/apis/site/v2/sports/soccer/ger.1/scoreboard";
+// ESPN-Team-ID → OpenLigaDB-teamId (Fallback: gleiches Kürzel)
+const ESPN_TEAM = {598:80, 131:6, 132:40, 124:7, 268:87, 125:91, 3841:95, 122:65, 127:100, 2950:81, 11420:1635, 126:112, 3307:31, 10388:198, 133:9, 7911:175, 134:16, 137:134};
+const mlToDec = ml => { const n = parseInt(ml, 10); if (!n) return null; return n < 0 ? 1 + 100 / -n : 1 + n / 100; };
+const ymd = t => new Date(t).toISOString().slice(0, 10).replace(/-/g, "");
+async function attachOdds(events) {
+  const open = events.filter(e => e.state === "pre");
+  if (!open.length) return;
+  const days = [...new Set(open.map(e => ymd(e.date)))];
+  const res = await Promise.all(days.map(d => fetch(`${ESPN}?dates=${d}`).then(r => r.ok ? r.json() : null).catch(() => null)));
+  const espnEvents = res.flatMap(d => d?.events || []);
+  for (const ev of open) {
+    const m = espnEvents.find(x => {
+      const cs = x.competitions?.[0]?.competitors || [];
+      const id = side => { const c = cs.find(c => c.homeAway === side); return c ? (ESPN_TEAM[c.team.id] ?? c.team.abbreviation) : null; };
+      return (id("home") === ev.home.id || id("home") === ev.home.abbr) && (id("away") === ev.away.id || id("away") === ev.away.abbr);
+    });
+    const list = (m?.competitions?.[0]?.odds || []).filter(Boolean);
+    let q = null, prov = "";
+    const ml = list.find(o => o.moneyline);
+    if (ml) {      // DraftKings: amerikanische Quoten
+      const x = ml.moneyline, pick = s => x[s]?.close?.odds ?? x[s]?.open?.odds;
+      q = [mlToDec(pick("home")), mlToDec(pick("draw")), mlToDec(pick("away"))]; prov = ml.provider?.name || "";
+    } else {       // z.B. Bet365: Dezimalquoten
+      const b = list.find(o => o.homeTeamOdds?.value && o.awayTeamOdds?.value && o.drawOdds?.value);
+      if (b) { q = [b.homeTeamOdds.value, b.drawOdds.value, b.awayTeamOdds.value]; prov = b.provider?.name || ""; }
+    }
+    if (!q || !q.every(v => v > 1)) continue;
+    let [pH, pD, pA] = q.map(v => 1 / v);
+    const s = pH + pD + pA; pH /= s; pD /= s; pA /= s;
+    ev.odds = {pH, pD, pA, qH: q[0], qD: q[1], qA: q[2], prov,
+      fav: pH > pA ? "H" : pA > pH ? "A" : null};
+  }
+}
+const fmtQ = q => q ? q.toFixed(2).replace(".", ",") : "–";
+function oddsHtml(ev) {
+  const o = ev.odds; if (!o || ev.state !== "pre") return "";
+  const h = Math.round(o.pH * 100), a = Math.round(o.pA * 100), d = 100 - h - a;
+  const fav = o.fav ? (o.fav === "H" ? ev.home : ev.away) : null;
+  return `<div class="odds"><div class="obar" style="--ch:#${ev.home.c[0]};--ca:#${ev.away.c[0]}">
+      <span class="h" style="width:${h}%">${ev.home.abbr} ${h}%</span><span class="x" style="width:${d}%">X ${d}%</span><span class="a">${a}% ${ev.away.abbr}</span></div>
+    Quote 1: <b>${fmtQ(o.qH)}</b> · X: <b>${fmtQ(o.qD)}</b> · 2: <b>${fmtQ(o.qA)}</b>${fav ? ` · Favorit <b class="fav">${fav.abbr}</b>` : ""}</div>`;
+}
+
 const sbCache = {};
 async function loadWeek(key, force = false) {
   if (!force && sbCache[key]) return sbCache[key];
@@ -450,6 +501,7 @@ async function loadWeek(key, force = false) {
     lock: events.length ? events[0].date - CONFIG.LOCK_MINUTES * 60000 : null,
     done: events.length > 0 && events.every(e => e.completed)
   };
+  if (!wk.done) await attachOdds(events).catch(() => {});
   sbCache[key] = wk;
   if (wk.done) localStorage.setItem(lsKey, JSON.stringify(wk));
   return wk;
@@ -706,7 +758,7 @@ function renderTippen() {
         <span class="tvs">${tvFor(ev, mdNum(S.key)).map(t => `<span class="tv ${tvClass(t.n)} ${t.sure ? "" : "maybe"}" title="${t.sure ? "Live" : "Ohne Gewähr"}">${esc(t.n)}${t.sure ? "" : "?"}</span>`).join("")}
         ${isAdmin() ? `<button class="tvedit" data-tv="${ev.id}" title="Sender eintragen">✎</button>` : ""}</span>${st}</div>
       <div class="match">${teamBtn(ev.home, "H")}${drawBtn}${teamBtn(ev.away, "A")}</div>
-      ${goals}
+      ${oddsHtml(ev)}${goals}
       ${S.me ? `<div class="mods">
         <button class="rbtn y ${isD ? "on" : ""}" data-mod="d" data-e="${ev.id}" ${canEdit ? "" : "disabled"}>2× Doppelt</button>
         <button class="rbtn m ${isH ? "on" : ""}" data-mod="h" data-e="${ev.id}" ${canEdit ? "" : "disabled"}>${SP.label}</button>
@@ -936,13 +988,14 @@ function renderSetup() {
   </div>
   <div class="panel card"><h3>ℹ️ Datenquellen</h3>
     <p class="muted">Spielplan, Live-Tore und Tabelle kommen von der freien Community-Datenbank <a href="https://www.openligadb.de" target="_blank" rel="noopener">OpenLigaDB</a>. Die Spielminute bei LIVE ist geschätzt.</p>
+    <p class="muted">Die Quoten (DraftKings bzw. Bet365) kommen von der öffentlichen ESPN-Schnittstelle und dienen nur als Info, wer Favorit ist (Prozent = Chance laut Buchmacher, Quote = Dezimalquote 1 / X / 2) – keine Werbung für Wettanbieter. Für laufende und vergangene Spiele werden keine Quoten angezeigt.</p>
     <p class="muted">Die PIN schützt nur vor Versehen. Tipps, die laut Server-Zeit nach der Sperre gespeichert wurden, zählen nicht.</p>
   </div>
   <div class="panel card"><h3>🔒 Datenschutz</h3><ul>
     <li><b>Was gespeichert wird:</b> dein Spitzname, deine PIN (nur verschlüsselt als Prüfwert, nicht lesbar), deine Tipps und der Zeitpunkt der Abgabe. Keine E-Mail, kein echter Name nötig.</li>
     <li><b>Wo:</b> in einer Google-Firebase-Datenbank mit Serverstandort in Belgien (EU). Spitzname und Tipps sind für alle Mitspieler sichtbar (Tipps erst nach der Sperre).</li>
     <li><b>Auf deinem Gerät</b> merkt sich der Browser, wer angemeldet ist, und deine Ansicht-Einstellungen (localStorage). Keine Cookies, kein Tracking, keine Werbung.</li>
-    <li><b>Externe Abrufe:</b> Spielplan und Ergebnisse von OpenLigaDB${S.logos ? ", Vereinswappen von Wikimedia, Imgur bzw. DFB" : ""} – dabei sehen diese Dienste deine IP-Adresse. Die Seite selbst liegt bei GitHub Pages.</li>
+    <li><b>Externe Abrufe:</b> Spielplan und Ergebnisse von OpenLigaDB, Quoten von ESPN${S.logos ? ", Vereinswappen von Wikimedia, Imgur bzw. DFB" : ""} – dabei sehen diese Dienste deine IP-Adresse. Die Seite selbst liegt bei GitHub Pages.</li>
     <li><b>Löschen:</b> Jederzeit selbst – oben auf deinen Namen tippen → „Nicht mehr mitspielen?“ → „Mich löschen“. Alternativ den Admin fragen.</li>
   </ul></div>
   <div class="panel card"><h3>📺 Wo läuft's? (Deutschland)</h3><ul>
