@@ -78,6 +78,8 @@ input{font:inherit;padding:.5em .7em;border-radius:9px;border:1px solid #c9b47a;
 .design .pv div{width:44px;height:66px;margin:0 -6px;filter:drop-shadow(0 2px 2px #0008)}
 .design .pv div:nth-child(1){transform:rotate(-10deg)}.design .pv div:nth-child(3){transform:rotate(10deg)}
 .design .pv svg{width:100%;height:100%}
+.lvl{display:flex;gap:6px;margin:2px 0 4px}.lvl button{flex:1;padding:7px 4px;border-radius:9px;border:2px solid #ffffff22;background:#0003;color:inherit;font:inherit;font-size:14px;cursor:pointer}.lvl button.on{border-color:#ffe08a;background:#ffe08a18}
+#lvlInfo{font-size:12px;opacity:.8;margin-bottom:8px;min-height:2.4em}
 .deckSel{display:flex;gap:6px;margin:-4px 0 10px}.deckSel button{flex:1;padding:7px 4px;border-radius:9px;border:2px solid #ffffff22;background:#0003;color:inherit;font:inherit;font-size:13px;cursor:pointer}.deckSel button.on{border-color:#ffe08a;background:#ffe08a18}
 .link{background:none;box-shadow:none;color:#ffe08a;text-decoration:underline;padding:6px;width:100%}
 .code{font-family:Georgia,serif;font-size:42px;letter-spacing:8px;text-align:center;color:#ffe08a}
@@ -195,6 +197,9 @@ input{font:inherit;padding:.5em .7em;border-radius:9px;border:1px solid #c9b47a;
  <div style="font-size:14px;margin-top:6px">Kartenblatt</div>
  <div class="designs" id="designs"></div>
  <div class="deckSel" id="deckSel"><button data-p="1">Originalkarten</button><button data-p="0">Gezeichnete Karten</button></div>
+ <div style="font-size:14px">KI-Stärke</div>
+ <div class="lvl" id="lvlBox"><button data-l="leicht">Schwach</button><button data-l="mittel">Mittel</button><button data-l="schwer">Stark</button></div>
+ <div id="lvlInfo"></div>
  <div id="joinBox" style="display:none;border:2px solid #ffe08a;border-radius:12px;padding:10px;margin:8px 0;text-align:center">
   Einladung an Tisch <b id="joinCode" style="font-size:20px;letter-spacing:3px"></b>
   <button class="big" id="btnJoinInv">Tisch beitreten</button>
@@ -224,6 +229,7 @@ input{font:inherit;padding:.5em .7em;border-radius:9px;border:1px solid #c9b47a;
  <div class="tog">Französisches Blatt<input type="checkbox" id="tgDesign"></div>
  <div class="tog">Originalkarten (alte Scans)<input type="checkbox" id="tgPhoto"></div>
  <div class="tog">Sound<input type="checkbox" id="tgSound"></div>
+ <div class="tog">KI-Stärke<select id="selLvl"><option value="leicht">Schwach</option><option value="mittel">Mittel</option><option value="schwer">Stark</option></select></div>
  <div class="tog" id="rowHerz">Herzrunde (Herz-Trumpf zählt doppelt)<input type="checkbox" id="tgHerz"></div>
  <div class="tog" id="rowSpritz">Spritzen erlaubt<input type="checkbox" id="tgSpritz"></div>
  <div class="tog">Augen der Stiche anzeigen<input type="checkbox" id="tgEyes"></div>
@@ -309,7 +315,7 @@ const GAME={},GIDX={};GAMES.forEach((g,i)=>{GAME[g.id]=g;GIDX[g.id]=i;});
 
 // ================= Einstellungen =================
 const DEF_GAMES=["bauernschnapser","gang","schnapser","bettler","kontraschnapser"];
-const SET=Object.assign({design:"fr",games:DEF_GAMES.slice(),sound:true,herz:true,spritz:true,eyes:true,name:''},JSON.parse(localStorage.getItem('bs-set')||'{}'));
+const SET=Object.assign({level:'mittel',design:"fr",games:DEF_GAMES.slice(),sound:true,herz:true,spritz:true,eyes:true,name:''},JSON.parse(localStorage.getItem('bs-set')||'{}'));
 if(SET.v!==2){SET.v=2;SET.design="fr";SET.games=DEF_GAMES.slice();localStorage.setItem("bs-set",JSON.stringify(SET));}
 if(SET.photo===undefined){SET.photo=true;localStorage.setItem("bs-set",JSON.stringify(SET));}
 function saveSet(){localStorage.setItem('bs-set',JSON.stringify(SET));}
@@ -490,9 +496,10 @@ const listeners=[];
 
 function freshSeats(){return [{type:'human',id:myId,name:SET.name||'Ich'},{type:'ai',name:AI_NAMES[0]},{type:'ai',name:AI_NAMES[1]},{type:'ai',name:AI_NAMES[2]}];}
 function hostInit(seats){
- S={seq:0,ev:[],evN:0,seats,dealer:Math.floor(Math.random()*4),handNo:0,scores:[0,0],bummerl:[0,0],phase:'lobby',hands:[[],[],[],[]],trick:[],tricks:[0,0,0,0],played:[],melds:[],herz:SET.herz,spritzOn:SET.spritz,enabled:SET.games.slice()};
+ S={seq:0,ev:[],evN:0,seats,dealer:Math.floor(Math.random()*4),handNo:0,scores:[0,0],bummerl:[0,0],phase:'lobby',hands:[[],[],[],[]],trick:[],tricks:[0,0,0,0],played:[],melds:[],herz:SET.herz,spritzOn:SET.spritz,enabled:SET.games.slice(),level:SET.level||'mittel'};
 }
-function ev(type,o){S.evN++;S.ev.push(Object.assign({n:S.evN,type},o||{}));if(S.ev.length>24)S.ev.shift();}
+let SIM=false; // true = KI-Simulation läuft auf einer Kopie des Zustands
+function ev(type,o){if(SIM)return;S.evN++;S.ev.push(Object.assign({n:S.evN,type},o||{}));if(S.ev.length>24)S.ev.shift();}
 function say(s,text,type='say'){ev(type,{s,text});}
 function shuffled(){const d=[...Array(20).keys()];for(let i=19;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]];}return d;}
 
@@ -601,7 +608,7 @@ function act(seat,a){
   S.hands[seat].splice(S.hands[seat].indexOf(c),1);
   S.trick.push({s:seat,c});S.played.push(c);ev('card',{s:seat});
   if(S.trick.length===activeSeats().length){
-   S.phase='trickEnd';S.turn=null;commit();
+   S.phase='trickEnd';S.turn=null;if(SIM){resolveTrick();return;}commit();
    const hn=S.handNo;phaseTimer=setTimeout(()=>{if(S&&S.handNo===hn&&S.phase==='trickEnd')resolveTrick();},1150);
   } else {S.turn=nextActive(seat);commit();}
   return;
@@ -662,7 +669,8 @@ function endHand(win,base,text){
   const l=1-win;const n=(prev[l]===23&&prev[win]===0)?4:S.scores[l]===0?2:1;
   S.bummerl[l]+=n;S.result.bm={l,n};
  }
- S.phase='handEnd';S.turn=null;ev('end',{win});commit();
+ S.phase='handEnd';S.turn=null;if(SIM)return;ev('end',{win});commit();
+
  const hn=S.handNo;phaseTimer=setTimeout(()=>{if(S&&S.handNo===hn&&S.phase==='handEnd')nextHand();},S.result.bm?11000:7500);
 }
 function nextHand(){
@@ -707,6 +715,7 @@ function viewFor(seat){
  return v;
 }
 function commit(){
+ if(SIM)return;
  S.seq++;
  mySeat=Math.max(0,S.seats.findIndex(x=>x.id===myId));
  render(viewFor(mySeat));
@@ -719,7 +728,7 @@ function scheduleAI(){
  const x=S.seats[s];
  const key=S.seq;
  if(x.type==='ai'){
-  const d=S.phase==='play'?650+Math.random()*450:800+Math.random()*500;
+  const d=S.phase==='play'?(aiLevel(s)==='schwer'?300:650)+Math.random()*400:800+Math.random()*500;
   aiTimer=setTimeout(()=>{aiTimer=null;if(!S||S.turn!==s||S.seats[s].type!=='ai')return scheduleAI();try{aiAct(s);}catch(e){console.error(e);}},d);
  } else if(S.phase==='spritz'&&x.id!==myId){
   // Sicherheit: Mitspieler antwortet nicht -> "Nein"
@@ -728,11 +737,147 @@ function scheduleAI(){
 }
 
 // ================= KI =================
+// Stärke: leicht = oft Zufall, mittel = Faustregeln (aiPlay & Co.), schwer = Simulation (PIMC / Monte Carlo)
+const LVL_INFO={leicht:'Spielt oft zufällig, sagt nur ganz sichere Spiele an und spritzt nie.',mittel:'Spielt nach Faustregeln und merkt sich die gefallenen Karten.',schwer:'Rechnet bei jeder Karte viele mögliche Kartenverteilungen durch und entscheidet Trumpf, Ansagen und Spritzen per Simulation.'};
+function renderLvl(){$('#lvlBox').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.l===SET.level));$('#lvlInfo').textContent=LVL_INFO[SET.level]||'';}
+function setLevel(l){SET.level=l;saveSet();renderLvl();if(isHost&&S)S.level=l;}
+const aiLevel=s=>(S.lvl&&S.lvl[s])||S.level||'mittel';
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
 function aiAct(s){
- if(S.phase==='trump')act(s,aiTrump(s));
- else if(S.phase==='bid')act(s,aiBid(s));
- else if(S.phase==='spritz')act(s,{type:'spritz',yes:aiSpritz(s)});
- else if(S.phase==='play')act(s,{type:'play',card:aiPlay(s)});
+ const lv=aiLevel(s);
+ if(S.phase==='trump')act(s,lv==='schwer'?mcTrump(s):lv==='leicht'?easyTrump(s):aiTrump(s));
+ else if(S.phase==='bid')act(s,lv==='schwer'?mcBid(s):lv==='leicht'?easyBid(s):aiBid(s));
+ else if(S.phase==='spritz')act(s,{type:'spritz',yes:lv==='schwer'?mcSpritz(s):lv==='leicht'?false:aiSpritz(s)});
+ else if(S.phase==='play')act(s,{type:'play',card:lv==='schwer'?pimcPlay(s):(lv==='leicht'&&Math.random()<0.5)?rnd(legalCards(s)):aiPlay(s)});
+}
+function easyTrump(s){
+ if(threeUnter(s))return {type:'redeal'};
+ const h=S.hands[s],n=[0,1,2,3].map(su=>h.filter(c=>sOf(c)===su).length),mx=Math.max(...n);
+ return {type:'trump',suit:rnd([0,1,2,3].filter(su=>n[su]===mx))};
+}
+function easyBid(s){
+ const opts=bidOptions(s),h=S.hands[s];
+ for(const id of ['herren','farbenring'])if(opts.includes(id))return {type:'bid',gid:id};
+ if(opts.includes('gang')&&gangSafe(h,false))return {type:'bid',gid:'gang'};
+ return {type:'pass'};
+}
+
+// ---------- Simulation (Stufe schwer) ----------
+// Öffentlich bekannte Karten anderer Spieler: aufgedeckte Trumpfkarte des Rufers, gemeldete König/Ober
+function knownOwner(seat){
+ const own={},pl=new Set(S.played);
+ if(S.trumpShown!=null&&S.rufer!==seat&&!pl.has(S.trumpShown)&&S.phase!=='trump')own[S.trumpShown]=S.rufer;
+ for(const m of S.melds||[])if(m.s!==seat)for(const r of [R_K,R_O]){const c=m.suit*5+r;if(!pl.has(c))own[c]=m.s;}
+ return own;
+}
+// Eine zufällige Kartenverteilung, die zu allem passt, was seat weiß (Fehlfarben, Meldungen, Kartenanzahl)
+function sampleWorld(seat){
+ const mine=new Set(S.hands[seat]),pl=new Set(S.played),own=knownOwner(seat);
+ const need0=S.hands.map((h,i)=>i===seat?0:h.length);
+ const base=[[],[],[],[]];base[seat]=S.hands[seat].slice();
+ const free=[];
+ for(let c=0;c<20;c++){if(mine.has(c)||pl.has(c))continue;const o=own[c];if(o!=null&&need0[o]>0){base[o].push(c);need0[o]--;}else free.push(c);}
+ const stockN=S.stock?S.stock.length:0;
+ for(let tries=0;tries<40;tries++){
+  const useVoids=tries<30,need=need0.slice(),hands=base.map(h=>h.slice()),stock=[];let sN=stockN,ok=true;
+  for(let i=free.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[free[i],free[j]]=[free[j],free[i]];}
+  // Karten aus Farben, in denen jemand frei ist, zuerst verteilen
+  const order=useVoids?free.slice().sort((a,b)=>vc(b)-vc(a)):free;
+  function vc(c){let n=0;for(let p=0;p<4;p++)if(S.voids[p][sOf(c)])n++;return n;}
+  for(const c of order){
+   const cand=[];let tot=0;
+   for(let p=0;p<4;p++)if(need[p]>0&&!(useVoids&&S.voids[p][sOf(c)])){cand.push(p);tot+=need[p];}
+   if(sN>0){cand.push(-1);tot+=sN;}
+   if(!cand.length){ok=false;break;}
+   let r=Math.random()*tot,pick=cand[cand.length-1];
+   for(const p of cand){r-=p<0?sN:need[p];if(r<0){pick=p;break;}}
+   if(pick<0){stock.push(c);sN--;}else{hands[pick].push(c);need[pick]--;}
+  }
+  if(ok&&(tries>=30||annPlausible(hands,seat)))return {hands,stock};
+ }
+ return null;
+}
+// Wer ein Spiel angesagt hat, hat dafür auch die passenden Karten: unpassende Verteilungen verwerfen
+function annPlausible(hands,seat){
+ const a=S.ann;if(a==null||a===seat||!S.game)return true;
+ const g=GAME[S.game],h=hands[a];if(!h.length)return true;
+ const pl=new Set(S.played),ten=!!g.ten;
+ const higherOut=c=>{let n=0;for(let x=0;x<5;x++){const u=sOf(c)*5+x;if(!pl.has(u)&&!h.includes(u)&&str(u,ten)>str(c,ten))n++;}return n;};
+ if(g.type==='all'){
+  if(g.trump){const t=S.trump;const tr=h.filter(c=>sOf(c)===t);return tr.length>=Math.min(2,h.length)&&tr.every(c=>higherOut(c)===0);}
+  return h.filter(c=>higherOut(c)>0).length<=1;
+ }
+ if(g.type==='schnapser'){const boss=h.filter(c=>higherOut(c)===0).length;return boss>=Math.min(2,h.length);}
+ if(g.type==='bettler'){let r=0;for(const c of h){let low=0;for(let x=0;x<5;x++){const u=sOf(c)*5+x;if(!pl.has(u)&&!h.includes(u)&&str(u,ten)<str(c,ten))low++;}r+=low/4;}return r<=0.9;}
+ return true;
+}
+function cloneS(){const o={};for(const k in S)if(k!=='ev'&&k!=='chat'&&k!=='seats')o[k]=S[k];const c=JSON.parse(JSON.stringify(o));c.seats=S.seats;c.ev=[];return c;}
+function inSim(w,fn){const sv=S,sim=SIM;SIM=true;try{S=cloneS();S.hands=w.hands.map(h=>h.slice());if(S.stock)S.stock=w.stock.slice();return fn();}finally{S=sv;SIM=sim;}}
+function playOut(){let g=0;while(S.phase==='play'&&g++<30){const s=S.turn;act(s,{type:'play',card:aiPlay(s)});}}
+function resultFor(team){const r=S.result;return r?(r.win===team?1:-1)*r.pts:0;}
+function setGame(gid,ann){ // Spiel direkt festlegen (ohne Spritzen) und Ausspiel vorbereiten
+ const g=GAME[gid];S.bid=gid==='normal'?null:{gid,seat:ann};S.game=gid;S.ann=gid==='normal'?null:ann;
+ S.declTeam=S.ann!=null?teamOf(S.ann):teamOf(S.rufer);S.sitOut=g.sitOut?partnerOf(S.ann):null;S.sp=null;
+ if(g.type==='instant'){endHand(S.declTeam,g.v,'');return;}
+ startPlay();
+}
+const simBudget=()=>S.simMs||320;
+function pimcPlay(seat){
+ const L=legalCards(seat);if(L.length===1)return L[0];
+ const team=teamOf(seat),sc=L.map(()=>0),t0=performance.now();let n=0;
+ while(n<220&&(n<12||performance.now()-t0<simBudget())){
+  const w=sampleWorld(seat);if(!w)break;n++;
+  L.forEach((c,i)=>{sc[i]+=inSim(w,()=>{act(seat,{type:'play',card:c});playOut();return resultFor(team);});});
+ }
+ if(!n)return aiPlay(seat);
+ const h=aiPlay(seat);let best=L.indexOf(h);
+ L.forEach((c,i)=>{if(sc[i]>sc[best]+0.05*n)best=i;});
+ return L[best];
+}
+// Erwartungswert eines Spiels für das Team von seat, über viele Verteilungen gemittelt
+function mcEval(seat,setup,minN){
+ const team=teamOf(seat),t0=performance.now();let n=0,sum=0,wins=0;
+ while(n<minN*3&&(n<minN||performance.now()-t0<simBudget()/3)){
+  const w=sampleWorld(seat);if(!w)break;n++;
+  const v=inSim(w,()=>{setup();playOut();return resultFor(team);});sum+=v;if(v>0)wins++;
+ }
+ return {ev:n?sum/n:0,p:n?wins/n:0};
+}
+function mcBid(s){
+ const opts=bidOptions(s),h=S.hands[s],t=S.trump;
+ for(const id of ['herren','farbenring'])if(opts.includes(id))return {type:'bid',gid:id};
+ // offensichtlich chancenlose Spiele gar nicht erst rechnen
+ const tr=h.filter(c=>sOf(c)===t).length,sx=schnapserScore(h,t).sc,br=bettlerRisk(h);
+ const nonTop=ten=>Object.values(bySuit(h)).reduce((a,cs)=>{const st=cs.map(c=>str(c,ten)).sort((x,y)=>y-x);let k=0;while(k<st.length&&st[k]===4-k)k++;return a+cs.length-k;},0);
+ const worth={bettler:br<=1.1,plauderer:br<=0.5,schnapser:sx>=50,kontraschnapser:sx>=60,gang:nonTop(false)<=2,zehnergang:nonTop(true)<=2,bauernschnapser:tr>=2,kontrabauer:tr>=3};
+ const cand=opts.filter(id=>worth[id]);
+ if(!cand.length)return {type:'pass'};
+ const passGame=S.bid?S.bid.gid:'normal',passAnn=S.bid?S.bid.seat:null;
+ const base=mcEval(s,()=>setGame(passGame,passAnn),24);
+ let best=null,bv=base.ev+0.6;
+ for(const id of cand){
+  const r=mcEval(s,()=>setGame(id,s),24);
+  // Bettel-Spiele vorsichtiger: menschliche Gegner spielen dagegen besser als die Simulation
+  const minP=GAME[id].type==='bettler'?0.68:GAME[id].v>=6?0.58:0.5;
+  if(r.ev>bv&&r.p>=minP){bv=r.ev;best=id;}
+ }
+ return best?{type:'bid',gid:best}:{type:'pass'};
+}
+function mcSpritz(s){
+ const stage=S.sp.stage,need=[0,0.62,0.66,0.8][stage];
+ const r=mcEval(s,()=>startPlay(),30);
+ return r.p>=need;
+}
+function mcTrump(s){
+ if(threeUnter(s))return {type:'redeal'};
+ const h=S.hands[s],opts=[...new Set(h.map(sOf))].map(su=>({type:'trump',suit:su}));opts.push({type:'trump',blind:true});
+ let best=null,bv=-1e9;
+ for(const o of opts){
+  const r=mcEval(s,()=>{act(s,o);setGame('normal',null);},16);
+  const v=r.ev-(o.blind?0.15:0);
+  if(v>bv){bv=v;best=o;}
+ }
+ return best||aiTrump(s);
 }
 function aiTrump(s){
  const h=S.hands[s];
@@ -1245,6 +1390,7 @@ function initStart(){
   $('#deckSel').querySelectorAll('button').forEach(b=>b.classList.toggle('on',(b.dataset.p==='1')===!!SET.photo));};
  $('#deckSel').querySelectorAll('button').forEach(b=>b.onclick=()=>{SET.photo=b.dataset.p==='1';saveSet();preloadPhotos();renderDesigns();SND.card();});
  preloadPhotos();
+ renderLvl();$('#lvlBox').querySelectorAll('button').forEach(b=>b.onclick=()=>{setLevel(b.dataset.l);SND.card();});
  renderDesigns();
  const m=location.hash.match(/t=([A-Za-z]{4})/);
  if(m){$('#joinBox').style.display='block';$('#joinCode').textContent=m[1].toUpperCase();}
@@ -1261,7 +1407,7 @@ function initStart(){
  $('#btnRules1').onclick=openRules;$('#btnRules2').onclick=openRules;$('#btnRulesClose').onclick=()=>$('#rules').classList.remove('show');
  // Menü
  $('#btnMenu').onclick=()=>{
-  $('#tgDesign').checked=SET.design==='fr';$('#tgPhoto').checked=!!SET.photo;$('#tgSound').checked=SET.sound;$('#tgHerz').checked=S?S.herz:SET.herz;$('#tgSpritz').checked=S?S.spritzOn:SET.spritz;$('#tgEyes').checked=SET.eyes;
+  $('#selLvl').value=(S&&S.level)||SET.level;$('#selLvl').disabled=online&&!isHost;  $('#tgDesign').checked=SET.design==='fr';$('#tgPhoto').checked=!!SET.photo;$('#tgSound').checked=SET.sound;$('#tgHerz').checked=S?S.herz:SET.herz;$('#tgSpritz').checked=S?S.spritzOn:SET.spritz;$('#tgEyes').checked=SET.eyes;
   const host=isHost;$('#tgHerz').disabled=!host;$('#tgSpritz').disabled=!host;
   let ms='';
   if(isHost&&online&&S){ms='<div style="margin-top:8px;font-size:13px;opacity:.8">Plätze</div>'+S.seats.map((x,i)=>`<div class="tog">${esc(x.name)} ${x.type==='ai'?'🤖':''}${x.off?' (offline)':''}${x.type==='human'&&x.id!==myId?`<button class="red kick" data-k="${i}" style="width:auto;margin:0;padding:3px 8px;font-size:12px">KI übernimmt</button>`:''}</div>`).join('');}
@@ -1272,6 +1418,7 @@ function initStart(){
  $('#btnMenuClose').onclick=()=>$('#menu').classList.remove('show');
 $('#tgDesign').onchange=e=>{SET.design=e.target.checked?'fr':'de';saveSet();preloadPhotos();if(V)render(V);};
  $('#tgPhoto').onchange=e=>{SET.photo=e.target.checked;saveSet();preloadPhotos();if(V)render(V);};
+$('#selLvl').onchange=e=>setLevel(e.target.value);
  $('#tgSound').onchange=e=>{SET.sound=e.target.checked;saveSet();};
  $('#tgHerz').onchange=e=>{SET.herz=e.target.checked;saveSet();if(isHost&&S){S.herz=SET.herz;commit();}};
  $('#tgSpritz').onchange=e=>{SET.spritz=e.target.checked;saveSet();if(isHost&&S){S.spritzOn=SET.spritz;}};
