@@ -33,7 +33,11 @@ input,select{font:inherit;padding:.5em .7em;border-radius:9px;border:1px solid #
 #logo{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);font-family:Georgia,serif;font-size:min(8vw,52px);color:#ffffff10;font-weight:700;letter-spacing:3px;pointer-events:none;white-space:nowrap}
 #cards{position:absolute;inset:0}
 .card{position:absolute;left:0;top:0;width:var(--cw);height:var(--ch);transition:transform .42s cubic-bezier(.2,.8,.25,1),opacity .35s,filter .2s;will-change:transform;filter:drop-shadow(0 2px 3px #0007)}
-.card svg{width:100%;height:100%;display:block}
+.card svg,.card img{width:100%;height:100%;display:block}
+.card img,.pimg{border-radius:7%/4.2%;box-shadow:0 0 0 1px #0003}
+.fc{position:relative;width:100%;height:100%}
+.fc img{width:100%;height:100%;display:block;border-radius:7%/4.2%;box-shadow:0 0 0 1px #0003}
+.fc .ix{position:absolute;left:3%;top:1.5%;font:700 calc(var(--cw,60px)*.17)/1 Georgia,serif;background:#fffdf6e6;border-radius:4px;padding:1px 2px;min-width:1.1em;text-align:center;box-shadow:0 0 0 1px #0002}
 .card.noanim{transition:none!important}
 .card.playable{cursor:pointer;filter:drop-shadow(0 0 6px #ffe680) drop-shadow(0 2px 3px #0007)}
 .card.sel{filter:drop-shadow(0 0 7px #ff6b5a) drop-shadow(0 2px 3px #0007)}
@@ -123,6 +127,8 @@ table.sum td:not(:first-child){text-align:right}
 #lastTrick .rv{display:flex;justify-content:center;gap:4px;margin:10px 0}
 #lastTrick .rv div{width:62px;text-align:center;font-size:11px}
 #lastTrick .rv svg{width:62px;height:93px}
+#lastTrick .rv .fc{width:62px;height:105px;--cw:62px}
+.preview .fc{--cw:46px}
 #gamesDlg{position:fixed;inset:0;z-index:1060;display:none;align-items:center;justify-content:center;background:#0008;padding:14px}
 #gamesDlg.show{display:flex}
 #gamesDlg .panel{max-height:92vh;overflow:auto}
@@ -194,6 +200,7 @@ table.sum td:not(:first-child){text-align:right}
  <h1>Tarock</h1>
  <div class="sub">Königrufen nach Wiener Regeln – zu viert</div>
  <div class="preview" id="preview"></div>
+ <div class="lvl" id="deckBox"><button data-d="foto">Originalkarten</button><button data-d="svg">Gezeichnete Karten</button></div>
  <label>Dein Name <input id="inName" maxlength="14" autocomplete="off"></label>
  <div style="font-size:14px;margin-top:6px">Stärke der KI-Spieler</div>
  <div class="lvl" id="lvlBox"><button data-l="leicht">Leicht</button><button data-l="mittel">Mittel</button><button data-l="schwer">Schwer</button></div>
@@ -224,6 +231,7 @@ table.sum td:not(:first-child){text-align:right}
 
 <div id="menu"><div class="panel">
  <h2 style="margin:0 0 6px;color:#ffe08a;font-family:Georgia,serif">Menü</h2>
+ <div class="tog">Originalkarten (Fotos)<input type="checkbox" id="tgDeck"></div>
  <div class="tog">Sound<input type="checkbox" id="tgSound"></div>
  <div class="tog">Punkte der eigenen Stiche anzeigen<input type="checkbox" id="tgPts"></div>
  <div class="tog">KI-Stärke<select id="selLvl"><option value="leicht">Leicht</option><option value="mittel">Mittel</option><option value="schwer">Schwer</option></select></div>
@@ -279,6 +287,7 @@ table.sum td:not(:first-child){text-align:right}
  <p>Nach dem Talon wird angesagt: Die Gegner können das Spiel kontrieren (×2), die Spieler Re geben (×4), die Gegner Subkontra (×8). Beim Trischaken gibt es kein Kontra.</p>
  <h3>Abrechnung</h3>
  <p>Im Spiel zwei gegen zwei zahlt jeder Gegner einem Spieler den Wert (Spiel + Prämien). Spielt einer allein, zahlt jeder der drei Gegner ihm den Wert – bzw. er zahlt jedem.</p>
+ <p class="small" style="text-align:left">Originalkarten: Tarockblatt „Industrie und Glück“, Fotos von Wikimedia Commons (Serie SPKW-Q2171, gemeinfrei).</p>
  <button id="btnRulesClose" style="width:100%;margin-top:12px">Schließen</button>
 </div></div>
 
@@ -338,7 +347,7 @@ const PREM={trull:{name:'Trull',s:1,a:2},koenige:{name:'4 Könige',s:1,a:2},paga
 const ALL_GAMES=GAMES.map(g=>g.id);
 
 // ================= Einstellungen =================
-const SET=Object.assign({games:ALL_GAMES.slice(),sound:true,pts:true,name:'',level:'mittel'},JSON.parse(localStorage.getItem('tk-set')||'{}'));
+const SET=Object.assign({games:ALL_GAMES.slice(),sound:true,pts:true,name:'',level:'mittel',deck:'foto'},JSON.parse(localStorage.getItem('tk-set')||'{}'));
 function saveSet(){localStorage.setItem('tk-set',JSON.stringify(SET));}
 let myId=localStorage.getItem('tk-id');
 if(!myId){myId='p'+Math.random().toString(36).slice(2,10);localStorage.setItem('tk-id',myId);}
@@ -347,6 +356,17 @@ const LVL_INFO={leicht:'Leicht: spielt oft zufällig, sagt kaum Spiele an.',mitt
 // ================= Kartengrafik =================
 const useS=(id,x,y,s,rot)=>`<use href="#${id}" x="${x-s/2}" y="${y-s/2}" width="${s}" height="${s}"${rot?` transform="rotate(180 ${x} ${y})"`:''}/>`;
 const FACE_CACHE={};
+// Originalkarten: Fotos eines Industrie-und-Glück-Blatts (Wikimedia Commons, gemeinfrei), Ordner karten/
+const photo=()=>SET.deck==='foto';
+const RATIO=()=>photo()?1.7:1.5;
+function photoIdx(c){if(isT(c))return {t:c===21?'Sk':String(c+1),col:'#111'};const s=suitOf(c),r=rk(c);return {t:r>=4?RI[r]:PIPL[s][r],col:COL[s]};}
+function cardFace(c){
+ if(!photo())return cardSVG(c);
+ const k='p'+c;if(FACE_CACHE[k])return FACE_CACHE[k];
+ const ix=photoIdx(c);
+ return FACE_CACHE[k]=`<div class="fc"><img src="karten/${c}.jpg" alt="" draggable="false">${isT(c)?'':`<span class="ix" style="color:${ix.col}">${ix.t}</span>`}</div>`;
+}
+function preloadPhotos(){if(preloadPhotos.done||!photo())return;preloadPhotos.done=1;for(let c=0;c<54;c++){const i=new Image();i.src='karten/'+c+'.jpg';}}
 function cardSVG(c){
  if(FACE_CACHE[c])return FACE_CACHE[c];
  return FACE_CACHE[c]=isT(c)?tarockSVG(c):suitSVG(c);
@@ -483,7 +503,7 @@ function skuesSVG(){
 }
 function backSVG(){
  if(FACE_CACHE.back)return FACE_CACHE.back;
- return FACE_CACHE.back=`<svg viewBox="0 0 100 150"><rect x="1" y="1" width="98" height="148" rx="9" fill="#fbf7ee" stroke="#9a8f7a" stroke-width="1.3"/><rect x="6" y="6" width="88" height="138" rx="6" fill="url(#p-back)"/><rect x="9" y="9" width="82" height="132" rx="5" fill="none" stroke="#e8d9a8" stroke-width="1.2" stroke-opacity=".8"/><ellipse cx="50" cy="75" rx="21" ry="27" fill="#12294a" stroke="#e8d9a8" stroke-width="1.5"/><text x="50" y="86" font-size="30" text-anchor="middle" font-family="Georgia,serif" font-weight="700" fill="#e8d9a8">T</text></svg>`;
+ return FACE_CACHE.back=`<svg viewBox="0 0 100 150" preserveAspectRatio="none"><rect x="1" y="1" width="98" height="148" rx="9" fill="#fbf7ee" stroke="#9a8f7a" stroke-width="1.3"/><rect x="6" y="6" width="88" height="138" rx="6" fill="url(#p-back)"/><rect x="9" y="9" width="82" height="132" rx="5" fill="none" stroke="#e8d9a8" stroke-width="1.2" stroke-opacity=".8"/><ellipse cx="50" cy="75" rx="21" ry="27" fill="#12294a" stroke="#e8d9a8" stroke-width="1.5"/><text x="50" y="86" font-size="30" text-anchor="middle" font-family="Georgia,serif" font-weight="700" fill="#e8d9a8">T</text></svg>`;
 }
 
 // ================= Sound =================
@@ -1316,8 +1336,9 @@ function render(v){
 function rel(s){return (s-V.me+4)%4;}
 function layout(n){
  const t=$('#table'),w=t.clientWidth,h=t.clientHeight,portrait=h>w*1.05;
- let cw=portrait?Math.min(w/4.6,h/7.4):Math.min(h/4.7,w/9.2);
- cw=Math.max(38,Math.min(cw,150));const ch=cw*1.5;
+ const R=RATIO(),hf=1.5/R;
+ let cw=portrait?Math.min(w/4.6,h/7.4*hf):Math.min(h/4.7*hf,w/9.2);
+ cw=Math.max(38,Math.min(cw,150));const ch=cw*R;
  const two=portrait&&n>8;
  const so=portrait?0.48:0.52;
  const lf=Math.max(13,Math.min(21,cw*0.18));
@@ -1374,8 +1395,8 @@ function renderTable(v){
    e.getBoundingClientRect();e.classList.remove('noanim');
    e.style.transitionDelay=t.hand?(stag++*28)+'ms':'0ms';
   } else if(e.style.transitionDelay!=='0ms'&&!e._dealing)e.style.transitionDelay='0ms';
-  const f=t.face?'f'+t.id:'back';
-  if(e._f!==f){e.innerHTML=t.face?cardSVG(t.id):backSVG();e._f=f;}
+  const f=t.face?SET.deck+t.id:'back';
+  if(e._f!==f){e.innerHTML=t.face?cardFace(t.id):backSVG();e._f=f;}
   e._id=t.id;e._trick=!!t.trick;e._talon=t.talon;e._kind=t.kind;
   e.classList.toggle('playable',!!t.click&&!t.sel);e.classList.toggle('sel',!!t.sel);e.classList.toggle('dim',!!t.dim);
   e.style.zIndex=t.z;e.style.opacity='1';
@@ -1575,7 +1596,10 @@ function renderLvl(){$('#lvlBox').querySelectorAll('button').forEach(b=>b.classL
 function setLevel(l){SET.level=l;saveSet();renderLvl();if(isHost&&S){S.level=l;S.mc={};}}
 function initStart(){
  $('#inName').value=SET.name||'';
- $('#preview').innerHTML=[21,20,KING(0),0].map(c=>`<div>${cardSVG(c)}</div>`).join('');
+ const renderPreview=()=>{$('#preview').innerHTML=[21,20,KING(0),0].map(c=>`<div style="height:${photo()?78:69}px">${cardFace(c)}</div>`).join('');
+  $('#deckBox').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.d===SET.deck));};
+ $('#deckBox').querySelectorAll('button').forEach(b=>b.onclick=()=>{SET.deck=b.dataset.d;saveSet();preloadPhotos();renderPreview();SND.card();});
+ renderPreview();preloadPhotos();
  $('#lvlBox').querySelectorAll('button').forEach(b=>b.onclick=()=>{setLevel(b.dataset.l);SND.card();});
  renderLvl();
  const m=location.hash.match(/t=([A-Za-z]{4})/);
@@ -1592,7 +1616,7 @@ function initStart(){
  const openRules=()=>$('#rules').classList.add('show');
  $('#btnRules1').onclick=openRules;$('#btnRules2').onclick=()=>{$('#menu').classList.remove('show');openRules();};$('#btnRulesClose').onclick=()=>$('#rules').classList.remove('show');
  $('#btnMenu').onclick=()=>{
-  $('#tgSound').checked=SET.sound;$('#tgPts').checked=SET.pts;
+  $('#tgSound').checked=SET.sound;$('#tgPts').checked=SET.pts;$('#tgDeck').checked=photo();
   $('#selLvl').value=(S&&S.level)||(V&&V.level)||SET.level;$('#selLvl').disabled=online&&!isHost;
   let ms='';
   if(isHost&&online&&S){ms='<div style="margin-top:8px;font-size:13px;opacity:.8">Plätze</div>'+S.seats.map((x,i)=>`<div class="tog">${esc(x.name)} ${x.type==='ai'?'🤖':''}${x.off?' (offline)':''}${x.type==='human'&&x.id!==myId?`<button class="red kick" data-k="${i}" style="width:auto;margin:0;padding:3px 8px;font-size:12px">KI übernimmt</button>`:''}</div>`).join('');}
@@ -1602,12 +1626,13 @@ function initStart(){
  };
  $('#btnMenuClose').onclick=()=>$('#menu').classList.remove('show');
  $('#tgSound').onchange=e=>{SET.sound=e.target.checked;saveSet();};
+ $('#tgDeck').onchange=e=>{SET.deck=e.target.checked?'foto':'svg';saveSet();preloadPhotos();if(V&&V.phase!=='lobby'){EL.forEach(x=>x.classList.add('noanim'));renderTable(V);requestAnimationFrame(()=>EL.forEach(x=>x.classList.remove('noanim')));}};
  $('#tgPts').onchange=e=>{SET.pts=e.target.checked;saveSet();if(V)render(V);};
  $('#selLvl').onchange=e=>{setLevel(e.target.value);if(isHost&&S)commit();};
  $('#btnQuit').onclick=()=>{$('#menu').classList.remove('show');if(!confirm('Tisch wirklich verlassen?'))return;leaveTable();};
  $('#btnLast').onclick=()=>{
   if(!V||!V.lastTrick){toast('Noch kein Stich gespielt.');return;}
-  $('#ltCards').innerHTML=V.lastTrick.cards.map(t=>`<div>${cardSVG(t.c)}<br>${t.s===V.me?'Du':esc(V.seats[t.s].name)}</div>`).join('');
+  $('#ltCards').innerHTML=V.lastTrick.cards.map(t=>`<div>${cardFace(t.c)}<br>${t.s===V.me?'Du':esc(V.seats[t.s].name)}</div>`).join('');
   $('#ltInfo').textContent='Stich für '+(V.lastTrick.winner===V.me?'dich':V.seats[V.lastTrick.winner].name);
   $('#lastTrick').classList.add('show');
  };
