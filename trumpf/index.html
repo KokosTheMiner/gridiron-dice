@@ -277,6 +277,7 @@ h1{margin:6px 0 2px;font-size:30px;letter-spacing:.5px;color:#f2c84b;text-shadow
 <script src="sets/bienen.js"></script>
 <script src="sets/kunst.js"></script>
 <script src="sets/walkingdead.js"></script>
+<script src="sets/formel1.js"></script>
 
 <script>
 'use strict';
@@ -319,6 +320,9 @@ function flagSVG(l){
   case 'DK':b=`<rect width="${W}" height="${H}" fill="#c8102e"/><rect x="9" width="3.5" height="${H}" fill="#fff"/><rect y="8.25" width="${W}" height="3.5" fill="#fff"/>`;break;
   case 'NL':b=hz(['#ae1c28','#fff','#21468b']);break;
   case 'B':b=vt(['#000','#fdda24','#ef3340']);break;
+  case 'ARG':b=hz(['#74acdf','#fff','#74acdf'])+`<circle cx="15" cy="10" r="2.2" fill="#f6b40e"/>`;break;
+  case 'MC':b=hz(['#ce1126','#fff']);break;
+  case 'AUS':b=`<rect width="${W}" height="${H}" fill="#012169"/><path d="M0 0L15 10M15 0L0 10" stroke="#fff" stroke-width="2"/><path d="M7.5 0V10M0 5H15" stroke="#fff" stroke-width="3"/><path d="M7.5 0V10M0 5H15" stroke="#e4002b" stroke-width="1.6"/>`+[[22,5],[25,11],[20,14],[23,16.5],[8,16]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="${x===8?1.6:.9}" fill="#fff"/>`).join('');break;
   case 'RO':b=vt(['#002b7f','#fcd116','#ce1126']);break;
   case 'MEX':b=vt(['#006847','#fff','#ce1126'])+`<circle cx="15" cy="10" r="2.4" fill="#8c6b2e"/>`;break;
   case 'RUS':b=hz(['#fff','#0039a6','#d52b1e']);break;
