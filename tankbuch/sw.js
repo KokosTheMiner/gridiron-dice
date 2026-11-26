@@ -1,5 +1,5 @@
 // Netzwerk zuerst, ohne Verbindung die zuletzt geladene Version (damit die App auch an der Tankstelle ohne Netz aufgeht)
-const C = "tankbuch-v1";
+const C = "tankbuch-v2";
 self.addEventListener("install", e => { self.skipWaiting(); e.waitUntil(caches.open(C).then(c => c.addAll(["./", "manifest.webmanifest", "icon.svg"]))); });
 self.addEventListener("activate", e => e.waitUntil(self.clients.claim()));
 self.addEventListener("fetch", e => {

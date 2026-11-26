@@ -49,6 +49,8 @@ th,td{padding:7px 4px;text-align:right;border-bottom:1px solid var(--line)}
 th:first-child,td:first-child{text-align:left}
 th{color:var(--mut);font-weight:600;font-size:12px}
 .fab{position:fixed;right:18px;bottom:22px;z-index:6;background:var(--acc);color:#2a1f33;border:0;border-radius:20px;padding:16px 22px;font-size:18px;font-weight:700;box-shadow:0 4px 14px #0008;cursor:pointer}
+.arch{background:#3d3320;color:var(--warn)}
+.arch .btn{color:var(--tx)}
 .empty{color:var(--mut);text-align:center;padding:24px 8px}
 /* Dialog */
 .ov{position:fixed;inset:0;background:#000a;z-index:10;display:flex;align-items:flex-end;justify-content:center}
@@ -190,28 +192,29 @@ function calc(vid) {
 }
 
 // ---------- Anzeige ----------
-function vehiclesSorted() {
+function vehiclesSorted(archiv = false) {
   const lastD = {};
   for (const e of Object.values(S.e)) if (!lastD[e.v] || e.d > lastD[e.v]) lastD[e.v] = e.d;
-  return Object.entries(S.v).sort(([a, A], [b, B]) => (A.ord ?? 99) - (B.ord ?? 99) || (lastD[b] || "").localeCompare(lastD[a] || ""));
+  return Object.entries(S.v).filter(([, v]) => !!v.archiv === archiv).sort(([a, A], [b, B]) => (A.ord ?? 99) - (B.ord ?? 99) || (lastD[b] || "").localeCompare(lastD[a] || ""));
 }
 
 function render() {
   const vs = vehiclesSorted();
-  if (!S.v[S.cur] && vs.length) S.cur = vs[0][0];
+  if (!S.v[S.cur]) S.cur = vs.length ? vs[0][0] : (vehiclesSorted(true)[0]?.[0] || "");
   localStorage.setItem("tb-cur", S.cur);
   document.getElementById("chips").innerHTML = vs.map(([id, v]) => {
     const c = calc(id);
     return `<button class="chip ${id === S.cur ? "on" : ""}" onclick="pick('${id}')"><b>${v.typ === "h" ? "🚜" : "🚐"} ${esc(v.name)}</b><small>${c.last ? odoTxt(v, c.last.odo) : "noch leer"}</small></button>`;
   }).join("") + `<button class="chip" onclick="editVehicle()"><b>＋</b><small>Fahrzeug</small></button>`;
   const m = document.getElementById("main");
-  document.getElementById("fab").style.display = S.v[S.cur] ? "" : "none";
+  document.getElementById("fab").style.display = S.v[S.cur] && !S.v[S.cur].archiv ? "" : "none";
   if (!S.v[S.cur]) {
     m.innerHTML = `<div class="card empty">Noch kein Fahrzeug.<br><br><button class="btn p" onclick="editVehicle()">＋ Fahrzeug anlegen</button><br><br>oder ein Fuelio-Backup laden: <a href="#" onclick="openSettings();return false">⚙ Einstellungen</a></div>`;
     return;
   }
   const c = calc(S.cur), v = c.v, u = unit(v);
-  let h = `<div class="card"><h2>${esc(v.name)} <span class="small">${v.typ === "h" ? "Betriebsstunden" : "Kilometer"}</span></h2><div class="kpis">
+  let h = v.archiv ? `<div class="card arch">📦 <b>Im Archiv</b>${v.verkauft ? ` · verkauft ${dTxt(v.verkauft)}` : ""}<div class="btns"><button class="btn" onclick="S.cur='';render()">← Zurück</button><button class="btn" onclick="setArchiv('${S.cur}',false)">↩ Wieder aktiv</button></div></div>` : "";
+  h += `<div class="card"><h2>${esc(v.name)} <span class="small">${v.typ === "h" ? "Betriebsstunden" : "Kilometer"}</span></h2><div class="kpis">
     <div class="kpi"><small>Ø Verbrauch</small><b>${f(c.avg, 2)} <i>${consUnit(v)}</i></b></div>
     <div class="kpi"><small>Letzte Messung</small><b>${f(c.lastCons, 2)} <i>${consUnit(v)}</i></b></div>
     <div class="kpi"><small>Kosten</small><b>${f(c.perUnit, 2)} <i>€ / ${v.typ === "h" ? "h" : "100 km"}</i></b></div>
@@ -306,12 +309,26 @@ function editVehicle(id) {
   dialog(`<h3>${id ? "Fahrzeug bearbeiten" : "Neues Fahrzeug"}</h3>
     <label>Name</label><input id="vN" value="${esc(v.name)}">
     <label>Zähler</label><select id="vT"><option value="km" ${v.typ === "km" ? "selected" : ""}>Kilometer (Auto) – Verbrauch l/100 km</option><option value="h" ${v.typ === "h" ? "selected" : ""}>Betriebsstunden (Traktor) – Verbrauch l/h</option></select>
+    ${id && !v.archiv ? `<div class="btns"><button class="btn" onclick="archivDlg('${id}')">📦 Verkauft – ins Archiv</button></div>` : ""}
+    ${id && v.archiv ? `<div class="btns"><button class="btn" onclick="setArchiv('${id}',false)">↩ Aus dem Archiv holen</button></div>` : ""}
     <div class="btns">${id ? `<button class="btn del" onclick="delVehicle('${id}')">🗑</button>` : ""}<button class="btn" onclick="closeDlg()">Abbrechen</button><button class="btn p" id="vS">Speichern</button></div>`);
   $("vS").onclick = () => {
     const name = $("vN").value.trim(); if (!name) return alert("Bitte einen Namen eingeben.");
     const nid = id || uid(); closeDlg(); S.cur = nid; put("v", nid, { ...v, name, typ: $("vT").value });
   };
   if (!id) setTimeout(() => $("vN").focus(), 50);
+}
+function archivDlg(id) {
+  dialog(`<h3>📦 ${esc(S.v[id].name)} ins Archiv</h3>
+    <p class="small">Das Fahrzeug verschwindet aus der oberen Liste. Alle Tankungen bleiben erhalten und sind unter ⚙ → Archiv weiter ansehbar.</p>
+    <label>Verkauft am (optional)</label><input type="date" id="aD" value="${nowLocal().slice(0, 10)}">
+    <div class="btns"><button class="btn" onclick="closeDlg()">Abbrechen</button><button class="btn p" onclick="setArchiv('${id}',true,document.getElementById('aD').value)">Ins Archiv</button></div>`);
+}
+function setArchiv(id, on, datum) {
+  const v = { ...S.v[id] };
+  if (on) { v.archiv = 1; if (datum) v.verkauft = datum; else delete v.verkauft; if (S.cur === id) S.cur = ""; }
+  else { delete v.archiv; delete v.verkauft; S.cur = id; S.tab = "liste"; }
+  closeDlg(); put("v", id, v);
 }
 function delVehicle(id) {
   const n = Object.values(S.e).filter(e => e.v === id).length;
@@ -328,6 +345,9 @@ function openSettings() {
     ${vs.map(([id, v], i) => `<div class="vrow"><span>${v.typ === "h" ? "🚜" : "🚐"} ${esc(v.name)} <span class="small">(${v.typ === "h" ? "Betriebsstunden" : "km"})</span></span>
       <button class="icbtn" onclick="moveV('${id}',-1)" ${i ? "" : "disabled"}>↑</button><button class="icbtn" onclick="closeDlg();editVehicle('${id}')">✎</button></div>`).join("")}
     <div class="btns"><button class="btn" onclick="closeDlg();editVehicle()">＋ Fahrzeug</button></div>
+    <br><b>📦 Archiv (verkaufte Fahrzeuge)</b>
+    ${vehiclesSorted(true).map(([id, v]) => `<div class="vrow"><span>${v.typ === "h" ? "🚜" : "🚐"} ${esc(v.name)}${v.verkauft ? ` <span class="small">verkauft ${dTxt(v.verkauft)}</span>` : ""}</span>
+      <button class="icbtn" title="Ansehen" onclick="closeDlg();S.cur='${id}';S.tab='liste';render()">👁</button><button class="icbtn" onclick="closeDlg();editVehicle('${id}')">✎</button></div>`).join("") || `<p class="small">Leer. Ein verkauftes Fahrzeug kommt über ✎ → „Verkauft – ins Archiv“ hierher.</p>`}
     <br><b>Fuelio-Backup übernehmen</b>
     <p class="small">In Fuelio: Menü → Sicherung → Backup erstellen. Die Datei <i>…fuelio.zip</i> hier auswählen. Schon übernommene Tankungen werden nicht doppelt angelegt.</p>
     <input type="file" id="fz" accept=".zip,.csv" style="font-size:14px">
