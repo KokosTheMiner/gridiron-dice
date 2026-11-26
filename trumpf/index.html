@@ -123,6 +123,8 @@ h1{margin:6px 0 2px;font-size:30px;letter-spacing:.5px;color:#f2c84b;text-shadow
 #pot{display:none;flex-direction:column;align-items:center;font-size:12px;font-weight:700;gap:2px}
 #pot.show{display:flex}
 #btnNext{display:none;padding:7px 14px}
+#btnNext.big{padding:10px 26px;font-size:17px;animation:pulse2 1.4s infinite}
+#btnNext small{opacity:.7;font-weight:600}
 .fly{position:fixed;z-index:50;pointer-events:none;transition:transform .55s cubic-bezier(.5,0,.3,1),opacity .55s;transform-origin:center}
 
 /* ===== Overlays ===== */
@@ -182,6 +184,8 @@ h1{margin:6px 0 2px;font-size:30px;letter-spacing:.5px;color:#f2c84b;text-shadow
   <div class="info" id="lvlInfo"></div>
   <h3 style="margin-top:12px">Spieldauer</h3><div class="seg" id="segLen"><button data-v="20">Kurz</button><button data-v="40">Mittel</button><button data-v="0">Bis zum Ende</button></div>
   <div class="info" id="lenInfo"></div>
+  <h3 style="margin-top:12px">Tempo</h3><div class="seg" id="segSpeed2"><button data-v="slow">Gemütlich</button><button data-v="normal">Normal</button><button data-v="fast">Flott</button><button data-v="confirm">⏸ Mit Weiter-Knopf</button></div>
+  <div class="info">„Mit Weiter-Knopf“: nach jeder Runde bleiben die Karten liegen, bis du auf „Weiter“ tippst (spätestens nach 10 Sekunden geht es weiter).</div>
   <div id="varStart"></div>
   <div class="toggle" style="margin-top:8px"><span>Supertrumpf-Karte</span><input type="checkbox" id="tgTrumpf"></div>
  </div>
@@ -217,7 +221,7 @@ h1{margin:6px 0 2px;font-size:30px;letter-spacing:.5px;color:#f2c84b;text-shadow
 <div class="ov" id="menu"><div class="dlg">
  <h2>Menü</h2>
  <div class="toggle"><span>Ton</span><input type="checkbox" id="tgSound"></div>
- <h3 style="font-size:15px;margin:8px 0 6px">Tempo</h3><div class="seg" id="segSpeed"><button data-v="slow">Gemütlich</button><button data-v="normal">Normal</button><button data-v="fast">Flott</button></div>
+ <h3 style="font-size:15px;margin:8px 0 6px">Tempo</h3><div class="seg" id="segSpeed"><button data-v="slow">Gemütlich</button><button data-v="normal">Normal</button><button data-v="fast">Flott</button><button data-v="confirm">⏸ Mit Weiter-Knopf</button></div><div class="info">„Mit Weiter-Knopf“: nach jeder Runde bleiben die Karten liegen, bis du auf „Weiter“ tippst – spätestens nach 10 Sekunden geht es von selbst weiter.</div>
  <div id="mSeats"></div>
  <div id="varMenu"></div>
  <div class="btns" style="margin-top:14px">
@@ -289,7 +293,7 @@ if(!SETMAP[SET.set])SET.set=SETS[0].id;
 function saveSet(){localStorage.setItem('tq-set',JSON.stringify(SET));}
 let myId=localStorage.getItem('tq-id');
 if(!myId){myId='p'+Math.random().toString(36).slice(2,10);localStorage.setItem('tq-id',myId);}
-const SPEED={slow:4600,normal:3000,fast:1700};
+const SPEED={slow:4600,normal:3000,fast:1700,confirm:10000}; // confirm = mit Weiter-Knopf, nach 10 s geht es von selbst weiter
 
 // ================= Kartengrafik =================
 function flagSVG(l){
@@ -900,7 +904,7 @@ function renderTable(v){
  } else if(v.phase==='end')m='Spiel vorbei';
  if(v.phase!=='end'&&v.phase!=='lobby'){let pre='';if(v.event&&EVENTS[v.event])pre+=`<div class="evt">⚡ ${EVENTS[v.event]}</div>`;else if(v.rev)pre+='<div class="evt">🃏 Umkehr-Joker: diese Runde gewinnt der niedrigere Wert!</div>';m=pre+m;}
  $('#msg').innerHTML=m;
- $('#btnNext').style.display=v.phase==='reveal'&&(isHost)?'block':'none';
+ updNext(v);
  $('#barT').textContent=`${st.name} · Runde ${v.round}${v.limit?' / '+v.limit:''}`;
  const card=$('#mine .card.pick');
  if(card)card.querySelectorAll('.crow').forEach(r=>r.onclick=()=>{SND.pick();const a={type:'choose',k:r.dataset.k};if(V.hand)a.c=selCard;if(jokerArmed&&jokerOK(V))a.rev=true;jokerArmed=false;send(a);});
@@ -912,6 +916,15 @@ function renderTable(v){
  const bz=$('#btnPause');if(bz)bz.onclick=()=>{SND.tick();bz.disabled=true;send({type:'select',pause:true});};
 }
 let jokerArmed=false;const jokerOK=v=>!!(v.var&&v.var.joker&&v.jokers>0&&!v.rev&&!v.tieStat);
+let nextIv=null,nextKey=null;
+function updNext(v){
+ const b=$('#btnNext'),show=v.phase==='reveal'&&isHost;b.style.display=show?'block':'none';
+ if(!show||v.speed!=='confirm'){clearInterval(nextIv);nextIv=null;nextKey=null;b.textContent='Weiter ▸';b.classList.remove('big');return;}
+ const key=v.round+'-'+v.stat;if(nextKey===key)return;nextKey=key;
+ const t0=Date.now();clearInterval(nextIv);
+ const tick=()=>{const n=Math.max(0,Math.ceil((SPEED.confirm-(Date.now()-t0))/1000));b.innerHTML='Weiter ▸ <small>('+n+')</small>';};
+ tick();nextIv=setInterval(tick,250);b.classList.add('big');
+}
 let selCard=null,selBubble=null;const SHOWN=new Set();const seenShown=k=>{if(SHOWN.has(k))return true;SHOWN.add(k);return false;};
 const stripOn=v=>!!(v.hand&&v.top&&(v.phase==='choose'||(v.phase==='select'&&(v.selPending||[])[0]===v.me)));
 // Karten zum Gewinner (oder in die Mitte) fliegen lassen
@@ -1030,6 +1043,7 @@ function initStart(){
  $('#inName').value=SET.name||'';
  segInit('#segN','n');segInit('#segLvl','level',()=>{renderStart();if(isHost&&S)S.level=SET.level;});segInit('#segLen','len',renderStart);
  updSpeed=segInit('#segSpeed','speed',()=>{if(isHost&&S)S.speed=SET.speed;});
+ const updSpeed2=segInit('#segSpeed2','speed',()=>{if(isHost&&S)S.speed=SET.speed;});
  renderVars('#varStart');
  $('#tgTrumpf').checked=!!SET.trumpf;$('#tgTrumpf').onchange=e=>{SET.trumpf=e.target.checked;saveSet();};
  renderStart();
