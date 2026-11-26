@@ -44,6 +44,7 @@ h1{margin:6px 0 2px;font-size:30px;letter-spacing:.5px;color:#f2c84b;text-shadow
 .card .flag{width:2.05em;height:1.37em;border:.05em solid #0005;display:block}
 .card .cimg{width:100%;aspect-ratio:3/2;object-fit:cover;display:block;background:#ccc;flex:0 0 auto}
 .card .cname{background:linear-gradient(#3b97e6,#1565c0);color:#fff;font-weight:800;padding:.22em .45em;font-size:1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 .06em 0 #0006;flex:0 0 auto}
+.card .csub{background:#fff6d6;color:#5d4300;font-size:.72em;font-style:italic;padding:.2em .6em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 0 auto;border-bottom:.05em solid #e6d48a}
 .card .cstats{flex:1;display:flex;flex-direction:column;min-height:0}
 .card .crow{flex:1;display:flex;justify-content:space-between;align-items:center;padding:0 .5em;font-size:.93em;border-bottom:.05em solid #d9dde2;gap:.3em;white-space:nowrap}
 .card .crow:nth-child(odd){background:#edf0f3}
@@ -260,6 +261,7 @@ h1{margin:6px 0 2px;font-size:30px;letter-spacing:.5px;color:#f2c84b;text-shadow
 <script src="sets/lemans.js"></script>
 <script src="sets/baeume.js"></script>
 <script src="sets/bienen.js"></script>
+<script src="sets/kunst.js"></script>
 
 <script>
 'use strict';
@@ -301,6 +303,9 @@ function flagSVG(l){
   case 'N':b=`<rect width="${W}" height="${H}" fill="#ba0c2f"/><rect x="8" width="6" height="${H}" fill="#fff"/><rect y="7" width="${W}" height="6" fill="#fff"/><rect x="9.5" width="3" height="${H}" fill="#00205b"/><rect y="8.5" width="${W}" height="3" fill="#00205b"/>`;break;
   case 'DK':b=`<rect width="${W}" height="${H}" fill="#c8102e"/><rect x="9" width="3.5" height="${H}" fill="#fff"/><rect y="8.25" width="${W}" height="3.5" fill="#fff"/>`;break;
   case 'NL':b=hz(['#ae1c28','#fff','#21468b']);break;
+  case 'B':b=vt(['#000','#fdda24','#ef3340']);break;
+  case 'RO':b=vt(['#002b7f','#fcd116','#ce1126']);break;
+  case 'MEX':b=vt(['#006847','#fff','#ce1126'])+`<circle cx="15" cy="10" r="2.4" fill="#8c6b2e"/>`;break;
   case 'RUS':b=hz(['#fff','#0039a6','#d52b1e']);break;
   case 'E':b=hz(['#aa151b','#f1bf00','#f1bf00','#aa151b']);break;
   case 'CN':b=`<rect width="${W}" height="${H}" fill="#de2910"/><path d="M5 2.5l1 3h3l-2.4 1.8.9 3-2.5-1.8-2.5 1.8.9-3L1 5.5h3z" fill="#ffde00"/>`+[[11,2],[13,4.5],[13,7.5],[11,10]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r=".8" fill="#ffde00"/>`).join('');break;
@@ -325,6 +330,7 @@ function cardHTML(st,id,o={}){
   <img class="cimg" src="${st.dir}${c.id}.jpg" alt="" draggable="false">
   ${st.trump===id&&o.trumpf!==false?'<div class="trumpf">SUPERTRUMPF</div>':''}
   <div class="cname"${c.name.length>24?' style="font-size:.86em"':''}>${esc(c.name)}</div>
+  ${c.sub?`<div class="csub">★ ${esc(c.sub)}</div>`:''}
   <div class="cstats">${rows}</div>
   <div class="cfoot">Foto: ${esc(c.f)} · Wikimedia Commons</div></div>`;
 }
