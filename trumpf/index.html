@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#173628">
+<title>Trumpf-Quartett</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#fff;background:radial-gradient(ellipse at 50% 40%,#2f6a53,#173628 75%);user-select:none;-webkit-user-select:none}
+button{font:inherit;border:0;border-radius:10px;padding:11px 16px;background:#f2c84b;color:#222;font-weight:700;cursor:pointer;box-shadow:0 2px 0 #a8831a}
+button:active{transform:translateY(1px);box-shadow:none}
+button.sec{background:#ffffff22;color:#fff;box-shadow:none;border:1px solid #ffffff44}
+button.red{background:#c62828;color:#fff;box-shadow:0 2px 0 #7a1616}
+button:disabled{opacity:.5}
+input{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid #ffffff55;background:#ffffff18;color:#fff;width:100%}
+input::placeholder{color:#ffffff88}
+.scr{position:fixed;inset:0;display:none;overflow:auto}
+.scr.show{display:block}
+.wrap{max-width:560px;margin:0 auto;padding:18px 16px 40px}
+h1{margin:6px 0 2px;font-size:30px;letter-spacing:.5px;color:#f2c84b;text-shadow:0 2px 0 #0006;font-style:italic}
+.sub{opacity:.8;margin-bottom:14px;font-size:14px}
+.box{background:#0000002e;border:1px solid #ffffff22;border-radius:14px;padding:12px;margin:10px 0}
+.box h3{margin:0 0 8px;font-size:15px;opacity:.9}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1;background:#ffffff18;color:#fff;box-shadow:none;border:1px solid #ffffff33;padding:9px 6px;font-weight:600;min-width:70px}
+.seg button.on{background:#f2c84b;color:#222;border-color:#f2c84b}
+.info{font-size:13px;opacity:.75;margin-top:6px}
+.btns{display:flex;flex-direction:column;gap:8px}
+.row2{display:flex;gap:8px}.row2>*{flex:1}
+.sets{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.settile{flex:0 0 auto;border:2px solid #ffffff33;border-radius:14px;padding:8px;cursor:pointer;text-align:center;font-size:14px;background:#ffffff10;width:150px}
+.settile.sel{border-color:#f2c84b;background:#f2c84b22}
+.settile .pv{height:150px;display:flex;justify-content:center;align-items:center;position:relative}
+.settile.soon{opacity:.5;cursor:default;display:flex;align-items:center;justify-content:center}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;font-size:15px}
+.toggle input{width:22px;height:22px;accent-color:#f2c84b}
+
+/* ===== Karte ===== */
+.card{--w:300px;width:var(--w);height:calc(var(--w)*1.5);font-size:calc(var(--w)/20);border-radius:.8em;background:#fff;padding:.45em;display:flex;flex-direction:column;position:relative;color:#1c1c1c;font-family:Arial,Helvetica,sans-serif;box-shadow:0 .25em .8em #0007;flex:0 0 auto;overflow:hidden}
+.card .ch{display:flex;align-items:center;gap:.35em;background:linear-gradient(#f6d46a,#d8a719);border-radius:.45em .45em 0 0;height:2.1em;padding:0 .35em;flex:0 0 auto}
+.card .cid{font-weight:900;font-size:1.45em;letter-spacing:-.02em;color:#1a1a1a;min-width:1.6em}
+.card .cland{margin-left:auto;border:.11em solid #1a1a1a;border-radius:50%;padding:.02em .42em;font-size:.72em;font-weight:800;background:#fff;line-height:1.2}
+.card .flag{width:2.05em;height:1.37em;border:.05em solid #0005;display:block}
+.card .cimg{width:100%;aspect-ratio:3/2;object-fit:cover;display:block;background:#ccc;flex:0 0 auto}
+.card .cname{background:linear-gradient(#3b97e6,#1565c0);color:#fff;font-weight:800;padding:.22em .45em;font-size:1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 .06em 0 #0006;flex:0 0 auto}
+.card .cstats{flex:1;display:flex;flex-direction:column;min-height:0}
+.card .crow{flex:1;display:flex;justify-content:space-between;align-items:center;padding:0 .5em;font-size:.93em;border-bottom:.05em solid #d9dde2;gap:.3em;white-space:nowrap}
+.card .crow:nth-child(odd){background:#edf0f3}
+.card .crow span small{font-size:.75em;color:#777}
+.card .crow b{font-weight:700}
+.card .cfoot{font-size:.48em;color:#888;padding:.25em .3em 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 0 auto}
+.card.pick .crow{cursor:pointer;transition:background .15s}
+.card.pick .crow:hover{background:#ffe9a8}
+.card.pick{box-shadow:0 0 0 .2em #f2c84b,0 .25em .8em #0007;animation:pulse 1.6s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 .4em #f2c84baa,0 .25em .8em #0007}}
+.card .crow.hl{background:#ffd54f!important;font-weight:800;box-shadow:inset 0 0 0 .12em #b8860b}
+.card.win{box-shadow:0 0 0 .25em #ffd54f,0 0 1.6em #ffd54f,0 .25em .8em #0007}
+.card.lose{filter:brightness(.72) saturate(.7)}
+.card .trumpf{position:absolute;top:5.4em;right:-2.3em;transform:rotate(38deg);background:#c62828;color:#fff;font-weight:900;font-size:.7em;padding:.2em 2.6em;letter-spacing:.06em;box-shadow:0 .1em .3em #0008;z-index:2}
+/* Rückseite */
+.card.back{padding:.5em;background:#fff}
+.card.back .bk{flex:1;border-radius:.5em;background:linear-gradient(135deg,var(--c1) 0 50%,var(--c2) 50% 100%);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:1em .4em;overflow:hidden}
+.card.back .bt{font-weight:900;font-style:italic;color:#f6d46a;font-size:1.7em;text-align:center;line-height:1.05;text-shadow:.08em .08em 0 #0008;-webkit-text-stroke:.03em #6b4b00}
+.card.back .bs{background:#fff;color:var(--c2);border-radius:2em;padding:.25em .9em;font-weight:900;font-size:.9em;letter-spacing:.08em;border:.12em solid var(--c1)}
+.card.back svg{width:85%}
+.card.flipin{animation:flipin .45s ease-out}
+@keyframes flipin{0%{transform:rotateY(90deg) scale(.9)}100%{transform:none}}
+.card.dealin{animation:dealin .35s ease-out}
+.card.pick.dealin{animation:dealin .35s ease-out,pulse 1.6s .35s infinite}
+@keyframes dealin{0%{transform:translateY(30px) scale(.94);opacity:0}100%{transform:none;opacity:1}}
+
+/* ===== Spieltisch ===== */
+#game{position:fixed;inset:0;display:none;flex-direction:column}
+#game.show{display:flex}
+#bar{height:46px;flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:0 8px;background:#00000040;padding-top:env(safe-area-inset-top)}
+#bar button{padding:6px 11px;font-size:15px}
+#bar .t{flex:1;text-align:center;font-size:14px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#table{flex:1;display:grid;min-height:0;padding:6px;gap:6px}
+#table.port{grid-template-rows:auto auto 1fr;grid-template-areas:"opps" "mid" "mine"}
+#table.land{grid-template-columns:auto 1fr;grid-template-rows:auto 1fr;grid-template-areas:"mine opps" "mine mid"}
+#table.land #mid{align-self:start;flex-direction:column;padding-top:14px}
+#opps{grid-area:opps;display:flex;justify-content:center;align-items:flex-start;gap:8px}
+#mid{grid-area:mid;display:flex;align-items:center;justify-content:center;gap:12px;min-height:52px}
+#mine{grid-area:mine;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:0}
+.zone{display:flex;flex-direction:column;align-items:center;gap:4px;position:relative}
+.zh{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700;max-width:100%;white-space:nowrap}
+.zh .nm{overflow:hidden;text-overflow:ellipsis}
+.cnt{background:#ffffff26;border-radius:20px;padding:1px 9px;font-size:13px;font-weight:700}
+.zone.turn .zh .nm{color:#f2c84b}
+.zone.turn .zh::before{content:"▶";color:#f2c84b;font-size:11px}
+.zone.out{opacity:.4}
+.slot{position:relative}
+.stack{position:relative}
+.stack .card.back{position:relative;z-index:2}
+.stack .sh{position:absolute;inset:0;border-radius:calc(var(--w)/25);background:#e8e8e8;box-shadow:0 1px 3px #0006}
+.empty{border:2px dashed #ffffff44;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:13px;opacity:.7;text-align:center}
+.chip{background:#fff;color:#1c1c1c;border-radius:10px;padding:2px 10px;font-weight:800;font-size:15px;box-shadow:0 2px 4px #0006;white-space:nowrap}
+.chip.win{background:#ffd54f}
+.chip.none{visibility:hidden}
+#msg{text-align:center;font-size:16px;font-weight:600;max-width:520px;line-height:1.3;padding:4px 10px;border-radius:12px;background:#00000033}
+#msg b{color:#f2c84b}
+#pot{display:none;flex-direction:column;align-items:center;font-size:12px;font-weight:700;gap:2px}
+#pot.show{display:flex}
+#btnNext{display:none;padding:7px 14px}
+.fly{position:fixed;z-index:50;pointer-events:none;transition:transform .55s cubic-bezier(.5,0,.3,1),opacity .55s;transform-origin:center}
+
+/* ===== Overlays ===== */
+.ov{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:80;padding:14px}
+.ov.show{display:flex}
+.dlg{background:#21483a;border:1px solid #ffffff33;border-radius:16px;padding:16px;max-width:520px;width:100%;max-height:92vh;overflow:auto;box-shadow:0 10px 40px #000a}
+.dlg h2{margin:0 0 10px;color:#f2c84b;font-size:21px}
+.dlg p,.dlg li{font-size:15px;line-height:1.45}
+.rank{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:#ffffff12;margin:5px 0;font-size:17px}
+.rank .pl{font-size:22px;width:34px;text-align:center}
+.rank .c{margin-left:auto;font-weight:800}
+.rank.me{background:#f2c84b33}
+#cardGrid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+#credits{font-size:13px;line-height:1.5}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#000c;padding:10px 16px;border-radius:12px;display:none;z-index:99;font-size:15px;max-width:90vw;text-align:center}
+#conn{position:fixed;top:52px;left:50%;transform:translateX(-50%);background:#c62828;padding:6px 14px;border-radius:10px;display:none;z-index:90;font-size:14px}
+.bubble{position:absolute;top:-8px;left:50%;transform:translate(-50%,-100%);background:#fff;color:#222;border-radius:12px;padding:5px 10px;font-weight:700;font-size:14px;white-space:nowrap;z-index:30;box-shadow:0 3px 8px #0007;animation:bub 2.6s forwards;pointer-events:none}
+@keyframes bub{0%{opacity:0;transform:translate(-50%,-80%)}10%,80%{opacity:1;transform:translate(-50%,-100%)}100%{opacity:0}}
+/* Lobby */
+.lseats{display:flex;flex-direction:column;gap:6px}
+.lseat{display:flex;align-items:center;gap:8px;background:#ffffff14;border-radius:10px;padding:9px 11px}
+.lseat b{flex:1}
+.lseat small{opacity:.7}
+.lseat button{padding:4px 9px;font-size:12px}
+.code{font-size:34px;font-weight:900;letter-spacing:6px;color:#f2c84b;text-align:center}
+/* Chat */
+#btnChat{position:relative}
+#chBadge{position:absolute;top:-5px;right:-5px;background:#c62828;color:#fff;border-radius:10px;font-size:11px;padding:1px 6px;display:none}
+#chat{position:fixed;right:8px;bottom:8px;width:min(340px,94vw);background:#1b3d30;border:1px solid #ffffff33;border-radius:14px;display:none;flex-direction:column;z-index:70;box-shadow:0 8px 30px #000a;max-height:60vh}
+#chat.show{display:flex}
+#chMsgs{flex:1;overflow:auto;padding:8px 10px;font-size:14px;min-height:90px}
+#chMsgs .me{color:#f2c84b}
+#chQuick{display:flex;flex-wrap:wrap;gap:4px;padding:0 8px}
+#chQuick button{padding:3px 8px;font-size:12px}
+#chForm{display:flex;gap:6px;padding:8px}
+#chForm button{padding:8px 12px}
+</style>
+</head>
+<body>
+
+<!-- ===== Start ===== -->
+<div id="scrStart" class="scr show"><div class="wrap">
+ <h1>Trumpf-Quartett</h1>
+ <div class="sub">Das Autoquartett-Spiel – wer hat die stärkere Karte?</div>
+ <div class="box" id="joinBox" style="display:none">
+  <h3>Einladung zum Tisch <span id="joinCode"></span></h3>
+  <button id="btnJoinInv" style="width:100%">Am Tisch Platz nehmen</button>
+ </div>
+ <div class="box"><h3>Dein Name</h3><input id="inName" maxlength="14" placeholder="Name"></div>
+ <div class="box"><h3>Kartenset</h3><div class="sets" id="sets"></div></div>
+ <div class="box">
+  <h3>Spieler</h3><div class="seg" id="segN"><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button></div>
+  <div class="info">Freie Plätze übernimmt die KI.</div>
+  <h3 style="margin-top:12px">KI-Stärke</h3><div class="seg" id="segLvl"><button data-v="leicht">Schwach</button><button data-v="mittel">Mittel</button><button data-v="schwer">Stark</button></div>
+  <div class="info" id="lvlInfo"></div>
+  <h3 style="margin-top:12px">Spieldauer</h3><div class="seg" id="segLen"><button data-v="20">Kurz</button><button data-v="40">Mittel</button><button data-v="0">Bis zum Ende</button></div>
+  <div class="info" id="lenInfo"></div>
+  <div class="toggle" style="margin-top:8px"><span>Supertrumpf-Karte</span><input type="checkbox" id="tgTrumpf"></div>
+ </div>
+ <div class="btns">
+  <button id="btnSolo">Gegen die KI spielen</button>
+  <button id="btnHost" class="sec">Online-Tisch eröffnen</button>
+  <div class="row2"><input id="inCode" maxlength="4" placeholder="Code" style="text-transform:uppercase"><button id="btnJoin" class="sec">Beitreten</button></div>
+  <div class="row2"><button class="sec" id="btnRules1">Spielregeln</button><button class="sec" id="btnCards1">Alle Karten</button></div>
+ </div>
+</div></div>
+
+<!-- ===== Lobby ===== -->
+<div id="scrLobby" class="scr"><div class="wrap">
+ <h1>Online-Tisch</h1>
+ <div class="box" style="text-align:center"><div class="sub" style="margin:0">Tisch-Code</div><div class="code" id="lbCode">----</div>
+  <div class="row2" style="margin-top:8px"><button class="sec" id="btnCopy">Link kopieren</button><button class="sec" id="btnShare">Teilen</button></div></div>
+ <div class="box"><h3>Plätze</h3><div class="lseats" id="lbSeats"></div><div class="info" id="lbHelp"></div></div>
+ <div class="box" id="lbSet"></div>
+ <div class="btns"><button id="btnStart">Spiel starten</button><button class="sec" id="btnLeave">Tisch verlassen</button></div>
+</div></div>
+
+<!-- ===== Spiel ===== -->
+<div id="game">
+ <div id="bar"><button class="sec" id="btnMenu">☰</button><div class="t" id="barT"></div><button class="sec" id="btnChat" style="display:none">💬<span id="chBadge"></span></button><button class="sec" id="btnFull">⛶</button></div>
+ <div id="table" class="port">
+  <div id="opps"></div>
+  <div id="mid"><div id="pot"></div><div id="msg"></div><button id="btnNext">Weiter ▸</button></div>
+  <div id="mine"></div>
+ </div>
+</div>
+
+<!-- Menü -->
+<div class="ov" id="menu"><div class="dlg">
+ <h2>Menü</h2>
+ <div class="toggle"><span>Ton</span><input type="checkbox" id="tgSound"></div>
+ <h3 style="font-size:15px;margin:8px 0 6px">Tempo</h3><div class="seg" id="segSpeed"><button data-v="slow">Gemütlich</button><button data-v="normal">Normal</button><button data-v="fast">Flott</button></div>
+ <div id="mSeats"></div>
+ <div class="btns" style="margin-top:14px">
+  <button class="sec" id="btnRules2">Spielregeln</button>
+  <button class="sec" id="btnCards2">Alle Karten ansehen</button>
+  <button class="sec" id="btnCredits">Bildnachweis</button>
+  <button class="red" id="btnQuit">Tisch verlassen</button>
+  <button id="btnMenuClose">Weiterspielen</button>
+ </div>
+</div></div>
+
+<!-- Regeln -->
+<div class="ov" id="rules"><div class="dlg">
+ <h2>Spielregeln</h2>
+ <ul>
+  <li>Alle Karten werden gleichmäßig verteilt. Jeder sieht nur seine <b>oberste Karte</b>.</li>
+  <li>Wer dran ist, wählt einen Wert seiner Karte, z.&nbsp;B. <i>Leistung</i>. Alle decken ihre oberste Karte auf.</li>
+  <li>Der <b>beste Wert gewinnt</b> alle aufgedeckten Karten – sie kommen unter den eigenen Stapel. Meist gewinnt der höhere Wert; beim <b>Baujahr</b> sticht die ältere Maschine.</li>
+  <li>Der Gewinner wählt in der nächsten Runde.</li>
+  <li><b>Gleichstand (Stechen):</b> Die Karten kommen in die Mitte, derselbe Spieler wählt noch einmal. Wer die nächste Runde gewinnt, bekommt auch die Karten aus der Mitte.</li>
+  <li><b>Supertrumpf</b> (Karte mit rotem Band): sticht jede Karte – außer die <b>A-Karten</b> (1A, 2A …). Liegt eine A-Karte dabei, wird normal verglichen.</li>
+  <li>Wer keine Karten mehr hat, scheidet aus. Gewonnen hat, wer alle Karten bekommt – oder bei begrenzter Spieldauer am Ende die meisten Karten hat.</li>
+ </ul>
+ <button id="btnRulesClose" style="width:100%">Alles klar</button>
+</div></div>
+
+<!-- Kartenübersicht -->
+<div class="ov" id="cards"><div class="dlg" style="max-width:960px"><h2 id="cardsT">Alle Karten</h2><div id="cardGrid"></div><button id="btnCardsClose" style="width:100%;margin-top:12px">Schließen</button></div></div>
+<!-- Bildnachweis -->
+<div class="ov" id="credDlg"><div class="dlg"><h2>Bildnachweis</h2><div id="credits"></div><button id="btnCredClose" style="width:100%;margin-top:12px">Schließen</button></div></div>
+<!-- Ergebnis -->
+<div class="ov" id="res"><div class="dlg"><h2 id="resT">Spielende</h2><div id="resList"></div><div class="btns" style="margin-top:12px"><button id="btnAgain">Noch einmal</button><button class="sec" id="btnResLeave">Zum Start</button></div></div></div>
+
+<div id="chat"><div style="display:flex;align-items:center;padding:8px 10px 0"><b style="flex:1">Chat</b><button class="sec" id="chClose" style="padding:3px 9px">✕</button></div><div id="chMsgs"></div><div id="chQuick"></div><form id="chForm"><input id="chIn" maxlength="140" placeholder="Nachricht …"><button>➤</button></form></div>
+<div id="toast"></div>
+<div id="conn"></div>
+
+<!-- Kartensets: weitere Sets einfach hier ergänzen -->
+<script src="sets/traktoren.js"></script>
+
+<script>
+'use strict';
+// ================= Grundlagen =================
+const $=s=>document.querySelector(s);
+const FB_ROOT='https://nfl-tippspiel-df32c-default-rtdb.europe-west1.firebasedatabase.app/tippspiel/freunde/trumpf';
+const SETS=window.TRUMPF_SETS||[];
+const SETMAP={};
+SETS.forEach(st=>{SETMAP[st.id]=st;st.byId={};st.cards.forEach(c=>st.byId[c.id]=c);st.statMap={};st.stats.forEach(x=>st.statMap[x.k]=x);});
+const AI_NAMES=['Sepp','Resi','Ferdl','Mitzi','Franz','Gretl'];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const SET=Object.assign({name:'',set:SETS[0]&&SETS[0].id,n:4,level:'mittel',len:40,trumpf:true,speed:'normal',sound:true},JSON.parse(localStorage.getItem('tq-set')||'{}'));
+if(!SETMAP[SET.set])SET.set=SETS[0].id;
+function saveSet(){localStorage.setItem('tq-set',JSON.stringify(SET));}
+let myId=localStorage.getItem('tq-id');
+if(!myId){myId='p'+Math.random().toString(36).slice(2,10);localStorage.setItem('tq-id',myId);}
+const SPEED={slow:4600,normal:3000,fast:1700};
+
+// ================= Kartengrafik =================
+function flagSVG(l){
+ const W=30,H=20;let b='';
+ const hz=c=>c.map((x,i)=>`<rect y="${i*H/c.length}" width="${W}" height="${H/c.length+.1}" fill="${x}"/>`).join('');
+ const vt=c=>c.map((x,i)=>`<rect x="${i*W/c.length}" width="${W/c.length+.1}" height="${H}" fill="${x}"/>`).join('');
+ switch(l){
+  case 'D':b=hz(['#000','#dd0000','#ffce00']);break;
+  case 'DDR':b=hz(['#000','#dd0000','#ffce00'])+`<circle cx="15" cy="10" r="3.6" fill="#7aa33f" stroke="#ffce00" stroke-width=".8"/>`;break;
+  case 'A':b=hz(['#c8102e','#fff','#c8102e']);break;
+  case 'I':b=vt(['#009246','#fff','#ce2b37']);break;
+  case 'F':b=vt(['#0055a4','#fff','#ef4135']);break;
+  case 'PL':b=hz(['#fff','#dc143c']);break;
+  case 'CH':b=`<rect width="${W}" height="${H}" fill="#d52b1e"/><rect x="13" y="4" width="4" height="12" fill="#fff"/><rect x="9" y="8" width="12" height="4" fill="#fff"/>`;break;
+  case 'FIN':b=`<rect width="${W}" height="${H}" fill="#fff"/><rect x="8" width="5" height="${H}" fill="#003580"/><rect y="7.5" width="${W}" height="5" fill="#003580"/>`;break;
+  case 'J':b=`<rect width="${W}" height="${H}" fill="#fff"/><circle cx="15" cy="10" r="6" fill="#bc002d"/>`;break;
+  case 'CS':b=hz(['#fff','#d7141a'])+`<path d="M0 0L15 10L0 20Z" fill="#11457e"/>`;break;
+  case 'SU':b=`<rect width="${W}" height="${H}" fill="#cc0000"/><path d="M5.5 2.2l.7 2 2.1 0-1.7 1.3.6 2-1.7-1.2-1.7 1.2.6-2-1.7-1.3 2.1 0z" fill="#ffd700"/><path d="M4 11.5c1.5 2 4 2.3 6 1M5 13.5l4-4" stroke="#ffd700" stroke-width="1.1" fill="none"/>`;break;
+  case 'GB':b=`<rect width="${W}" height="${H}" fill="#012169"/><path d="M0 0L30 20M30 0L0 20" stroke="#fff" stroke-width="4"/><path d="M0 0L30 20M30 0L0 20" stroke="#c8102e" stroke-width="1.6"/><path d="M15 0V20M0 10H30" stroke="#fff" stroke-width="6"/><path d="M15 0V20M0 10H30" stroke="#c8102e" stroke-width="3.4"/>`;break;
+  case 'USA':{let s='';for(let i=0;i<13;i++)s+=`<rect y="${i*H/13}" width="${W}" height="${H/13+.05}" fill="${i%2?'#fff':'#b22234'}"/>`;let d='';for(let r=0;r<4;r++)for(let c=0;c<5;c++)d+=`<circle cx="${1.4+c*2.4+(r%2)*1.2}" cy="${1.4+r*2.5}" r=".55" fill="#fff"/>`;b=s+`<rect width="13" height="${H*7/13}" fill="#3c3b6e"/>`+d;break;}
+  default:b=`<rect width="${W}" height="${H}" fill="#999"/>`;
+ }
+ return `<svg class="flag" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${b}</svg>`;
+}
+const fmt=(st,k,v)=>{const s=st.statMap[k];if(k==='bj')return String(v);return v.toLocaleString('de-AT')+(s.u?' '+s.u:'');};
+function cardHTML(st,id,o={}){
+ const c=st.byId[id];if(!c)return '';
+ const cls=['card'];if(o.pick)cls.push('pick');if(o.win)cls.push('win');if(o.lose)cls.push('lose');if(o.anim)cls.push(o.anim);
+ const rows=st.stats.map(x=>`<div class="crow${o.hl===x.k?' hl':''}" data-k="${x.k}"><span>${x.n}${x.note?` <small>(${x.note})</small>`:''}</span><b>${fmt(st,x.k,c.v[x.k])}</b></div>`).join('');
+ return `<div class="${cls.join(' ')}" style="--w:${o.w||300}px" data-c="${id}">
+  <div class="ch"><span class="cid">${c.id}</span><span class="cland">${c.land}</span>${flagSVG(c.land)}</div>
+  <img class="cimg" src="${st.dir}${c.id}.jpg" alt="" draggable="false">
+  ${st.trump===id&&o.trumpf!==false?'<div class="trumpf">SUPERTRUMPF</div>':''}
+  <div class="cname">${esc(c.name)}</div>
+  <div class="cstats">${rows}</div>
+  <div class="cfoot">Foto: ${esc(c.f)} · Wikimedia Commons</div></div>`;
+}
+const TRACTOR=`<svg viewBox="0 0 120 80"><g fill="#fff" stroke="#0005" stroke-width="1.5"><path d="M30 40h12l4-26h30l6 26h22l6 8v10H24z"/><rect x="50" y="18" width="22" height="18" fill="#9fd3ff" stroke="#fff" stroke-width="3"/><rect x="92" y="22" width="4" height="18"/></g><circle cx="38" cy="58" r="20" fill="#222" stroke="#fff" stroke-width="3"/><circle cx="38" cy="58" r="8" fill="#f6d46a"/><circle cx="100" cy="66" r="12" fill="#222" stroke="#fff" stroke-width="3"/><circle cx="100" cy="66" r="5" fill="#f6d46a"/></svg>`;
+function backHTML(st,w,extra=''){
+ return `<div class="card back ${extra}" style="--w:${w}px;--c1:${st.colors[0]};--c2:${st.colors[1]}"><div class="bk"><div class="bt">${esc(st.title)}</div>${TRACTOR}<div class="bs">TRUMPF</div></div></div>`;
+}
+function preload(st){if(preload[st.id])return;preload[st.id]=1;st.cards.forEach(c=>{const i=new Image();i.src=st.dir+c.id+'.jpg';});}
+
+// ================= Ton =================
+let AC=null;
+function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC;}
+function tn(f,dur,g=.15,type='sine',delay=0,f2){if(!SET.sound)return;const a=ac();if(!a)return;const t=a.currentTime+delay;const o=a.createOscillator(),v=a.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);v.gain.setValueAtTime(g,t);v.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(v).connect(a.destination);o.start(t);o.stop(t+dur);}
+function noise(dur,g=.12,delay=0){if(!SET.sound)return;const a=ac();if(!a)return;const t=a.currentTime+delay;const b=a.createBuffer(1,a.sampleRate*dur,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);const s=a.createBufferSource(),v=a.createGain(),f=a.createBiquadFilter();f.type='highpass';f.frequency.value=1800;s.buffer=b;v.gain.value=g;s.connect(f).connect(v).connect(a.destination);s.start(t);}
+const SND={
+ flip(){noise(.08,.14);noise(.07,.1,.06);},
+ pick(){tn(660,.08,.1,'triangle');},
+ win(){[523,659,784,1046].forEach((f,i)=>tn(f,.18,.13,'triangle',i*.08));},
+ lose(){tn(330,.25,.12,'sawtooth',0,220);},
+ tie(){tn(440,.12,.12,'square');tn(440,.12,.12,'square',.18);},
+ out(){tn(300,.5,.14,'sawtooth',0,90);},
+ end(){[392,523,659,784,659,784].forEach((f,i)=>tn(f,.22,.13,'triangle',i*.13));},
+ tick(){tn(900,.05,.06);}
+};
+
+// ================= Zustand =================
+let S=null;          // Host-Spielzustand
+let isHost=false,online=false,room=null,mySeat=0;
+let V=null;          // aktuelle Ansicht
+let aiTimer=null,phaseTimer=null;
+const listeners=[];
+const curSet=()=>SETMAP[(S&&S.setId)||(V&&V.setId)||SET.set];
+function aiName(){const used=S?S.seats.map(x=>x.name):[];return AI_NAMES.find(n=>!used.includes(n))||'KI';}
+function freshSeats(n){const a=[{type:'human',id:myId,name:SET.name||'Ich'}];for(let i=1;i<n;i++)a.push({type:'ai',name:AI_NAMES[i-1]});return a;}
+function hostInit(seats){
+ S={seq:0,ev:[],evN:0,seats,setId:SET.set,phase:'lobby',piles:[],out:[],outOrder:[],chooser:0,stat:null,reveal:null,winners:null,pot:[],round:0,limit:+SET.len,trumpf:!!SET.trumpf,level:SET.level,speed:SET.speed,pub:{},chat:S&&S.chat||[]};
+}
+function ev(type,o){S.evN++;S.ev.push(Object.assign({n:S.evN,type},o||{}));if(S.ev.length>20)S.ev.shift();}
+const nm=s=>S.seats[s].name;
+const hasCards=s=>S.piles[s]&&S.piles[s].length>0;
+const activeSeats=()=>S.seats.map((x,i)=>i).filter(hasCards);
+
+function startGame(){
+ clearTimeout(phaseTimer);clearTimeout(aiTimer);aiTimer=null;
+ const st=SETMAP[S.setId];preload(st);
+ const n=S.seats.length,d=st.cards.map(c=>c.id);
+ for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]];}
+ S.piles=S.seats.map(()=>[]);
+ const first=Math.floor(Math.random()*n);
+ d.forEach((c,i)=>S.piles[(first+i)%n].push(c));
+ S.out=S.seats.map(()=>false);S.outOrder=[];S.pot=[];S.pub={};S.round=1;S.stat=null;S.reveal=null;S.winners=null;S.rank=null;
+ S.chooser=first;S.phase='choose';S.trumpf=!!SET.trumpf;S.limit=+SET.len;S.level=SET.level;S.speed=SET.speed;
+ ev('start',{s:first});
+ commit();
+}
+function isTrumpCard(st,id){return S.trumpf&&st.trump===id;}
+// Gewinner einer Runde: Liste der Plätze mit dem besten Wert
+function roundWinners(st,cards,k){
+ const t=cards.find(x=>isTrumpCard(st,x.c));
+ if(t&&!cards.some(x=>x!==t&&st.byId[x.c].id.endsWith('A')))return {w:[t.s],trumpf:true};
+ const hi=st.statMap[k].hi;
+ let best=null;for(const x of cards){const v=st.byId[x.c].v[k];if(best===null||(hi?v>best:v<best))best=v;}
+ return {w:cards.filter(x=>st.byId[x.c].v[k]===best).map(x=>x.s),trumpf:false};
+}
+function act(seat,a){
+ if(!S||!a)return;
+ const st=SETMAP[S.setId];
+ if(a.type==='choose'&&S.phase==='choose'&&seat===S.chooser&&st.statMap[a.k]){
+  S.stat=a.k;
+  S.reveal=activeSeats().map(s=>({s,c:S.piles[s][0]}));
+  const r=roundWinners(st,S.reveal,a.k);
+  S.winners=r.w;S.trumpfWin=r.trumpf;
+  S.reveal.forEach(x=>S.pub[x.c]=1);
+  S.phase='reveal';
+  ev('reveal',{s:seat,k:a.k,w:r.w,trumpf:r.trumpf});
+  commit();
+  clearTimeout(phaseTimer);
+  phaseTimer=setTimeout(resolveRound,SPEED[S.speed]||3000);
+ } else if(a.type==='next'&&S.phase==='reveal'&&(!online||seat===mySeat)){
+  clearTimeout(phaseTimer);resolveRound();
+ }
+}
+function resolveRound(){
+ if(!S||S.phase!=='reveal')return;
+ clearTimeout(phaseTimer);
+ const cards=S.reveal;
+ cards.forEach(x=>S.piles[x.s].shift());
+ if(S.winners.length===1){
+  const w=S.winners[0];
+  const own=cards.find(x=>x.s===w);
+  const won=[own.c,...cards.filter(x=>x!==own).map(x=>x.c),...S.pot];
+  S.piles[w].push(...won);
+  ev('win',{s:w,n:won.length});
+  S.pot=[];S.chooser=w;
+ } else {
+  S.pot.push(...cards.map(x=>x.c));
+  ev('tie',{w:S.winners});
+  if(!hasCards(S.chooser)){const c=S.winners.find(hasCards);if(c!=null)S.chooser=c;}
+ }
+ S.seats.forEach((x,s)=>{if(!S.out[s]&&!hasCards(s)){S.out[s]=true;S.outOrder.push(s);ev('out',{s});}});
+ const act_=activeSeats();
+ if(!hasCards(S.chooser)&&act_.length){let c=S.chooser;for(let i=0;i<S.seats.length;i++){c=(c+1)%S.seats.length;if(hasCards(c))break;}S.chooser=c;}
+ S.reveal=null;S.stat=null;S.winners=null;
+ if(act_.length<=1||(S.limit&&S.round>=S.limit&&!S.pot.length)){
+  if(act_.length===1&&S.pot.length){S.piles[act_[0]].push(...S.pot);S.pot=[];}
+  endGame();return;
+ }
+ S.round++;S.phase='choose';
+ commit();
+}
+function endGame(){
+ S.phase='end';
+ const act_=activeSeats().sort((a,b)=>S.piles[b].length-S.piles[a].length);
+ const outs=S.outOrder.slice().reverse();
+ S.rank=[...act_,...outs.filter(s=>!act_.includes(s))];
+ ev('end',{s:S.rank[0]});
+ commit();
+}
+function viewFor(seat){
+ const v={seq:S.seq,me:seat,phase:S.phase,setId:S.setId,code:room,
+  seats:S.seats.map(x=>({name:x.name,type:x.type,off:!!x.off})),
+  counts:S.seats.map((x,i)=>S.piles[i]?S.piles[i].length:0),out:S.out.slice(),
+  chooser:S.chooser,stat:S.stat,round:S.round,limit:S.limit,pot:S.pot.length,trumpf:S.trumpf,level:S.level,speed:S.speed,
+  top:S.piles[seat]&&S.piles[seat][0]||null,ev:S.ev.slice(),chat:S.chat||[]};
+ if(S.phase==='reveal'){v.reveal=S.reveal;v.winners=S.winners;v.trumpfWin=S.trumpfWin;}
+ if(S.phase==='end')v.rank=S.rank;
+ return v;
+}
+function commit(){
+ S.seq++;
+ mySeat=Math.max(0,S.seats.findIndex(x=>x.id===myId));
+ render(viewFor(mySeat));
+ if(online)S.seats.forEach((x,i)=>{if(x.type==='human'&&x.id&&x.id!==myId)queuePut('views/'+x.id,viewFor(i));});
+ scheduleAI();
+}
+function scheduleAI(){
+ if(aiTimer||!S||S.phase!=='choose')return;
+ const s=S.chooser,x=S.seats[s];if(!x||x.type!=='ai')return;
+ aiTimer=setTimeout(()=>{aiTimer=null;if(!S||S.phase!=='choose'||S.chooser!==s||S.seats[s].type!=='ai')return scheduleAI();try{act(s,{type:'choose',k:aiChoose(s)});}catch(e){console.error(e);}},1100+Math.random()*900);
+}
+
+// ================= KI =================
+const LVL_INFO={leicht:'Wählt oft einfach irgendeinen Wert.',mittel:'Wählt den Wert, der im Vergleich zu allen Karten am stärksten ist.',schwer:'Merkt sich jede aufgedeckte Karte, weiß, welche Karten schon wieder oben liegen müssen, und rechnet die Siegchance für jeden Wert aus.'};
+// Wie viel Prozent der übrigen Karten schlägt diese Karte bei Wert k?
+function beatShare(st,id,k,pool){
+ const hi=st.statMap[k].hi,v=st.byId[id].v[k];let w=0,n=0;
+ for(const o of pool){if(o===id)continue;n++;const ov=st.byId[o].v[k];
+  if(isTrumpCard(st,id)&&!o.endsWith('A'))w+=1;
+  else if(isTrumpCard(st,o)&&!id.endsWith('A'))w+=0;
+  else if(ov===v)w+=.4;else if(hi?v>ov:v<ov)w+=1;}
+ return n?w/n:1;
+}
+function aiChoose(s){
+ const st=SETMAP[S.setId],id=S.piles[s][0],lvl=S.level||'mittel';
+ const ks=st.stats.map(x=>x.k);
+ if(lvl==='leicht'&&Math.random()<.55)return ks[Math.floor(Math.random()*ks.length)];
+ const all=st.cards.map(c=>c.id);
+ if(lvl!=='schwer'){let b=ks[0],bv=-1;for(const k of ks){const v=beatShare(st,id,k,all)+Math.random()*.02;if(v>bv){bv=v;b=k;}}return b;}
+ // schwer: Kartenzählen. Öffentlich bekannte Karten (schon einmal aufgedeckt) behält die KI im Kopf.
+ const mine=new Set(S.piles[s]);
+ const hidden=all.filter(c=>!S.pub[c]&&!mine.has(c));
+ const opps=activeSeats().filter(o=>o!==s);
+ let best=ks[0],bv=-1;
+ for(const k of ks){
+  let p=1;
+  for(const o of opps){
+   const top=S.piles[o][0];
+   // Liegt oben eine schon einmal aufgedeckte Karte, weiß die KI genau, welche es ist
+   const pool=S.pub[top]?[top]:(hidden.length?hidden:all.filter(c=>!mine.has(c)));
+   p*=beatShare(st,id,k,pool);
+  }
+  if(p>bv){bv=p;best=k;}
+ }
+ return best;
+}
+
+// ================= Firebase (online) =================
+const fbUrl=p=>`${FB_ROOT}/${room}/${p}.json`;
+const fbPut=(p,d)=>fetch(fbUrl(p),{method:'PUT',body:JSON.stringify(d)}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r;});
+const fbPost=(p,d)=>fetch(fbUrl(p),{method:'POST',body:JSON.stringify(d)});
+const fbDel=p=>fetch(fbUrl(p),{method:'DELETE'});
+const fbGet=p=>fetch(fbUrl(p)).then(r=>r.json());
+const WQ={},WB={};
+function queuePut(p,d){WQ[p]=d;if(!WB[p])flushQ(p);}
+async function flushQ(p){WB[p]=true;while(p in WQ){const d=WQ[p];delete WQ[p];try{await fbPut(p,d);}catch(e){console.warn(e);}}WB[p]=false;}
+function listen(path,cb){
+ const es=new EventSource(fbUrl(path));
+ es.addEventListener('put',e=>{const d=JSON.parse(e.data);cb(d.path,d.data);});
+ es.addEventListener('patch',e=>{const d=JSON.parse(e.data);for(const k in d.data)cb((d.path==='/'?'':d.path)+'/'+k,d.data[k]);});
+ listeners.push(es);return es;
+}
+let netTimer=null,lastSeen={},lastView=Date.now();
+function stopNet(){listeners.forEach(e=>e.close());listeners.length=0;clearInterval(netTimer);}
+async function cleanupRooms(){
+ try{const keys=await fetch(FB_ROOT+'.json?shallow=true').then(r=>r.json());if(!keys)return;
+  for(const k of Object.keys(keys).slice(0,30)){if(k===room)continue;const m=await fetch(`${FB_ROOT}/${k}/meta.json`).then(r=>r.json());if(!m||Date.now()-(m.ping||m.created||0)>6*3600e3)fetch(`${FB_ROOT}/${k}.json`,{method:'DELETE'});}
+ }catch(e){}
+}
+async function hostOnline(){
+ const A='ABCDEFGHJKLMNPQRSTUVWXYZ';room=Array.from({length:4},()=>A[Math.floor(Math.random()*A.length)]).join('');
+ try{await fbPut('meta',{created:Date.now(),ping:Date.now(),host:SET.name});}
+ catch(e){toast('Online-Verbindung fehlgeschlagen: '+e.message);room=null;return false;}
+ online=true;isHost=true;
+ S=null;hostInit(freshSeats(SET.n));S.chat=[];
+ chatStart();cleanupRooms();
+ const processed=new Set();
+ const handle=(kind,key,d)=>{
+  if(kind==='a'){if(!d||processed.has(key))return;processed.add(key);fbDel('in/a/'+key);const s=S.seats.findIndex(x=>x.id===d.id&&x.type==='human');if(s>=0)act(s,d.a);}
+  else if(kind==='j'){if(d==null)leavePlayer(key);else if(d.name)joinPlayer(key,d);}
+  else if(kind==='c'){if(!d||!d.t||processed.has('c'+key))return;processed.add('c'+key);
+   const s=S.seats.findIndex(x=>x.id===d.id);
+   S.chat.push({k:key,id:d.id,n:String(d.n||'?').slice(0,14),t:String(d.t).slice(0,140),s:s>=0?s:null});
+   if(S.chat.length>40)S.chat.shift();commit();}
+ };
+ listen('in',(p,d)=>{
+  const parts=p.split('/').filter(Boolean);
+  if(parts.length===0){if(d)for(const kind in d)for(const k in d[kind])handle(kind,k,d[kind][k]);}
+  else if(parts.length===1){if(d)for(const k in d)handle(parts[0],k,d[k]);}
+  else if(parts.length===2)handle(parts[0],parts[1],d);
+  else if(parts[0]==='j')lastSeen[parts[1]]=Date.now();
+ });
+ netTimer=setInterval(()=>{
+  fbPut('meta/ping',Date.now()).catch(()=>{});
+  const now=Date.now();let ch=false;
+  S.seats.forEach((x,i)=>{if(x.type==='human'&&x.id!==myId){const age=now-(lastSeen[x.id]||now);const off=age>50000;if(off!==!!x.off){x.off=off;ch=true;}if(age>150000&&S.phase!=='lobby'){toast(x.name+' ist offline – die KI übernimmt.');S.seats[i]={type:'ai',name:aiName(),prevId:x.id};ch=true;}}});
+  if(ch)commit();
+  else S.seats.forEach((x,i)=>{if(x.type==='human'&&x.id&&x.id!==myId)queuePut('views/'+x.id,viewFor(i));});
+ },15000);
+ return true;
+}
+function joinPlayer(id,d){
+ lastSeen[id]=Date.now();
+ if(id===myId)return;
+ const cur=S.seats.findIndex(x=>x.id===id&&x.type==='human');
+ if(cur>=0){if(S.seats[cur].off){S.seats[cur].off=false;commit();}return;}
+ let s=S.seats.findIndex(x=>x.type==='ai'&&x.prevId===id);
+ if(s<0)s=S.seats.findIndex(x=>x.type==='ai');
+ if(s<0&&S.phase==='lobby'&&S.seats.length<4){S.seats.push({type:'ai',name:''});s=S.seats.length-1;}
+ if(s<0){queuePut('views/'+id,{full:true});return;}
+ S.seats[s]={type:'human',id,name:String(d.name||'Gast').slice(0,14)};
+ if(S.phase!=='lobby')toast(S.seats[s].name+' übernimmt den Platz.');
+ commit();
+}
+function leavePlayer(id){
+ const s=S.seats.findIndex(x=>x.id===id&&x.type==='human');if(s<0)return;
+ toast(S.seats[s].name+' hat den Tisch verlassen.');
+ S.seats[s]={type:'ai',name:aiName(),prevId:id};commit();
+}
+function clientJoin(code){
+ room=code.toUpperCase();online=true;isHost=false;S=null;
+ const reg=()=>fbPut('in/j/'+myId,{name:SET.name||'Gast',t:Date.now()}).catch(()=>{});
+ fbGet('meta').then(m=>{
+  if(!m){toast('Tisch '+room+' nicht gefunden.');leaveTable();return;}
+  reg();chatStart();lastView=Date.now();
+  listen('views/'+myId,(p,d)=>{
+   if(p!=='/'||!d)return;
+   if(d.full){toast('Der Tisch ist voll.');leaveTable();return;}
+   lastView=Date.now();
+   if(V&&d.seq<V.seq)return;
+   mySeat=d.me;render(norm(d));
+  });
+  netTimer=setInterval(()=>{reg();const c=$('#conn');if(Date.now()-lastView>65000){c.textContent='Keine Verbindung zum Gastgeber …';c.style.display='block';}else c.style.display='none';},20000);
+  showScreen('lobby');renderLobby({seats:[],code:room,phase:'lobby',setId:SET.set});
+ }).catch(()=>{toast('Keine Internetverbindung?');leaveTable();});
+}
+function norm(v){v.seats=v.seats||[];v.counts=v.counts||[];v.out=v.out||[];v.ev=v.ev||[];v.chat=v.chat||[];if(v.reveal)v.winners=v.winners||[];return v;}
+function send(a){
+ if(isHost||!online){act(mySeat,a);return;}
+ fbPost('in/a',{id:myId,a}).catch(()=>toast('Senden fehlgeschlagen'));
+}
+function leaveTable(){
+ clearTimeout(aiTimer);aiTimer=null;clearTimeout(phaseTimer);
+ if(online){if(isHost&&room)fetch(`${FB_ROOT}/${room}.json`,{method:'DELETE'});else if(room)fbDel('in/j/'+myId);}
+ stopNet();chatStop();S=null;V=null;online=false;isHost=false;room=null;
+ $('#res').classList.remove('show');$('#conn').style.display='none';
+ history.replaceState(null,'',location.pathname);
+ showScreen('start');renderStart();
+}
+
+// ================= Darstellung =================
+let lastEvN=null,LAY=null,shownTop=null,revealKey=null;
+function showScreen(n){
+ $('#scrStart').classList.toggle('show',n==='start');
+ $('#scrLobby').classList.toggle('show',n==='lobby');
+ $('#game').classList.toggle('show',n==='game');
+}
+function render(v){
+ const prev=V;V=v;
+ chatFromView(v);
+ if(v.phase==='lobby'){showScreen('lobby');renderLobby(v);lastEvN=v.ev.length?v.ev[v.ev.length-1].n:0;return;}
+ showScreen('game');
+ if(prev&&prev.phase==='reveal'&&v.phase!=='reveal'&&prev.reveal)flyCards(prev,v);
+ renderTable(v);
+ processEvents(v);
+ renderResult(v);
+}
+const rel=(s,v)=>(s-v.me+v.seats.length)%v.seats.length;
+function layout(v){
+ const W=innerWidth,H=innerHeight-46-12;
+ const opps=v.seats.length-1;
+ const land=W>H*1.2;
+ let my,op;
+ if(land){
+  my=Math.min((H-34)/1.5,W*.4);
+  const RW=W-my-30;
+  op=Math.min((RW-10*opps)/opps,(H-60-34-30)/1.5,240);
+ } else {
+  op=Math.min((W-12-8*(opps-1))/opps,190,(H*.36-50)/1.5);
+  const rest=H-(op*1.5+52)-60-34;
+  my=Math.min(W*.88,rest/1.5,420);
+ }
+ return {land,my:Math.floor(my),op:Math.floor(op)};
+}
+function zoneHTML(v,s,w,isMe){
+ const st=SETMAP[v.setId];
+ const x=v.seats[s],cnt=v.counts[s]||0,out=v.out[s];
+ const turn=(v.phase==='choose'||v.phase==='reveal')&&v.chooser===s;
+ let slot='',chip='<div class="chip none">–</div>';
+ const rv=v.reveal&&v.reveal.find(r=>r.s===s);
+ const rk=v.round+'-'+v.stat;
+ if(rv){
+  const win=v.winners.includes(s),single=v.winners.length===1;
+  slot=cardHTML(st,rv.c,{w,hl:v.stat,win:win&&single,lose:!win,anim:(!isMe&&revealKey!==rk)?'flipin':'',trumpf:v.trumpf});
+  chip=`<div class="chip${win?' win':''}">${fmt(st,v.stat,st.byId[rv.c].v[v.stat])}</div>`;
+ } else if(isMe&&v.top){
+  const pick=v.phase==='choose'&&v.chooser===v.me;
+  slot=cardHTML(st,v.top,{w,pick,anim:shownTop!==v.top?'dealin':'',trumpf:v.trumpf});
+ } else if(cnt>0){
+  const sh=Math.min(4,Math.ceil(cnt/4));let sd='';for(let i=sh;i>0;i--)sd+=`<div class="sh" style="--w:${w}px;transform:translate(${i*2}px,${i*2}px)"></div>`;
+  slot=`<div class="stack">${sd}${backHTML(st,w)}</div>`;
+ } else slot=`<div class="empty" style="width:${w}px;height:${w*1.5}px">${out?'ausgeschieden':'keine Karten'}</div>`;
+ const name=isMe?'Du':esc(x.name)+(x.type==='ai'?' 🤖':'')+(x.off?' 📵':'');
+ return `<div class="zone${turn?' turn':''}${out?' out':''}" data-s="${s}"><div class="zh"><span class="nm">${name}</span><span class="cnt">${cnt} 🂠</span></div><div class="slot">${slot}</div>${isMe?'':chip}</div>`;
+}
+function renderTable(v){
+ const st=SETMAP[v.setId];
+ const L=layout(v);LAY=L;
+ $('#table').className=L.land?'land':'port';
+ const n=v.seats.length;
+ const order=[];for(let r=1;r<n;r++)order.push((v.me+r)%n);
+ $('#opps').innerHTML=order.map(s=>zoneHTML(v,s,L.op,false)).join('');
+ $('#mine').innerHTML=zoneHTML(v,v.me,L.my,true);
+ shownTop=v.top;
+ if(v.reveal)revealKey=v.round+'-'+v.stat;
+ // Mitte
+ const pot=$('#pot');
+ if(v.pot>0){pot.classList.add('show');pot.innerHTML=`<div class="stack">${backHTML(st,Math.max(40,Math.min(70,L.op*.45)))}</div><div>Stechen: ${v.pot}</div>`;}
+ else pot.classList.remove('show');
+ const nme=s=>s===v.me?'Du':esc(v.seats[s].name);
+ let m='';
+ if(v.phase==='choose'){
+  m=v.chooser===v.me?'<b>Du bist dran!</b> Tippe auf einen Wert deiner Karte.':`<b>${nme(v.chooser)}</b> wählt einen Wert …`;
+  if(v.pot)m='Stechen! '+m;
+ } else if(v.phase==='reveal'){
+  const sn=st.statMap[v.stat].n;
+  if(v.winners.length===1){const w=v.winners[0];m=`${nme(v.chooser)} ${v.chooser===v.me?'wählst':'wählt'} <b>${sn}</b> – ${v.trumpfWin?'<b>Supertrumpf!</b> ':''}${w===v.me?'<b>Du gewinnst!</b>':`<b>${nme(w)}</b> gewinnt.`}`;}
+  else m=`<b>${sn}</b>: Gleichstand – <b>Stechen!</b>`;
+ } else if(v.phase==='end')m='Spiel vorbei';
+ $('#msg').innerHTML=m;
+ $('#btnNext').style.display=v.phase==='reveal'&&(isHost)?'block':'none';
+ $('#barT').textContent=`${st.name} · Runde ${v.round}${v.limit?' / '+v.limit:''}`;
+ const card=$('#mine .card.pick');
+ if(card)card.querySelectorAll('.crow').forEach(r=>r.onclick=()=>{SND.pick();send({type:'choose',k:r.dataset.k});});
+}
+// Karten zum Gewinner (oder in die Mitte) fliegen lassen
+function flyCards(prev,v){
+ const tie=prev.winners.length!==1;
+ let target;
+ if(tie)target=$('#mid');
+ else{const w=prev.winners[0];target=document.querySelector(`.zone[data-s="${w}"] .zh`);}
+ if(!target)return;
+ const tr=target.getBoundingClientRect();
+ document.querySelectorAll('.zone .slot .card:not(.back)').forEach(el=>{
+  const r=el.getBoundingClientRect();const c=el.cloneNode(true);c.classList.remove('flipin','dealin','pick');
+  c.classList.add('fly');c.style.left=r.left+'px';c.style.top=r.top+'px';c.style.margin='0';
+  document.body.appendChild(c);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{const dx=tr.left+tr.width/2-(r.left+r.width/2),dy=tr.top+tr.height/2-(r.top+r.height/2);c.style.transform=`translate(${dx}px,${dy}px) scale(.18)`;c.style.opacity='.2';}));
+  setTimeout(()=>c.remove(),620);
+ });
+}
+function processEvents(v){
+ const evs=v.ev||[];
+ if(lastEvN===null){lastEvN=evs.length?evs[evs.length-1].n:0;return;}
+ for(const e of evs){if(e.n<=lastEvN)continue;lastEvN=e.n;onEvent(e,v);}
+}
+function onEvent(e,v){
+ const st=SETMAP[v.setId];
+ if(e.type==='reveal'){SND.flip();bubble(e.s,st.statMap[e.k].n+'!');}
+ else if(e.type==='win'){if(e.s===v.me)SND.win();else SND.lose();}
+ else if(e.type==='tie')SND.tie();
+ else if(e.type==='out'){SND.out();toast(e.s===v.me?'Du hast keine Karten mehr.':v.seats[e.s].name+' ist ausgeschieden.');}
+ else if(e.type==='end')SND.end();
+ else if(e.type==='start')SND.flip();
+}
+function bubble(s,html){
+ const z=document.querySelector(`.zone[data-s="${s}"]`);if(!z)return;
+ const b=document.createElement('div');b.className='bubble';b.innerHTML=html;z.appendChild(b);setTimeout(()=>b.remove(),2600);
+}
+function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',3500);}
+function renderResult(v){
+ const o=$('#res');
+ if(v.phase!=='end'||!v.rank){o.classList.remove('show');return;}
+ const P=['🥇','🥈','🥉','4.'];
+ $('#resT').textContent=v.rank[0]===v.me?'Gewonnen! 🎉':v.seats[v.rank[0]].name+' gewinnt!';
+ $('#resList').innerHTML=v.rank.map((s,i)=>`<div class="rank${s===v.me?' me':''}"><span class="pl">${P[i]}</span><span>${s===v.me?'Du':esc(v.seats[s].name)}</span><span class="c">${v.counts[s]} Karten</span></div>`).join('')+`<div class="info">${v.round} Runden gespielt</div>`;
+ $('#btnAgain').style.display=isHost?'block':'none';
+ o.classList.add('show');
+}
+
+// ---------- Lobby ----------
+function inviteLink(){return location.origin+location.pathname+'#t='+room;}
+function renderLobby(v){
+ $('#lbCode').textContent=room||'----';
+ const host=isHost;
+ $('#btnStart').style.display=host?'block':'none';
+ $('#lbHelp').textContent=host?'Freie Plätze spielt die KI – Freunde können auch später noch einsteigen und einen KI-Platz übernehmen.':'Warte, bis der Gastgeber das Spiel startet …';
+ $('#lbSeats').innerHTML=(v.seats||[]).map((x,i)=>`<div class="lseat"><b>${esc(x.name||'…')}${x.type==='ai'?' 🤖':''}</b><small>${i===v.me?'Du':x.type==='ai'?'KI':'Mitspieler'}${x.off?' · offline':''}</small>${host&&x.type==='human'&&i!==mySeat?`<button class="red" data-k="${i}">KI übernimmt</button>`:''}</div>`).join('')||'<div class="info">Verbinde …</div>';
+ const st=SETMAP[v.setId]||SETMAP[SET.set];
+ if(host){
+  $('#lbSet').innerHTML=`<h3>Spieler</h3><div class="seg" id="lbN">${[2,3,4].map(n=>`<button data-v="${n}" class="${S.seats.length===n?'on':''}">${n}</button>`).join('')}</div><h3 style="margin-top:10px">Kartenset</h3><div class="seg" id="lbS">${SETS.map(x=>`<button data-v="${x.id}" class="${S.setId===x.id?'on':''}">${esc(x.name)}</button>`).join('')}</div><div class="info">KI: ${({leicht:'Schwach',mittel:'Mittel',schwer:'Stark'})[SET.level]} · Dauer: ${+SET.len?SET.len+' Runden':'bis zum Ende'} · Supertrumpf ${SET.trumpf?'an':'aus'} (änderbar im Startbildschirm)</div>`;
+  $('#lbN').querySelectorAll('button').forEach(b=>b.onclick=()=>{const n=+b.dataset.v;const humans=S.seats.filter(x=>x.type==='human').length;
+   if(n<humans){toast('Es sitzen schon '+humans+' Spieler am Tisch.');return;}
+   while(S.seats.length<n)S.seats.push({type:'ai',name:aiName()});
+   while(S.seats.length>n){const i=S.seats.map(x=>x.type).lastIndexOf('ai');S.seats.splice(i,1);}
+   SET.n=n;saveSet();commit();});
+  $('#lbS').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.setId=b.dataset.v;SET.set=S.setId;saveSet();commit();});
+  $('#lbSeats').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const s=+b.dataset.k;S.seats[s]={type:'ai',name:aiName(),prevId:S.seats[s].id};commit();});
+ } else $('#lbSet').innerHTML=`<h3>Kartenset</h3><div>${esc(st?st.name:'')}</div>`;
+}
+
+// ---------- Start ----------
+function segInit(id,key,cb){const el=$(id);const upd=()=>el.querySelectorAll('button').forEach(b=>b.classList.toggle('on',String(SET[key])===b.dataset.v));
+ el.querySelectorAll('button').forEach(b=>b.onclick=()=>{SET[key]=isNaN(+b.dataset.v)?b.dataset.v:+b.dataset.v;saveSet();upd();SND.tick();cb&&cb();});upd();return upd;}
+let updSpeed=null;
+function renderStart(){
+ $('#sets').innerHTML=SETS.map(st=>`<div class="settile${SET.set===st.id?' sel':''}" data-id="${st.id}"><div class="pv">${cardHTML(st,st.cards[Math.floor(st.cards.length/2)+5]?st.cards[Math.floor(st.cards.length/2)+5].id:st.cards[0].id,{w:96})}</div><b>${esc(st.name)}</b><br><small>${st.cards.length} Karten</small></div>`).join('')+`<div class="settile soon"><small>Weitere Sets<br>folgen …</small></div>`;
+ $('#sets').querySelectorAll('.settile[data-id]').forEach(e=>e.onclick=()=>{SET.set=e.dataset.id;saveSet();renderStart();SND.tick();});
+ $('#lvlInfo').textContent=LVL_INFO[SET.level]||'';
+ $('#lenInfo').textContent=+SET.len?`Nach ${SET.len} Runden gewinnt, wer die meisten Karten hat.`:'Gespielt wird, bis einer alle Karten hat.';
+}
+function initStart(){
+ $('#inName').value=SET.name||'';
+ segInit('#segN','n');segInit('#segLvl','level',()=>{renderStart();if(isHost&&S)S.level=SET.level;});segInit('#segLen','len',renderStart);
+ updSpeed=segInit('#segSpeed','speed',()=>{if(isHost&&S)S.speed=SET.speed;});
+ $('#tgTrumpf').checked=!!SET.trumpf;$('#tgTrumpf').onchange=e=>{SET.trumpf=e.target.checked;saveSet();};
+ renderStart();
+ const m=location.hash.match(/t=([A-Za-z]{4})/);
+ if(m){$('#joinBox').style.display='block';$('#joinCode').textContent=m[1].toUpperCase();}
+ const nameOk=()=>{SET.name=$('#inName').value.trim().slice(0,14);if(!SET.name){toast('Bitte gib zuerst deinen Namen ein.');$('#inName').focus();return false;}saveSet();ac();return true;};
+ $('#btnSolo').onclick=()=>{if(!nameOk())return;online=false;isHost=true;room=null;S=null;hostInit(freshSeats(SET.n));lastEvN=0;revealKey=null;startGame();};
+ $('#btnHost').onclick=async()=>{if(!nameOk())return;$('#btnHost').disabled=true;const ok=await hostOnline();$('#btnHost').disabled=false;if(ok){lastEvN=0;commit();history.replaceState(null,'','#t='+room);}};
+ $('#btnJoin').onclick=()=>{if(!nameOk())return;const c=$('#inCode').value.trim().toUpperCase();if(!/^[A-Z]{4}$/.test(c)){toast('Der Code hat 4 Buchstaben.');return;}lastEvN=null;clientJoin(c);};
+ $('#btnJoinInv').onclick=()=>{if(!nameOk())return;lastEvN=null;clientJoin($('#joinCode').textContent);};
+ $('#btnStart').onclick=()=>{ac();if(isHost&&S&&S.phase==='lobby')startGame();};
+ $('#btnLeave').onclick=leaveTable;
+ $('#btnCopy').onclick=()=>{navigator.clipboard.writeText(inviteLink()).then(()=>toast('Link kopiert!'),()=>prompt('Link kopieren:',inviteLink()));};
+ $('#btnShare').onclick=()=>{if(navigator.share)navigator.share({title:'Trumpf-Quartett',text:'Komm an meinen Quartett-Tisch! Code: '+room,url:inviteLink()}).catch(()=>{});else $('#btnCopy').onclick();};
+ const openRules=()=>$('#rules').classList.add('show');
+ $('#btnRules1').onclick=openRules;$('#btnRules2').onclick=()=>{$('#menu').classList.remove('show');openRules();};$('#btnRulesClose').onclick=()=>$('#rules').classList.remove('show');
+ const openCards=()=>{const st=curSet();$('#cardsT').textContent=st.name+' – alle '+st.cards.length+' Karten';const w=Math.min(190,Math.floor((Math.min(innerWidth,960)-60)/2));$('#cardGrid').innerHTML=st.cards.map(c=>cardHTML(st,c.id,{w})).join('');$('#cards').classList.add('show');};
+ $('#btnCards1').onclick=openCards;$('#btnCards2').onclick=()=>{$('#menu').classList.remove('show');openCards();};$('#btnCardsClose').onclick=()=>$('#cards').classList.remove('show');
+ $('#btnCredits').onclick=()=>{const st=curSet();$('#credits').innerHTML='<p>Alle Fotos stammen von Wikimedia Commons und stehen unter freien Lizenzen (CC BY, CC BY-SA, CC0 oder gemeinfrei). Sie wurden auf das Kartenformat zugeschnitten.</p>'+st.cards.map(c=>`<div><b>${c.id}</b> ${esc(c.name)}: ${esc(c.f)}</div>`).join('')+'<p style="margin-top:10px">Technische Daten: gerundete Werte aus Wikipedia, Prospekten und Typenblättern – je nach Ausführung können sie abweichen.</p>';$('#credDlg').classList.add('show');};
+ $('#btnCredClose').onclick=()=>$('#credDlg').classList.remove('show');
+ $('#btnNext').onclick=()=>send({type:'next'});
+ $('#btnMenu').onclick=()=>{
+  $('#tgSound').checked=SET.sound;updSpeed();
+  let ms='';
+  if(isHost&&online&&S){ms='<h3 style="font-size:15px;margin:12px 0 4px">Plätze</h3>'+S.seats.map((x,i)=>`<div class="toggle">${esc(x.name)} ${x.type==='ai'?'🤖':''}${x.off?' (offline)':''}${x.type==='human'&&x.id!==myId?`<button class="red" data-k="${i}" style="padding:3px 8px;font-size:12px">KI übernimmt</button>`:''}</div>`).join('');}
+  $('#mSeats').innerHTML=ms;
+  $('#mSeats').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const s=+b.dataset.k;S.seats[s]={type:'ai',name:aiName(),prevId:S.seats[s].id};commit();$('#menu').classList.remove('show');});
+  $('#menu').classList.add('show');
+ };
+ $('#btnMenuClose').onclick=()=>$('#menu').classList.remove('show');
+ $('#tgSound').onchange=e=>{SET.sound=e.target.checked;saveSet();};
+ $('#btnQuit').onclick=()=>{$('#menu').classList.remove('show');if(!confirm('Tisch wirklich verlassen?'))return;leaveTable();};
+ $('#btnAgain').onclick=()=>{if(isHost&&S){$('#res').classList.remove('show');startGame();}};
+ $('#btnResLeave').onclick=leaveTable;
+ document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o&&o.id!=='res')o.classList.remove('show');}));
+ const fsOk=document.fullscreenEnabled||document.webkitFullscreenEnabled;
+ if(!fsOk)$('#btnFull').style.display='none';
+ $('#btnFull').onclick=()=>{const d=document;if(d.fullscreenElement||d.webkitFullscreenElement){(d.exitFullscreen||d.webkitExitFullscreen).call(d);}else{const el=d.documentElement;const p=(el.requestFullscreen||el.webkitRequestFullscreen).call(el);if(p&&p.catch)p.catch(()=>{});}};
+}
+
+// ---------- Chat ----------
+let chatSeen=new Set(),chatUnread=0,chatFirst=true;
+function chatFromView(v){if(!online)return;for(const m of v.chat||[])if(m)chatAdd(m.k,m,chatFirst);chatFirst=false;}
+const QUICK=['Servus!','Gut gespielt!','Mah, Pech!','Na warte!','Supertrumpf! 💪','😂','👍','🚜'];
+$('#chQuick').innerHTML=QUICK.map(q=>`<button class="sec" type="button">${q}</button>`).join('');
+$('#chQuick').querySelectorAll('button').forEach(b=>b.onclick=()=>chatSend(b.textContent));
+function chatStart(){chatSeen=new Set();chatUnread=0;$('#chMsgs').innerHTML='';chatBadge();$('#btnChat').style.display='';chatFirst=true;}
+function chatStop(){$('#btnChat').style.display='none';$('#chat').classList.remove('show');$('#chMsgs').innerHTML='';}
+function chatAdd(k,m,old){
+ if(chatSeen.has(k)||!m||!m.t)return;chatSeen.add(k);
+ const box=$('#chMsgs'),el=document.createElement('div');if(m.id===myId)el.className='me';
+ el.innerHTML=`<b>${esc(m.n||'?')}:</b> ${esc(m.t)}`;box.appendChild(el);box.scrollTop=box.scrollHeight;
+ if(old)return;
+ if(!$('#chat').classList.contains('show')&&m.id!==myId){chatUnread++;chatBadge();}
+ if(m.id!==myId){SND.tick();if(V&&V.phase!=='lobby'&&m.s!=null)bubble(m.s,'💬 '+esc(m.t.length>40?m.t.slice(0,40)+'…':m.t));}
+}
+function chatBadge(){const b=$('#chBadge');b.textContent=chatUnread;b.style.display=chatUnread?'block':'none';}
+function chatSend(t){t=String(t||'').trim().slice(0,140);if(!t||!room)return;fbPost('in/c',{id:myId,n:SET.name||'?',t,ts:Date.now()}).catch(()=>toast('Chat: Senden fehlgeschlagen'));}
+$('#chForm').onsubmit=e=>{e.preventDefault();chatSend($('#chIn').value);$('#chIn').value='';};
+$('#btnChat').onclick=()=>{const c=$('#chat');c.classList.toggle('show');if(c.classList.contains('show')){chatUnread=0;chatBadge();}};
+$('#chClose').onclick=()=>$('#chat').classList.remove('show');
+
+let rzT=null;
+window.addEventListener('resize',()=>{clearTimeout(rzT);rzT=setTimeout(()=>{if(V&&V.phase!=='lobby'){const k=revealKey;renderTable(V);revealKey=k;}},120);});
+initStart();
+</script>
+</body>
+</html>
