@@ -64,6 +64,7 @@ h1{margin:6px 0 2px;font-size:30px;letter-spacing:.5px;color:#f2c84b;text-shadow
 .card.back .bt{font-weight:900;font-style:italic;color:#f6d46a;font-size:1.7em;text-align:center;line-height:1.05;text-shadow:.08em .08em 0 #0008;-webkit-text-stroke:.03em #6b4b00}
 .card.back .bs{background:#fff;color:var(--c2);border-radius:2em;padding:.25em .9em;font-weight:900;font-size:.9em;letter-spacing:.08em;border:.12em solid var(--c1)}
 .card.back svg{width:85%}
+.card.back .bi{font-size:8em;line-height:1;filter:drop-shadow(.04em .06em 0 #0007)}
 .card.flipin{animation:flipin .45s ease-out}
 @keyframes flipin{0%{transform:rotateY(90deg) scale(.9)}100%{transform:none}}
 .card.dealin{animation:dealin .35s ease-out}
@@ -243,6 +244,13 @@ h1{margin:6px 0 2px;font-size:30px;letter-spacing:.5px;color:#f2c84b;text-shadow
 
 <!-- Kartensets: weitere Sets einfach hier ergänzen -->
 <script src="sets/traktoren.js"></script>
+<script src="sets/autos.js"></script>
+<script src="sets/kampfjets.js"></script>
+<script src="sets/zuege.js"></script>
+<script src="sets/schiffe.js"></script>
+<script src="sets/kriegsschiffe.js"></script>
+<script src="sets/flugzeuge.js"></script>
+<script src="sets/tiere.js"></script>
 
 <script>
 'use strict';
@@ -280,26 +288,40 @@ function flagSVG(l){
   case 'SU':b=`<rect width="${W}" height="${H}" fill="#cc0000"/><path d="M5.5 2.2l.7 2 2.1 0-1.7 1.3.6 2-1.7-1.2-1.7 1.2.6-2-1.7-1.3 2.1 0z" fill="#ffd700"/><path d="M4 11.5c1.5 2 4 2.3 6 1M5 13.5l4-4" stroke="#ffd700" stroke-width="1.1" fill="none"/>`;break;
   case 'GB':b=`<rect width="${W}" height="${H}" fill="#012169"/><path d="M0 0L30 20M30 0L0 20" stroke="#fff" stroke-width="4"/><path d="M0 0L30 20M30 0L0 20" stroke="#c8102e" stroke-width="1.6"/><path d="M15 0V20M0 10H30" stroke="#fff" stroke-width="6"/><path d="M15 0V20M0 10H30" stroke="#c8102e" stroke-width="3.4"/>`;break;
   case 'USA':{let s='';for(let i=0;i<13;i++)s+=`<rect y="${i*H/13}" width="${W}" height="${H/13+.05}" fill="${i%2?'#fff':'#b22234'}"/>`;let d='';for(let r=0;r<4;r++)for(let c=0;c<5;c++)d+=`<circle cx="${1.4+c*2.4+(r%2)*1.2}" cy="${1.4+r*2.5}" r=".55" fill="#fff"/>`;b=s+`<rect width="13" height="${H*7/13}" fill="#3c3b6e"/>`+d;break;}
-  default:b=`<rect width="${W}" height="${H}" fill="#999"/>`;
+  case 'S':b=`<rect width="${W}" height="${H}" fill="#006aa7"/><rect x="9" width="4" height="${H}" fill="#fecc00"/><rect y="8" width="${W}" height="4" fill="#fecc00"/>`;break;
+  case 'N':b=`<rect width="${W}" height="${H}" fill="#ba0c2f"/><rect x="8" width="6" height="${H}" fill="#fff"/><rect y="7" width="${W}" height="6" fill="#fff"/><rect x="9.5" width="3" height="${H}" fill="#00205b"/><rect y="8.5" width="${W}" height="3" fill="#00205b"/>`;break;
+  case 'DK':b=`<rect width="${W}" height="${H}" fill="#c8102e"/><rect x="9" width="3.5" height="${H}" fill="#fff"/><rect y="8.25" width="${W}" height="3.5" fill="#fff"/>`;break;
+  case 'NL':b=hz(['#ae1c28','#fff','#21468b']);break;
+  case 'RUS':b=hz(['#fff','#0039a6','#d52b1e']);break;
+  case 'E':b=hz(['#aa151b','#f1bf00','#f1bf00','#aa151b']);break;
+  case 'CN':b=`<rect width="${W}" height="${H}" fill="#de2910"/><path d="M5 2.5l1 3h3l-2.4 1.8.9 3-2.5-1.8-2.5 1.8.9-3L1 5.5h3z" fill="#ffde00"/>`+[[11,2],[13,4.5],[13,7.5],[11,10]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r=".8" fill="#ffde00"/>`).join('');break;
+  case 'KR':b=`<rect width="${W}" height="${H}" fill="#fff"/><circle cx="15" cy="10" r="5" fill="#cd2e3a"/><path d="M10 10a5 5 0 0 0 10 0a2.5 2.5 0 0 0-5 0a2.5 2.5 0 0 1-5 0z" fill="#0047a0"/>`;break;
+  case 'TW':b=`<rect width="${W}" height="${H}" fill="#fe0000"/><rect width="15" height="10" fill="#000095"/><circle cx="7.5" cy="5" r="2.6" fill="#fff"/>`;break;
+  case 'BR':b=`<rect width="${W}" height="${H}" fill="#009c3b"/><path d="M15 2L28 10L15 18L2 10Z" fill="#ffdf00"/><circle cx="15" cy="10" r="4.2" fill="#002776"/>`;break;
+  case 'CDN':b=vt(['#d80621','#fff','#fff','#d80621'])+`<path d="M15 4l1 2.5 1.5-.7-.5 3 1.8-1-.4 1.6 1.4.4-2.6 2 .3 1.2H15.5V15h-1v-2H12.5l.3-1.2-2.6-2 1.4-.4-.4-1.6 1.8 1-.5-3 1.5.7z" fill="#d80621"/>`;break;
+  case 'EU':{let s=`<rect width="${W}" height="${H}" fill="#039"/>`;for(let i=0;i<12;i++){const a=i*Math.PI/6;s+=`<circle cx="${(15+6*Math.sin(a)).toFixed(2)}" cy="${(10-6*Math.cos(a)).toFixed(2)}" r=".9" fill="#fc0"/>`;}b=s;break;}
+  default:return '';
  }
  return `<svg class="flag" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${b}</svg>`;
 }
+const REGION={AFR:'Afrika',ASI:'Asien',EUR:'Europa',AME:'Amerika',AUS:'Australien',MEER:'Ozean',ARK:'Arktis',ANT:'Antarktis'};
 const fmt=(st,k,v)=>{const s=st.statMap[k];if(k==='bj')return String(v);return v.toLocaleString('de-AT')+(s.u?' '+s.u:'');};
 function cardHTML(st,id,o={}){
  const c=st.byId[id];if(!c)return '';
  const cls=['card'];if(o.pick)cls.push('pick');if(o.win)cls.push('win');if(o.lose)cls.push('lose');if(o.anim)cls.push(o.anim);
  const rows=st.stats.map(x=>`<div class="crow${o.hl===x.k?' hl':''}" data-k="${x.k}"><span>${x.n}${x.note?` <small>(${x.note})</small>`:''}</span><b>${fmt(st,x.k,c.v[x.k])}</b></div>`).join('');
+ const fl=flagSVG(c.land),land=fl?c.land:(REGION[c.land]||c.land);
  return `<div class="${cls.join(' ')}" style="--w:${o.w||300}px" data-c="${id}">
-  <div class="ch"><span class="cid">${c.id}</span><span class="cland">${c.land}</span>${flagSVG(c.land)}</div>
+  <div class="ch"><span class="cid">${c.id}</span><span class="cland">${esc(land)}</span>${fl}</div>
   <img class="cimg" src="${st.dir}${c.id}.jpg" alt="" draggable="false">
   ${st.trump===id&&o.trumpf!==false?'<div class="trumpf">SUPERTRUMPF</div>':''}
-  <div class="cname">${esc(c.name)}</div>
+  <div class="cname"${c.name.length>24?' style="font-size:.86em"':''}>${esc(c.name)}</div>
   <div class="cstats">${rows}</div>
   <div class="cfoot">Foto: ${esc(c.f)} · Wikimedia Commons</div></div>`;
 }
 const TRACTOR=`<svg viewBox="0 0 120 80"><g fill="#fff" stroke="#0005" stroke-width="1.5"><path d="M30 40h12l4-26h30l6 26h22l6 8v10H24z"/><rect x="50" y="18" width="22" height="18" fill="#9fd3ff" stroke="#fff" stroke-width="3"/><rect x="92" y="22" width="4" height="18"/></g><circle cx="38" cy="58" r="20" fill="#222" stroke="#fff" stroke-width="3"/><circle cx="38" cy="58" r="8" fill="#f6d46a"/><circle cx="100" cy="66" r="12" fill="#222" stroke="#fff" stroke-width="3"/><circle cx="100" cy="66" r="5" fill="#f6d46a"/></svg>`;
 function backHTML(st,w,extra=''){
- return `<div class="card back ${extra}" style="--w:${w}px;--c1:${st.colors[0]};--c2:${st.colors[1]}"><div class="bk"><div class="bt">${esc(st.title)}</div>${TRACTOR}<div class="bs">TRUMPF</div></div></div>`;
+ return `<div class="card back ${extra}" style="--w:${w}px;--c1:${st.colors[0]};--c2:${st.colors[1]}"><div class="bk"><div class="bt">${esc(st.title)}</div>${st.icon?`<div class="bi">${st.icon}</div>`:TRACTOR}<div class="bs">TRUMPF</div></div></div>`;
 }
 function preload(st){if(preload[st.id])return;preload[st.id]=1;st.cards.forEach(c=>{const i=new Image();i.src=st.dir+c.id+'.jpg';});}
 
