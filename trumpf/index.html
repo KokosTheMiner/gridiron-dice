@@ -176,6 +176,8 @@ h1{margin:6px 0 2px;font-size:30px;letter-spacing:.5px;color:#f2c84b;text-shadow
   <div class="info" id="lvlInfo"></div>
   <h3 style="margin-top:12px">Spieldauer</h3><div class="seg" id="segLen"><button data-v="20">Kurz</button><button data-v="40">Mittel</button><button data-v="0">Bis zum Ende</button></div>
   <div class="info" id="lenInfo"></div>
+  <h3 style="margin-top:12px">Wer sagt an?</h3><div class="seg" id="segAns"><button data-v="reihum">Reihum</button><button data-v="gewinner">Der Gewinner</button></div>
+  <div class="info">Reihum: jeder kommt gleich oft zum Ansagen – spannender. Der Gewinner: klassisch, wer gewinnt, sagt wieder an.</div>
   <div class="toggle" style="margin-top:8px"><span>Supertrumpf-Karte</span><input type="checkbox" id="tgTrumpf"></div>
  </div>
  <div class="btns">
@@ -228,7 +230,7 @@ h1{margin:6px 0 2px;font-size:30px;letter-spacing:.5px;color:#f2c84b;text-shadow
   <li>Alle Karten werden gleichmäßig verteilt. Jeder sieht nur seine <b>oberste Karte</b>.</li>
   <li>Wer dran ist, wählt einen Wert seiner Karte, z.&nbsp;B. <i>Leistung</i>. Alle decken ihre oberste Karte auf.</li>
   <li>Der <b>beste Wert gewinnt</b> alle aufgedeckten Karten – sie kommen unter den eigenen Stapel. Meist gewinnt der höhere Wert; beim <b>Baujahr</b> sticht die ältere Maschine.</li>
-  <li>Der Gewinner wählt in der nächsten Runde.</li>
+  <li><b>Ansage:</b> je nach Einstellung <b>reihum</b> (jeder ist der Reihe nach dran) oder der <b>Gewinner</b> der letzten Runde. Beim Stechen sagt immer einer der Mitstecher an.</li>
   <li><b>Gleichstand (Stechen):</b> Die Karten kommen in die Mitte. In der nächsten Runde spielen <b>nur noch die Spieler mit dem gleichen Bestwert</b> mit, und es <b>muss derselbe Wert</b> gespielt werden (z.&nbsp;B. wieder <i>Länge</i>) – so lange, bis einer die Mitte gewinnt.</li>
   <li><b>Letzte Karte im Stechen:</b> War deine letzte Karte gleich gut wie die eines anderen, ziehst du <b>3 Karten von ihm</b> und suchst dir eine davon aus. Die anderen zwei kommen unter seinen Stapel.</li>
   <li><b>Supertrumpf</b> (Karte mit rotem Band): sticht jede Karte – außer die <b>A-Karten</b> (1A, 2A …). Liegt eine A-Karte dabei, wird normal verglichen.</li>
@@ -275,7 +277,7 @@ const SETMAP={};
 SETS.forEach(st=>{SETMAP[st.id]=st;st.byId={};st.cards.forEach(c=>st.byId[c.id]=c);st.statMap={};st.stats.forEach(x=>st.statMap[x.k]=x);});
 const AI_NAMES=['Sepp','Resi','Ferdl','Mitzi','Franz','Gretl'];
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const SET=Object.assign({name:'',set:SETS[0]&&SETS[0].id,n:4,level:'mittel',len:40,trumpf:true,speed:'normal',sound:true},JSON.parse(localStorage.getItem('tq-set')||'{}'));
+const SET=Object.assign({name:'',set:SETS[0]&&SETS[0].id,n:4,level:'mittel',len:40,trumpf:true,ansage:'reihum',speed:'normal',sound:true},JSON.parse(localStorage.getItem('tq-set')||'{}'));
 if(!SETMAP[SET.set])SET.set=SETS[0].id;
 function saveSet(){localStorage.setItem('tq-set',JSON.stringify(SET));}
 let myId=localStorage.getItem('tq-id');
@@ -386,7 +388,7 @@ function startGame(){
  d.forEach((c,i)=>S.piles[(first+i)%n].push(c));
  S.out=S.seats.map(()=>false);S.outOrder=[];S.pot=[];S.pub={};S.round=1;S.stat=null;S.reveal=null;S.winners=null;S.rank=null;
  S.tieStat=null;S.tieSeats=null;S.draw=null;S.drawQ=[];S.pauses=S.seats.map(()=>0);S.shown=[];S.paused=[];S.solo=false;S.selPending=[];
- S.chooser=first;S.phase='choose';S.trumpf=!!SET.trumpf;S.limit=+SET.len;S.level=SET.level;S.speed=SET.speed;
+ S.chooser=first;S.turn=first;S.ansage=SET.ansage||'reihum';S.phase='choose';S.trumpf=!!SET.trumpf;S.limit=+SET.len||(S.ansage==='reihum'?REIHUM_MAX:0);S.level=SET.level;S.speed=SET.speed;
  ev('start',{s:first});
  commit();
 }
@@ -429,6 +431,7 @@ function act(seat,a){
   clearTimeout(phaseTimer);resolveRound();
  }
 }
+const REIHUM_MAX=150; // reihum + 'Bis zum Ende': spätestens nach so vielen Runden ist Schluss
 const SELECT_MAX=3; // ab so wenigen Karten darf man aussuchen
 const canSelect=s=>S.piles[s]&&S.piles[s].length>1&&S.piles[s].length<=SELECT_MAX;
 function toFront(s,c){const p=S.piles[s];if(!p||p.length>SELECT_MAX)return;const i=p.indexOf(c);if(i>0){p.splice(i,1);p.unshift(c);}}
@@ -504,6 +507,8 @@ function afterRound(){
  S.seats.forEach((x,s)=>{if(!S.out[s]&&!hasCards(s)){S.out[s]=true;S.outOrder.push(s);ev('out',{s});}});
  const act_=activeSeats();
  if(!hasCards(S.chooser)&&act_.length){let c=S.chooser;for(let i=0;i<S.seats.length;i++){c=(c+1)%S.seats.length;if(hasCards(c))break;}S.chooser=c;}
+ // Ansage reihum: nach jeder fertigen Runde ist der nächste Spieler dran (beim Stechen sagt ein Mitstecher an)
+ if(S.ansage==='reihum'&&!S.tieSeats&&act_.length>1){let c=S.turn!=null?S.turn:S.chooser;for(let i=0;i<S.seats.length;i++){c=(c+1)%S.seats.length;if(hasCards(c))break;}S.turn=c;S.chooser=c;}
  S.reveal=null;S.stat=null;S.winners=null;S.solo=false;S.paused=[];
  // Aussetzen zählt nur, solange man bei der letzten Karte ist
  S.seats.forEach((x,s)=>{if(S.piles[s].length>1)S.pauses[s]=0;});
@@ -943,12 +948,13 @@ function renderStart(){
  $('#sets').innerHTML=SETS.map(st=>`<div class="settile${SET.set===st.id?' sel':''}" data-id="${st.id}"><div class="pv">${cardHTML(st,st.cards[Math.floor(st.cards.length/2)+5]?st.cards[Math.floor(st.cards.length/2)+5].id:st.cards[0].id,{w:96})}</div><b>${esc(st.name)}</b><br><small>${st.cards.length} Karten</small></div>`).join('')+`<div class="settile soon"><small>Weitere Sets<br>folgen …</small></div>`;
  $('#sets').querySelectorAll('.settile[data-id]').forEach(e=>e.onclick=()=>{SET.set=e.dataset.id;saveSet();renderStart();SND.tick();});
  $('#lvlInfo').textContent=LVL_INFO[SET.level]||'';
- $('#lenInfo').textContent=+SET.len?`Nach ${SET.len} Runden gewinnt, wer die meisten Karten hat.`:'Gespielt wird, bis einer alle Karten hat.';
+ $('#lenInfo').textContent=+SET.len?`Nach ${SET.len} Runden gewinnt, wer die meisten Karten hat.`:(SET.ansage==='reihum'?'Gespielt wird, bis einer alle Karten hat – bei Ansage reihum höchstens 150 Runden, dann gewinnt, wer die meisten Karten hat.':'Gespielt wird, bis einer alle Karten hat.');
 }
 function initStart(){
  $('#inName').value=SET.name||'';
  segInit('#segN','n');segInit('#segLvl','level',()=>{renderStart();if(isHost&&S)S.level=SET.level;});segInit('#segLen','len',renderStart);
  updSpeed=segInit('#segSpeed','speed',()=>{if(isHost&&S)S.speed=SET.speed;});
+ segInit('#segAns','ansage',renderStart);
  $('#tgTrumpf').checked=!!SET.trumpf;$('#tgTrumpf').onchange=e=>{SET.trumpf=e.target.checked;saveSet();};
  renderStart();
  const m=location.hash.match(/t=([A-Za-z]{4})/);
