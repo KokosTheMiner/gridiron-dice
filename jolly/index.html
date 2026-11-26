@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0b2e1c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Jolly</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#0b2e1c;color:#f4ecd8;font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:.5em .95em;background:linear-gradient(#f7e7b4,#d9b860);color:#3a2608;font-weight:600;box-shadow:0 2px 0 #8a6a1e,0 3px 8px #0006}
+button:active{transform:translateY(1px);box-shadow:0 1px 0 #8a6a1e}
+button.sec{background:linear-gradient(#3f5f4d,#2a4636);color:#f4ecd8;box-shadow:0 2px 0 #142a1e,0 3px 8px #0006}
+button:disabled{opacity:.4;cursor:default}
+input,select{font:inherit;padding:.45em .6em;border-radius:9px;border:1px solid #c9b47a;background:#fffaf0;color:#2a1c06}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;background:radial-gradient(ellipse at 50% 40%,#2f8a52 0%,#1d6b3c 50%,#114428 100%)}
+#bar{flex:0 0 44px;display:flex;align-items:center;gap:6px;padding:0 8px;padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right));background:linear-gradient(#3a2414,#22140a);border-bottom:2px solid #6b4a22;box-shadow:0 2px 8px #0008;z-index:5;white-space:nowrap}
+#bar .t{font-family:Georgia,serif;font-weight:700;font-size:19px;color:#ffe08a;letter-spacing:1px}
+#bar .gi{flex:1;text-align:center;font-size:13px;opacity:.85;overflow:hidden;text-overflow:ellipsis}
+#bar button{padding:4px 9px;font-size:16px;min-width:36px}
+#opps{flex:0 0 auto;display:flex;gap:6px;padding:6px 8px 2px;justify-content:center;flex-wrap:wrap}
+.opp{background:#0006;border:1px solid #ffffff22;border-radius:11px;padding:3px 10px;font-size:13px;display:flex;align-items:center;gap:7px;transition:box-shadow .3s,border-color .3s}
+.opp .dot{width:10px;height:10px;border-radius:50%}
+.opp b{font-size:14px}
+.opp .cc{display:flex;align-items:center;gap:3px;background:#ffffff1c;border-radius:6px;padding:0 5px}
+.opp .cc i{display:inline-block;width:9px;height:13px;border-radius:2px;background:linear-gradient(135deg,#2a4f9a,#14306b);border:1px solid #fff8}
+.opp .pt{color:#ffe08a;font-weight:700}
+.opp .ok{font-size:11px;background:#d9b860;color:#3a2608;border-radius:5px;padding:0 4px}
+.opp.turn{border-color:#ffe680;box-shadow:0 0 0 2px #ffe68088,0 0 14px #ffe680aa}
+#log{flex:0 0 auto;text-align:center;font-size:12.5px;min-height:18px;opacity:.9;padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#piles{flex:0 0 auto;display:flex;align-items:flex-end;gap:10px;padding:4px 10px}
+#deck{position:relative;flex:0 0 auto;width:var(--mw);height:calc(var(--mw)*1.47);cursor:pointer}
+#deck .cnt{position:absolute;left:50%;bottom:-2px;transform:translate(-50%,40%);background:#000b;border-radius:7px;font-size:11px;padding:0 5px}
+#deck.can{filter:drop-shadow(0 0 7px #ffe680)}
+#rowWrap{flex:1;min-width:0;display:flex;flex-direction:column}
+#rowInfo{font-size:12px;opacity:.85;margin-bottom:3px;display:flex;gap:8px;align-items:center}
+#rowInfo button{padding:2px 9px;font-size:12px}
+#row{display:flex;overflow-x:auto;overflow-y:hidden;padding:4px 2px 6px;scrollbar-width:thin;min-height:calc(var(--mw)*1.47 + 10px)}
+#row .card{margin-right:calc(var(--mw)*-.48)}
+#row .card:last-child{margin-right:0}
+#row.can .card.tk{cursor:pointer}
+#row .card.rsel{transform:translateY(-6px);filter:drop-shadow(0 0 6px #ffe680)}
+#melds{flex:1;min-height:0;overflow-y:auto;padding:6px 8px;display:flex;flex-wrap:wrap;gap:14px 12px;align-content:flex-start}
+.meld{display:flex;padding:4px 6px 6px;border-radius:9px;background:#0003;border:2px solid transparent;position:relative;cursor:default}
+.meld .card{margin-right:calc(var(--mw)*-.55)}
+.meld .card:last-child{margin-right:0}
+.meld .own{position:absolute;left:6px;top:-8px;font-size:10px;font-weight:700;border-radius:5px;padding:0 4px;color:#222}
+.meld.target{border-color:#ffe68099;cursor:pointer}
+.meld.target:hover{border-color:#ffe680}
+.meld.closed{opacity:.75}
+.meld.closed::after{content:"✓";position:absolute;right:-6px;top:-8px;background:#d9b860;color:#3a2608;border-radius:50%;width:16px;height:16px;font-size:11px;text-align:center;line-height:16px;font-weight:700}
+#emptyMelds{width:100%;text-align:center;opacity:.35;font-family:Georgia,serif;font-size:min(8vw,46px);margin-top:4%}
+#ctrl{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:4px 8px;flex-wrap:wrap;justify-content:center;background:#0004}
+#msg{flex:1 1 220px;font-size:13.5px;text-align:center;min-width:180px}
+#msg b{color:#ffe08a}
+#ctrl button{padding:6px 11px;font-size:14px}
+#hand{flex:0 0 auto;position:relative;padding:12px 8px calc(8px + env(safe-area-inset-bottom));min-height:calc(var(--hw)*1.47 + 22px)}
+#hand .card{position:absolute;width:var(--hw);height:calc(var(--hw)*1.47);cursor:pointer;transition:left .25s,top .25s,transform .15s}
+#hand .card.sel{transform:translateY(-12px);filter:drop-shadow(0 0 7px #ffe680) drop-shadow(0 2px 3px #0008)}
+#hand .card.must::before{content:"!";position:absolute;right:-3px;top:-5px;background:#c62828;color:#fff;border-radius:50%;width:15px;height:15px;font-size:11px;font-weight:700;text-align:center;line-height:15px;z-index:2}
+.card{flex:0 0 auto;width:var(--mw);height:calc(var(--mw)*1.47);filter:drop-shadow(0 1px 2px #0008);position:relative}
+.card svg{width:100%;height:100%;display:block}
+.card .by{position:absolute;left:12%;right:12%;bottom:-4px;height:3px;border-radius:2px}
+.card.new{animation:glow 1.6s ease-out 2}
+@keyframes glow{0%{filter:drop-shadow(0 0 0 #ffe680)}40%{filter:drop-shadow(0 0 8px #ffe680)}100%{filter:drop-shadow(0 1px 2px #0008)}}
+.dlg{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:50;padding:12px}
+.dlg.show{display:flex}
+.panel{background:linear-gradient(#2a1a0c,#1a1006);border:2px solid #c9a14a;border-radius:16px;padding:14px 16px;max-width:560px;width:100%;max-height:92vh;overflow:auto;box-shadow:0 10px 40px #000}
+.panel h2{margin:0 0 8px;color:#ffe08a;font-family:Georgia,serif}
+.panel h3{margin:14px 0 4px;color:#ffe08a;font-size:15px}
+.panel p,.panel li{font-size:14px;line-height:1.45}
+.panel .row{display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap}
+.panel .row>label:first-child{min-width:110px;opacity:.9}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button{background:linear-gradient(#3f5f4d,#2a4636);color:#f4ecd8;box-shadow:0 2px 0 #142a1e;padding:6px 10px;font-size:14px}
+.seg button.on{background:linear-gradient(#f7e7b4,#d9b860);color:#3a2608;box-shadow:0 2px 0 #8a6a1e}
+.small{font-size:12.5px;opacity:.8}
+table.sc{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
+table.sc td,table.sc th{padding:4px 6px;border-bottom:1px solid #ffffff1c;text-align:right}
+table.sc td:first-child,table.sc th:first-child{text-align:left}
+table.sc tr.win td{color:#ffe08a;font-weight:700}
+#toast{position:fixed;left:50%;bottom:calc(var(--hw)*1.47 + 80px);transform:translateX(-50%);background:#fffaf0;color:#2a1c06;font-weight:600;border-radius:12px;padding:7px 14px;box-shadow:0 4px 14px #000a;z-index:60;opacity:0;pointer-events:none;transition:opacity .25s;max-width:92%;text-align:center;font-size:14px}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+ <symbol id="su0" viewBox="0 0 100 100"><path d="M50 4C62 25 95 40 95 62C95 77 83 86 71 86C63 86 56 82 53 76C54 85 58 92 66 97H34C42 92 46 85 47 76C44 82 37 86 29 86C17 86 5 77 5 62C5 40 38 25 50 4Z"/></symbol>
+ <symbol id="su1" viewBox="0 0 100 100"><path d="M50 92C20 68 4 50 4 31C4 15 16 5 29 5C39 5 46 11 50 19C54 11 61 5 71 5C84 5 96 15 96 31C96 50 80 68 50 92Z"/></symbol>
+ <symbol id="su2" viewBox="0 0 100 100"><path d="M50 3L86 50L50 97L14 50Z"/></symbol>
+ <symbol id="su3" viewBox="0 0 100 100"><circle cx="50" cy="27" r="21"/><circle cx="26" cy="58" r="21"/><circle cx="74" cy="58" r="21"/><rect x="40" y="35" width="20" height="25"/><path d="M46 55C46 76 42 88 31 97H69C58 88 54 76 54 55Z"/></symbol>
+ <symbol id="star" viewBox="0 0 100 100"><path d="M50 4L62 37L97 38L69 59L79 94L50 73L21 94L31 59L3 38L38 37Z"/></symbol>
+</svg>
+
+<div id="app">
+ <div id="bar">
+  <span class="t">Jolly</span>
+  <span class="gi" id="gi"></span>
+  <button class="sec" id="bScore" title="Punkte">🏆</button>
+  <button class="sec" id="bRules" title="Regeln">📖</button>
+  <button class="sec" id="bNew" title="Neues Spiel">⟳</button>
+ </div>
+ <div id="opps"></div>
+ <div id="log"></div>
+ <div id="piles">
+  <div id="deck"></div>
+  <div id="rowWrap"><div id="rowInfo"></div><div id="row"></div></div>
+ </div>
+ <div id="melds"></div>
+ <div id="ctrl">
+  <div id="msg"></div>
+  <button id="bMeld">Auslegen</button>
+  <button id="bDisc">Abwerfen</button>
+  <button class="sec" id="bUndo" title="Zug zurücksetzen">↶</button>
+  <button class="sec" id="bSort" title="Sortieren">⇅</button>
+ </div>
+ <div id="hand"></div>
+</div>
+
+<div class="dlg" id="startDlg"><div class="panel">
+ <h2>Jolly</h2>
+ <div class="row"><label>Dein Name</label><input id="sName" maxlength="14" placeholder="Du"></div>
+ <div class="row"><label>Regeln</label><div class="seg" id="sRules"><button data-v="pdf">Interspar (Anleitung)</button><button data-v="classic">Klassisch (Rommé)</button></div></div>
+ <div class="small" id="sRulesInfo" style="margin:-2px 0 6px"></div>
+ <div class="row"><label>Gegner</label><div class="seg" id="sOpp"><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button></div></div>
+ <div class="row"><label>Spielziel</label><div class="seg" id="sTarget"></div></div>
+ <div class="row"><label>KI-Tempo</label><div class="seg" id="sSpeed"><button data-v="1100">gemütlich</button><button data-v="650">normal</button><button data-v="300">flott</button></div></div>
+ <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+  <button id="sGo" style="flex:1">Neues Spiel</button>
+  <button class="sec" id="sResume" style="flex:1;display:none">Weiterspielen</button>
+ </div>
+ <button class="sec" id="sRules2" style="width:100%;margin-top:8px">Spielregeln lesen</button>
+</div></div>
+
+<div class="dlg" id="rulesDlg"><div class="panel">
+ <h2>Spielregeln Jolly</h2>
+ <p>Gespielt wird mit zwei Paketen zu je 52 Karten und 6 Jollys. Ziel ist es, die Handkarten als <b>Reihen</b> oder <b>Gruppen</b> von mindestens drei Karten auszulegen.</p>
+ <ul>
+  <li><b>Reihe:</b> mindestens drei aufeinanderfolgende Karten derselben Farbe, z.&nbsp;B. ♠ 9-10-B-D. Das Ass kann unten (A-2-3) oder oben (D-K-A) liegen, aber nicht „rundherum“ (K-A-2).</li>
+  <li><b>Gruppe:</b> drei oder vier Karten desselben Werts in verschiedenen Farben, z.&nbsp;B. ♥K ♦K ♣K. Jede Farbe darf nur einmal vorkommen.</li>
+  <li><b>Jolly:</b> ersetzt jede beliebige Karte. In einer Kombination dürfen nie gleich viele oder mehr Jollys als echte Karten liegen.</li>
+ </ul>
+ <h3>Ein Zug</h3>
+ <ol>
+  <li>Eine Karte vom verdeckten Stapel ziehen <i>oder</i> aus dem offenen Ablagestapel nehmen (siehe unten).</li>
+  <li>Beliebig viele Reihen/Gruppen auslegen und Karten an liegende Kombinationen anlegen.</li>
+  <li>Eine Karte abwerfen – damit endet der Zug.</li>
+ </ol>
+ <h3>Interspar-Regeln (aus der Anleitung)</h3>
+ <ul>
+  <li>Jeder bekommt <b>12 Karten</b>. Es gibt keine Mindestpunktzahl fürs erste Auslegen.</li>
+  <li>Abgeworfene Karten bilden die <b>Vorratsreihe</b> (immer rechts angelegt). Daraus darf man erst nehmen, wenn dort Karten im Wert von <b>mindestens 30</b> liegen. Man kann mehrere Karten auf einmal nehmen, aber immer von rechts nach links. Mindestens eine davon muss im selben Zug ausgelegt oder angelegt werden.</li>
+  <li>Man darf auch an Kombinationen der Mitspieler anlegen. Die Anleitung sagt, der Mitspieler muss das „bezahlen“. Das Spiel setzt das so um: Jede Karte zählt für den, der sie hingelegt hat. Wer also bei anderen anlegt, holt sich diese Punkte (farbiger Strich unter der Karte).</li>
+  <li>Eine <b>vervollständigte</b> Kombination (Gruppe mit 4 Karten, Reihe mit 13 oder mehr Karten) wird „umgedreht“ (✓). Daran kann man nichts mehr anlegen.</li>
+  <li>Die Runde endet, wenn jemand seine <b>letzte Karte abwirft</b>. Man muss also eine Karte zum Abwerfen übrig behalten.</li>
+  <li><b>Wertung:</b> Ausgelegte Karten zählen plus: 2–9 = 5, 10/B/D/K = 10, Ass = 5 (unten in der Reihe) oder 10 (oben), in einer Ass-Gruppe 25. Ein Jolly zählt wie die Karte, die er ersetzt. Handkarten zählen minus: 2–9 = 5, 10–K = 10, Ass = 10, Jolly = 50. Wer die Runde beendet, bekommt +50. Gewonnen hat, wer zuerst das Spielziel (z.&nbsp;B. 300 oder 500) erreicht.</li>
+ </ul>
+ <h3>Klassische Regeln (österreichisches Rommé)</h3>
+ <ul>
+  <li>Jeder bekommt <b>13 Karten</b>.</li>
+  <li><b>Erstauslage:</b> Wer zum ersten Mal auslegt, muss in diesem Zug Kombinationen im Wert von <b>mindestens 40 Punkten</b> legen (2–10 nach Augen, B/D/K = 10, Ass = 11, unten in A-2-3 = 1, Jolly zählt wie die ersetzte Karte). Vorher darf man nicht anlegen und keinen Jolly tauschen.</li>
+  <li>Vom Ablagestapel darf nur die <b>oberste Karte</b> genommen werden, und sie muss im selben Zug ausgelegt werden.</li>
+  <li><b>Jolly tauschen:</b> Nach der Erstauslage darf man einen ausgelegten Jolly gegen die echte Karte tauschen, die er vertritt. Der Jolly muss im selben Zug wieder ausgelegt werden.</li>
+  <li>Die Runde endet, wenn jemand keine Karten mehr hat (durch Abwerfen oder Auslegen der letzten Karte).</li>
+  <li><b>Wertung (Minuspunkte):</b> Die anderen schreiben ihre Handkarten an: 2–10 nach Augen, B/D/K = 10, Ass = 11, Jolly = 20. Wer alle Karten auf einmal auslegt, ohne vorher ausgelegt zu haben („Hand-Jolly“), verdoppelt die Minuspunkte der anderen. Erreicht jemand das Spielziel (z.&nbsp;B. 500), gewinnt, wer die wenigsten Punkte hat.</li>
+ </ul>
+ <h3>Bedienung</h3>
+ <ul>
+  <li>Stapel antippen = Karte ziehen. In der Vorratsreihe eine Karte antippen und mit „Nehmen“ bestätigen.</li>
+  <li>Handkarten antippen zum Auswählen, dann „Auslegen“ für eine neue Kombination. Um anzulegen oder einen Jolly zu tauschen, eine Kombination auf dem Tisch antippen.</li>
+  <li>„Abwerfen“ mit genau einer ausgewählten Karte beendet den Zug. ↶ setzt den Zug zurück, ⇅ sortiert nach Farbe oder Wert.</li>
+ </ul>
+ <button id="rClose" style="width:100%;margin-top:10px">Schließen</button>
+</div></div>
+
+<div class="dlg" id="scoreDlg"><div class="panel">
+ <h2 id="scTitle">Punkte</h2>
+ <div id="scBody"></div>
+ <div style="display:flex;gap:8px;margin-top:10px">
+  <button id="scNext" style="flex:1">Nächste Runde</button>
+  <button class="sec" id="scClose" style="flex:1">Schließen</button>
+ </div>
+</div></div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+const $=s=>document.querySelector(s);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const COLORS=['#ffd54f','#4fc3f7','#f48fb1','#a5d6a7'];
+const AI_NAMES=['Resi','Sepp','Mitzi'];
+const SUIT_NAME=['Pik','Herz','Karo','Kreuz'];
+const SUIT_SYM=['♠','♥','♦','♣'];
+const RN=r=>r===1||r===14?'A':r===11?'B':r===12?'D':r===13?'K':String(r);
+
+// ================= Karten =================
+const CARD=[];
+(function(){let id=0;for(let d=0;d<2;d++)for(let s=0;s<4;s++)for(let r=1;r<=13;r++)CARD.push({id:id++,s,r,j:false});for(let k=0;k<6;k++)CARD.push({id:id++,s:-1,r:0,j:true});})();
+const isJ=id=>CARD[id].j;
+const cardName=id=>{const c=CARD[id];return c.j?'Jolly':SUIT_SYM[c.s]+RN(c.r);};
+
+// ================= Kartengrafik =================
+const SVGC={};
+function cardSVG(id){
+ if(id<0) return backSVG();
+ if(SVGC[id]) return SVGC[id];
+ const c=CARD[id];
+ let o='<svg viewBox="0 0 60 88"><rect x=".6" y=".6" width="58.8" height="86.8" rx="5.5" fill="#fffdf6" stroke="#8a8170" stroke-width="1.1"/>';
+ if(c.j){
+  o+='<defs><linearGradient id="jg'+id+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e53935"/><stop offset=".5" stop-color="#8e24aa"/><stop offset="1" stop-color="#1e88e5"/></linearGradient></defs>';
+  o+='<text x="5" y="15" font-size="11" font-weight="800" fill="#c62828" font-family="Georgia,serif">J</text><use href="#star" x="3.5" y="18" width="9" height="9" fill="#f9a825"/>';
+  o+='<g transform="rotate(180 30 44)"><text x="5" y="15" font-size="11" font-weight="800" fill="#1e5fbf" font-family="Georgia,serif">J</text><use href="#star" x="3.5" y="18" width="9" height="9" fill="#f9a825"/></g>';
+  o+='<path d="M17 50L22 26L30 40L38 26L43 50Z" fill="url(#jg'+id+')" stroke="#3a1a4a" stroke-width=".8"/><circle cx="22" cy="25" r="3" fill="#fdd835" stroke="#7a5a00" stroke-width=".5"/><circle cx="38" cy="25" r="3" fill="#fdd835" stroke="#7a5a00" stroke-width=".5"/><circle cx="30" cy="38.5" r="2.6" fill="#fdd835" stroke="#7a5a00" stroke-width=".5"/>';
+  o+='<rect x="16" y="49" width="28" height="5" rx="2" fill="#fdd835" stroke="#7a5a00" stroke-width=".5"/>';
+  o+='<text x="30" y="67" font-size="10.5" font-weight="800" text-anchor="middle" fill="url(#jg'+id+')" font-family="Georgia,serif" letter-spacing=".5">JOLLY</text>';
+  return SVGC[id]=o+'</svg>';
+ }
+ const col=c.s===1||c.s===2?'#c8102e':'#151515', rn=RN(c.r), fs=rn.length>1?12.5:15;
+ const corner='<text x="8.5" y="15" font-size="'+fs+'" text-anchor="middle" font-weight="700" fill="'+col+'" font-family="Georgia,serif">'+rn+'</text><use href="#su'+c.s+'" x="3.5" y="18" width="10" height="10" fill="'+col+'"/>';
+ o+=corner+'<g transform="rotate(180 30 44)">'+corner+'</g>';
+ if(c.r>=11){
+  o+='<rect x="16" y="13" width="28" height="62" rx="3" fill="none" stroke="'+col+'" stroke-width=".9"/><rect x="18" y="15" width="24" height="58" rx="2" fill="'+(c.s===1||c.s===2?'#fdeaea':'#eceff4')+'"/>';
+  if(c.r===13) o+='<path d="M22 31L24 22L27.5 27L30 20L32.5 27L36 22L38 31Z" fill="#f2c230" stroke="#7a5500" stroke-width=".6"/>';
+  else if(c.r===12) o+='<path d="M24 30Q30 19 36 30Z" fill="#f2c230" stroke="#7a5500" stroke-width=".6"/><circle cx="30" cy="22.5" r="1.6" fill="#c8102e"/>';
+  else o+='<path d="M23 30Q30 22 37 30L35 31.5H25Z" fill="#3949ab" stroke="#1a237e" stroke-width=".5"/><circle cx="36" cy="25" r="1.6" fill="#e53935"/>';
+  o+='<text x="30" y="52" font-size="19" text-anchor="middle" font-weight="700" fill="'+col+'" font-family="Georgia,serif">'+rn+'</text><use href="#su'+c.s+'" x="24" y="56" width="12" height="12" fill="'+col+'"/>';
+ } else if(c.r===1){
+  o+='<use href="#su'+c.s+'" x="13" y="27" width="34" height="34" fill="'+col+'"/>';
+ } else {
+  o+='<use href="#su'+c.s+'" x="17" y="30" width="26" height="26" fill="'+col+'" fill-opacity=".92"/>';
+ }
+ return SVGC[id]=o+'</svg>';
+}
+function backSVG(){
+ return '<svg viewBox="0 0 60 88"><rect x=".6" y=".6" width="58.8" height="86.8" rx="5.5" fill="#1d3f8f" stroke="#fff" stroke-width="1.2"/><rect x="4" y="4" width="52" height="80" rx="3.5" fill="none" stroke="#ffffff88" stroke-width=".8"/><g fill="#ffffff22">'+
+  Array.from({length:36},(_,i)=>'<circle cx="'+(9+(i%6)*8.4)+'" cy="'+(10+Math.floor(i/6)*13.6)+'" r="2.6"/>').join('')+'</g><use href="#star" x="21" y="35" width="18" height="18" fill="#f2c230"/></svg>';
+}
+function cardEl(id,cls){const d=document.createElement('div');d.className='card'+(cls?' '+cls:'');d.innerHTML=cardSVG(id);d.dataset.id=id;return d;}
+
+// ================= Kombinationen =================
+// Kombination: {type:'set'|'run', rank|suit, slots:[{id,r,s,by}], owner, fresh, closed}
+function buildMeld(ids){
+ const cs=ids.map(i=>CARD[i]);const nat=cs.filter(c=>!c.j),J=cs.filter(c=>c.j);
+ if(cs.length<3||!nat.length||J.length>=nat.length) return null;
+ if(nat.every(c=>c.r===nat[0].r)){
+  const suits=new Set(nat.map(c=>c.s));
+  if(suits.size===nat.length&&cs.length<=4){
+   const miss=[0,1,2,3].filter(s=>!suits.has(s));
+   return {type:'set',rank:nat[0].r,slots:[...nat.map(c=>({id:c.id,r:c.r,s:c.s})),...J.map((c,k)=>({id:c.id,r:nat[0].r,s:miss[k]}))]};
+  }
+  return null;
+ }
+ if(!nat.every(c=>c.s===nat[0].s)) return null;
+ const aces=nat.filter(c=>c.r===1),others=nat.filter(c=>c.r!==1);
+ const opts=aces.length===0?[[]]:aces.length===1?[[1],[14]]:aces.length===2?[[1,14]]:[];
+ for(const ao of opts){
+  const list=[...others.map(c=>({id:c.id,r:c.r})),...aces.map((c,k)=>({id:c.id,r:ao[k]}))].sort((a,b)=>a.r-b.r);
+  let ok=true;for(let k=1;k<list.length;k++)if(list[k].r===list[k-1].r)ok=false;
+  if(!ok) continue;
+  const lo=list[0].r,hi=list[list.length-1].r,gaps=hi-lo+1-list.length;
+  if(gaps>J.length) continue;
+  let extra=J.length-gaps,top=hi,bot=lo;const jr=[];
+  for(let r=lo;r<=hi;r++)if(!list.some(x=>x.r===r))jr.push(r);
+  while(extra>0&&top<14){top++;jr.push(top);extra--;}
+  while(extra>0&&bot>1){bot--;jr.push(bot);extra--;}
+  if(extra>0) continue;
+  return {type:'run',suit:nat[0].s,slots:[...list,...J.map((c,k)=>({id:c.id,r:jr[k]}))].sort((a,b)=>a.r-b.r)};
+ }
+ return null;
+}
+const natCount=m=>m.slots.filter(x=>!isJ(x.id)).length;
+function isClosed(m){if(m.type==='set')return m.slots.length>=4;return m.slots[m.slots.length-1].r-m.slots[0].r+1>=13;}
+// Karte an Kombination anlegen. Ergebnis {slots, back} oder null. back = zurückgetauschter Jolly.
+function addToMeld(m,id,exch){
+ const c=CARD[id],nat=natCount(m),nj=m.slots.length-nat;
+ const sl=m.slots.map(x=>Object.assign({},x));
+ if(m.type==='set'){
+  if(c.j){
+   if(sl.length>=4||nj+1>=nat) return null;
+   const used=new Set(sl.map(x=>x.s));sl.push({id,r:m.rank,s:[0,1,2,3].find(s=>!used.has(s))});return {slots:sl};
+  }
+  if(c.r!==m.rank) return null;
+  const natS=new Set(sl.filter(x=>!isJ(x.id)).map(x=>x.s));
+  if(natS.has(c.s)) return null;
+  if(sl.length<4){
+   const used=new Set(sl.map(x=>x.s));const jx=sl.find(x=>isJ(x.id)&&x.s===c.s);
+   if(jx) jx.s=[0,1,2,3].find(s=>!used.has(s));
+   sl.push({id,r:m.rank,s:c.s});return {slots:sl};
+  }
+  if(!exch) return null;
+  const jx=sl.find(x=>isJ(x.id)&&x.s===c.s)||sl.find(x=>isJ(x.id));
+  if(!jx) return null;
+  const back=jx.id;jx.id=id;jx.s=c.s;delete jx.by;return {slots:sl,back};
+ }
+ const lo=sl[0].r,hi=sl[sl.length-1].r;
+ if(c.j){
+  if(nj+1>=nat) return null;
+  const r=hi<14?hi+1:lo>1?lo-1:null;if(r==null) return null;
+  sl.push({id,r});sl.sort((a,b)=>a.r-b.r);return {slots:sl};
+ }
+ if(c.s!==m.suit) return null;
+ const cand=c.r===1?[1,14]:[c.r];
+ for(const r of cand) if(r===lo-1||r===hi+1){
+  if(lo===1&&r===14||hi===14&&r===1) continue;
+  sl.push({id,r});sl.sort((a,b)=>a.r-b.r);return {slots:sl};
+ }
+ if(exch) for(const r of cand){const jx=sl.find(x=>isJ(x.id)&&x.r===r);if(jx){const back=jx.id;jx.id=id;delete jx.by;return {slots:sl,back};}}
+ return null;
+}
+
+// ================= Punkte =================
+function slotVal(sl,m,rules){
+ const r=sl.r;
+ if(rules==='pdf'){if(m.type==='set'&&m.rank===1)return 25;if(r===1)return 5;if(r===14)return 10;return r<=9?5:10;}
+ if(m.type==='set'&&m.rank===1)return 11;if(r===1)return 1;if(r===14)return 11;return r>=10?10:r;
+}
+function meldVal(m,rules){return m.slots.reduce((t,x)=>t+slotVal(x,m,rules),0);}
+function handVal(id,rules){
+ const c=CARD[id];
+ if(rules==='pdf'){if(c.j)return 50;if(c.r===1)return 10;return c.r<=9?5:10;}
+ if(c.j)return 20;if(c.r===1)return 11;return c.r>=10?10:c.r;
+}
+const rowVal=()=>G.row.reduce((t,id)=>t+handVal(id,'pdf'),0);
+
+// ================= Spielzustand =================
+let G=null,SNAP=null,SEL=new Set(),ROWSEL=-1,BUSY=false;
+const SET=Object.assign({name:'',rules:'pdf',opp:2,tpdf:500,tclassic:500,speed:650,sort:'suit'},JSON.parse(localStorage.getItem('jolly-set')||'{}'));
+const saveSet=()=>localStorage.setItem('jolly-set',JSON.stringify(SET));
+const save=()=>{if(G)localStorage.setItem('jolly-save',JSON.stringify(G));};
+const PDF=()=>G.rules==='pdf';
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function newGame(){
+ const n=SET.opp+1;
+ G={rules:SET.rules,n,names:[SET.name||'Du',...AI_NAMES.slice(0,SET.opp)],scores:Array(n).fill(0),history:[],round:0,dealer:Math.floor(Math.random()*n),
+    target:SET.rules==='pdf'?SET.tpdf:SET.tclassic,turnNo:0,over:false,gid:Math.random()};
+ newRound();
+}
+function newRound(){
+ G.round++;G.dealer=(G.dealer+1)%G.n;
+ const deck=shuffle(CARD.map(c=>c.id));const cnt=PDF()?12:13;
+ G.hands=Array.from({length:G.n},()=>deck.splice(0,cnt));
+ G.deck=deck;G.row=[];G.melds=[];G.out=Array(G.n).fill(false);G.phase='draw';G.roundOver=false;
+ G.cur=G.dealer;G.lastNew=[];G.log='Runde '+G.round+' – '+G.names[(G.dealer+1)%G.n]+' beginnt.';
+ nextTurn();
+}
+function nextTurn(){
+ if(G.roundOver) return;
+ G.cur=(G.cur+1)%G.n;G.turnNo++;
+ G.turn={taken:[],jMust:[],startOut:G.out[G.cur],startCnt:G.hands[G.cur].length};
+ G.phase='draw';SEL.clear();ROWSEL=-1;SNAP=null;
+ save();render();
+ if(G.cur!==0) aiTurn(G.cur);
+}
+
+// ================= Aktionen (für Mensch und KI) =================
+function refillDeck(){
+ if(G.deck.length) return true;
+ if(PDF()){if(!G.row.length)return false;G.deck=shuffle(G.row);G.row=[];}
+ else{if(G.row.length<2)return false;const top=G.row.pop();G.deck=shuffle(G.row);G.row=[top];}
+ G.log='Stapel leer – Ablage wird neu gemischt.';return true;
+}
+function drawDeck(p){
+ if(!refillDeck()){endRound(-1);return null;}
+ const id=G.deck.pop();G.hands[p].push(id);G.phase='play';return id;
+}
+function canTakeRow(i){
+ if(!G.row.length) return false;
+ if(PDF()) return rowVal()>=30&&i>=0&&i<G.row.length;
+ return i===G.row.length-1;
+}
+function takeRow(p,i){
+ const ids=G.row.slice(i);G.row=G.row.slice(0,i);
+ G.hands[p].push(...ids);G.turn.taken=ids.slice();G.phase='play';return ids;
+}
+const freshPts=p=>G.melds.filter(m=>m.owner===p&&m.fresh===G.turnNo).reduce((t,m)=>t+meldVal(m,'classic'),0);
+const canInteract=p=>PDF()||G.out[p]||freshPts(p)>=40;
+const inMelds=id=>G.melds.some(m=>m.slots.some(x=>x.id===id));
+function removeFromHand(p,ids){const h=G.hands[p];ids.forEach(id=>{const k=h.indexOf(id);if(k>=0)h.splice(k,1);});}
+// prüft, ob eine Aktion die Hand leeren würde und ob das erlaubt ist
+function emptyOk(p,cnt){
+ if(G.hands[p].length-cnt>0) return true;
+ if(PDF()) return false; // letzte Karte muss abgeworfen werden
+ return true;
+}
+function doMeld(p,ids){
+ const m=buildMeld(ids);if(!m) return 'Das ist keine gültige Reihe oder Gruppe.';
+ if(!emptyOk(p,ids.length)) return 'Eine Karte musst du zum Abwerfen behalten.';
+ m.slots.forEach(x=>x.by=p);m.owner=p;m.fresh=G.turnNo;m.closed=PDF()&&isClosed(m);m.id=Math.random().toString(36).slice(2,8);
+ if(!PDF()&&G.hands[p].length===ids.length&&!G.out[p]&&freshPts(p)+meldVal(m,'classic')<40) return 'Für die Erstauslage brauchst du 40 Punkte.';
+ removeFromHand(p,ids);G.melds.push(m);G.lastNew=ids.slice();
+ afterPlay(p);return null;
+}
+function doLayoff(p,mi,ids){
+ const m=G.melds[mi];
+ if(m.closed) return 'Diese Kombination ist schon vervollständigt.';
+ if(!canInteract(p)&&!(m.owner===p&&m.fresh===G.turnNo)) return 'Vor der Erstauslage (40 Punkte) darfst du nicht anlegen.';
+ let work={slots:m.slots},left=ids.slice(),back=[],placed=[];
+ let prog=true;
+ while(left.length&&prog){prog=false;
+  for(const id of left.slice()){const r=addToMeld(Object.assign({},m,{slots:work.slots}),id,false);if(r){r.slots.forEach(x=>{if(x.id===id)x.by=p;});work=r;left.splice(left.indexOf(id),1);placed.push(id);prog=true;}}
+ }
+ if(left.length===1&&!PDF()&&canInteract(p)){
+  const r=addToMeld(Object.assign({},m,{slots:work.slots}),left[0],true);
+  if(r&&r.back!=null){r.slots.forEach(x=>{if(x.id===left[0])x.by=p;});work=r;back.push(r.back);placed.push(left[0]);left=[];}
+ }
+ if(left.length) return 'Passt nicht an diese Kombination.';
+ if(!emptyOk(p,placed.length-back.length)) return 'Eine Karte musst du zum Abwerfen behalten.';
+ removeFromHand(p,placed);m.slots=work.slots;m.closed=PDF()&&isClosed(m);
+ if(back.length){G.hands[p].push(...back);G.turn.jMust.push(...back);}
+ G.lastNew=placed.slice();
+ afterPlay(p);return back.length?'swap':null;
+}
+function afterPlay(p){
+ if(!PDF()&&G.hands[p].length===0){finishCheckOut(p);endRound(p);}
+}
+function finishCheckOut(p){if(!PDF())G.out[p]=true;}
+function discardCheck(p,id){
+ if(G.phase!=='play') return 'Zuerst eine Karte ziehen.';
+ const t=G.turn;
+ if(t.taken.length&&!t.taken.some(x=>x!==id&&inMelds(x))) return PDF()?'Mindestens eine aus dem Vorrat genommene Karte musst du auslegen oder anlegen.':'Die aufgenommene Karte musst du auslegen.';
+ const jm=t.jMust.filter(x=>!inMelds(x));if(jm.length) return 'Den eingetauschten Jolly musst du in diesem Zug wieder auslegen.';
+ if(!PDF()&&!G.out[p]){const fp=freshPts(p);if(fp>0&&fp<40)return 'Erstauslage: erst '+fp+' von 40 Punkten.';}
+ return null;
+}
+function doDiscard(p,id){
+ const err=discardCheck(p,id);if(err) return err;
+ if(!PDF()&&!G.out[p]&&freshPts(p)>=40) G.out[p]=true;
+ removeFromHand(p,[id]);G.row.push(id);G.lastNew=[id];
+ if(G.hands[p].length===0){if(!PDF())G.out[p]=true;endRound(p);return null;}
+ nextTurn();return null;
+}
+
+// ================= Rundenende =================
+function endRound(w){
+ if(G.roundOver) return;
+ G.roundOver=true;G.phase='end';
+ const res=[];
+ for(let p=0;p<G.n;p++){
+  const hand=G.hands[p].reduce((t,id)=>t+handVal(id,G.rules),0);
+  if(PDF()){
+   let laid=0;G.melds.forEach(m=>m.slots.forEach(x=>{if(x.by===p)laid+=slotVal(x,m,'pdf');}));
+   const bonus=p===w?50:0;res.push({laid,hand,bonus,total:laid-hand+bonus});
+  } else {
+   const handJolly=w>=0&&!G.turn.startOut&&w===G.cur;
+   const pen=p===w?0:hand*(handJolly?2:1);res.push({hand,pen,handJolly,total:pen});
+  }
+ }
+ res.forEach((r,p)=>G.scores[p]+=r.total);
+ G.history.push({w,res});
+ const reached=G.scores.some(s=>s>=G.target);
+ if(reached) G.over=true;
+ save();render();
+ setTimeout(()=>showScores(true),w===0?600:900);
+}
+function winnerIdx(){
+ const s=G.scores;let b=0;
+ for(let p=1;p<G.n;p++) if(PDF()?s[p]>s[b]:s[p]<s[b]) b=p;
+ return b;
+}
+function showScores(afterRound){
+ if(!G) return;
+ const last=G.history[G.history.length-1];
+ let h='';
+ if(afterRound&&last){
+  const w=last.w;
+  h+='<p>'+(w<0?'Der Stapel ist aufgebraucht – niemand hat beendet.':'<b>'+G.names[w]+'</b> '+(w===0?'hast':'hat')+' die Runde beendet'+(last.res[w]&&last.res[w].handJolly?' – <b>Hand-Jolly!</b> Minuspunkte doppelt.':'.'))+'</p>';
+  h+='<table class="sc"><tr><th></th>'+(PDF()?'<th>Ausgelegt</th><th>Hand</th><th>Bonus</th>':'<th>Handkarten</th>')+'<th>Runde</th><th>Gesamt</th></tr>';
+  last.res.forEach((r,p)=>{h+='<tr><td><span style="color:'+COLORS[p]+'">●</span> '+G.names[p]+'</td>'+(PDF()?'<td>+'+r.laid+'</td><td>−'+r.hand+'</td><td>'+(r.bonus?'+50':'')+'</td>':'<td>'+r.hand+'</td>')+'<td><b>'+(PDF()&&r.total>0?'+':'')+r.total+'</b></td><td>'+G.scores[p]+'</td></tr>';});
+  h+='</table>';
+ }
+ if(G.over){const b=winnerIdx();h+='<p style="font-size:17px;color:#ffe08a;text-align:center"><b>'+(b===0?'Du hast gewonnen! 🎉':G.names[b]+' hat gewonnen.')+'</b></p>';}
+ if(G.history.length>(afterRound?1:0)){
+  h+='<h3>Alle Runden</h3><table class="sc"><tr><th>Runde</th>'+G.names.map((n,p)=>'<th style="color:'+COLORS[p]+'">'+n+'</th>').join('')+'</tr>';
+  const run=Array(G.n).fill(0);
+  G.history.forEach((x,i)=>{x.res.forEach((r,p)=>run[p]+=r.total);h+='<tr><td>'+(i+1)+'</td>'+run.map(v=>'<td>'+v+'</td>').join('')+'</tr>';});
+  h+='</table>';
+ }
+ h+='<p class="small">'+(PDF()?'Gespielt wird bis '+G.target+' Punkte – wer zuerst dort ist, gewinnt.':'Gespielt wird bis '+G.target+' Minuspunkte – dann gewinnt, wer am wenigsten hat.')+'</p>';
+ $('#scTitle').textContent=G.over?'Spielende':afterRound?'Runde '+G.round+' vorbei':'Punkte';
+ $('#scBody').innerHTML=h;
+ $('#scNext').style.display=G.roundOver?'':'none';
+ $('#scNext').textContent=G.over?'Neues Spiel':'Nächste Runde';
+ $('#scoreDlg').classList.add('show');
+}
+
+// ================= KI =================
+function poolOf(ids){
+ const pool={},J=[];
+ ids.forEach(id=>{const c=CARD[id];if(c.j)J.push(id);else(pool[c.s*20+c.r]=pool[c.s*20+c.r]||[]).push(id);});
+ return {pool,J};
+}
+function genCands(ids){
+ const {pool,J}=poolOf(ids),has=(s,r)=>pool[s*20+(r===14?1:r)]&&pool[s*20+(r===14?1:r)].length>0;
+ const out=[];
+ for(let r=1;r<=13;r++){
+  const S=[0,1,2,3].filter(s=>has(s,r));
+  if(S.length>=3){out.push({nat:S.map(s=>[s,r]),j:0});if(S.length===4)for(let k=0;k<4;k++)out.push({nat:S.filter((_,i)=>i!==k).map(s=>[s,r]),j:0});}
+  if(J.length) for(let a=0;a<S.length;a++)for(let b=a+1;b<S.length;b++)out.push({nat:[[S[a],r],[S[b],r]],j:1});
+ }
+ for(let s=0;s<4;s++)for(let lo=1;lo<=12;lo++)for(let hi=lo+2;hi<=14;hi++){
+  if(lo===1&&hi===14) continue;
+  let present=[],miss=0;for(let r=lo;r<=hi;r++){if(has(s,r))present.push([s,r]);else miss++;}
+  if(miss===0) out.push({nat:present,j:0});
+  else if(miss===1&&J.length&&present.length>=2&&hi-lo+1<=present.length+1) out.push({nat:present,j:1});
+  if(miss>1) break;
+ }
+ return out;
+}
+// beste Aufteilung der Karten in Kombinationen. must: Karten-IDs, von denen mindestens eine verwendet werden muss
+function findMelds(ids,rules,must){
+ const cands=genCands(ids);
+ const {pool,J}=poolOf(ids);
+ const mustKeys=new Set((must||[]).map(id=>{const c=CARD[id];return c.j?'J':c.s*20+c.r;}));
+ let best={score:-1,melds:[]},nodes=0;
+ const cur=[];
+ function take(c){
+  const got=[];
+  for(const [s,r] of c.nat){const a=pool[s*20+(r===14?1:r)];if(!a||!a.length){got.forEach(([k,id])=>pool[k].push(id));return null;}const id=a.pop();got.push([s*20+(r===14?1:r),id]);}
+  if(c.j){if(J.length<c.j){got.forEach(([k,id])=>pool[k].push(id));return null;}for(let k=0;k<c.j;k++)got.push(['J',J.pop()]);}
+  return got;
+ }
+ function untake(got){for(let k=got.length-1;k>=0;k--){const [key,id]=got[k];if(key==='J')J.push(id);else pool[key].push(id);}}
+ function evalCur(){
+  let cnt=0,pts=0,usedMust=!mustKeys.size;
+  for(const ms of cur){const m=buildMeld(ms);if(!m)return;cnt+=ms.length;pts+=meldVal(m,rules);if(!usedMust&&ms.some(id=>mustKeys.has(isJ(id)?'J':CARD[id].s*20+CARD[id].r)))usedMust=true;}
+  if(!usedMust) return;
+  const score=cnt*100+pts;
+  if(score>best.score) best={score,melds:cur.map(x=>x.slice()),cnt,pts};
+ }
+ function dfs(start){
+  if(++nodes>25000) return;
+  evalCur();
+  for(let i=start;i<cands.length;i++){
+   const got=take(cands[i]);if(!got) continue;
+   // Pflichtkarten bevorzugt verwenden
+   cur.push(got.map(g=>g[1]));dfs(i);cur.pop();untake(got);
+  }
+ }
+ // Pflichtkarten zuerst an die Spitze der Pools, damit sie bevorzugt gezogen werden
+ (must||[]).forEach(id=>{const c=CARD[id];if(c.j)return;const a=pool[c.s*20+c.r];if(a){const k=a.indexOf(id);if(k>=0){a.splice(k,1);a.push(id);}}});
+ dfs(0);
+ return best.score<0?{melds:[],cnt:0,pts:0}:best;
+}
+function canLayAnywhere(p,id){
+ for(let i=0;i<G.melds.length;i++){const m=G.melds[i];if(m.closed)continue;if(addToMeld(m,id,false))return i;}
+ return -1;
+}
+function keepScore(h,id){
+ const c=CARD[id];if(c.j) return 1000;
+ let k=0;
+ for(const o of h){if(o===id)continue;const d=CARD[o];if(d.j)continue;
+  if(d.r===c.r&&d.s!==c.s)k+=3;
+  if(d.s===c.s){const diff=Math.abs(d.r-c.r);if(diff===1||(c.r===1&&d.r===13)||(d.r===1&&c.r===13))k+=3;else if(diff===2||(c.r===1&&d.r===12)||(d.r===1&&c.r===12))k+=1.4;}
+ }
+ return k;
+}
+function chooseDiscard(p){
+ const h=G.hands[p];let best=null,bv=-1e9;
+ for(const id of h){
+  let v=handVal(id,G.rules)/10-keepScore(h,id)*1.2;
+  if(G.turn.taken.includes(id)&&!G.turn.taken.some(x=>x!==id&&inMelds(x))) v-=1000;
+  if(G.turn.jMust.includes(id)) v-=1000;
+  // nicht dem nächsten Spieler etwas Anlegbares schenken (leicht)
+  if(canLayAnywhere(p,id)>=0) v-=2;
+  if(v>bv){bv=v;best=id;}
+ }
+ return best;
+}
+function aiLog(t){G.log=t;render();}
+async function aiTurn(p){
+ BUSY=true;const D=SET.speed,gid=G.gid;
+ const w=async ms=>{await sleep(ms);if(!G||G.gid!==gid||G.roundOver)throw "abort";};
+ try{
+ await w(D*.8);
+ if(G.cur!==p||G.roundOver) return;
+ const h=G.hands[p],rules=G.rules;
+ // --- Ziehen ---
+ const base=findMelds(h,rules);
+ let takeIdx=-1,bestGain=0;
+ if(PDF()&&G.row.length&&rowVal()>=30){
+  for(let i=G.row.length-1;i>=Math.max(0,G.row.length-6);i--){
+   const tk=G.row.slice(i),nh=h.concat(tk);const r=findMelds(nh,rules,tk);
+   let used=r.cnt>0;let gain=r.pts-base.pts;
+   const meldIds=new Set(r.melds.flat());
+   tk.forEach(id=>{if(!meldIds.has(id)){if(canLayAnywhere(p,id)>=0){gain+=5;used=true;}else gain-=handVal(id,'pdf')*.6;}});
+   if(!used) continue;
+   if(gain>bestGain+4){bestGain=gain;takeIdx=i;}
+  }
+  if(bestGain<12) takeIdx=-1;
+ } else if(!PDF()&&G.row.length){
+  const top=G.row[G.row.length-1];const nh=h.concat([top]);const r=findMelds(nh,rules,[top]);
+  if(r.cnt&&(G.out[p]?r.cnt>base.cnt:r.pts>=40)) takeIdx=G.row.length-1;
+  else if(G.out[p]&&canLayAnywhere(p,top)>=0&&!isJ(top)) takeIdx=G.row.length-1;
+  else if(isJ(top)&&G.out[p]) takeIdx=-1;
+ }
+ if(takeIdx>=0){const ids=takeRow(p,takeIdx);aiLog(G.names[p]+' nimmt '+ids.map(cardName).join(' ')+' aus dem Vorrat.');G.lastNew=[];}
+ else{drawDeck(p);if(G.roundOver)return;aiLog(G.names[p]+' zieht vom Stapel.');}
+ await w(D);
+ // --- Auslegen ---
+ const must=G.turn.taken;
+ let plan=findMelds(G.hands[p],rules,must.length?must:null);
+ if(must.length&&!plan.cnt) plan=findMelds(G.hands[p],rules);
+ let doIt=plan.cnt>0;
+ if(!PDF()&&!G.out[p]&&plan.pts<40) doIt=false;
+ if(doIt){
+  for(const ms of plan.melds){
+   if(PDF()&&G.hands[p].length-ms.length<1) continue;
+   const err=doMeld(p,ms);
+   if(!err){const m=G.melds[G.melds.length-1];aiLog(G.names[p]+' legt '+(m.type==='set'?'Gruppe':'Reihe')+' '+ms.map(cardName).join(' '));await w(D);if(G.roundOver)return;}
+  }
+  if(!PDF()&&freshPts(p)>=40) G.out[p]=true;
+ }
+ // --- Jolly tauschen (klassisch) ---
+ if(!PDF()&&canInteract(p)){
+  for(const id of G.hands[p].slice()){
+   if(isJ(id)) continue;
+   for(let mi=0;mi<G.melds.length;mi++){
+    const m=G.melds[mi];if(!m.slots.some(x=>isJ(x.id)))continue;
+    if(addToMeld(m,id,false))continue;
+    const r=addToMeld(m,id,true);if(!r||r.back==null)continue;
+    // simulieren: kann der Jolly danach verwendet werden?
+    const nh=G.hands[p].filter(x=>x!==id).concat([r.back]);
+    const pl=findMelds(nh,rules,[r.back]);
+    if(pl.cnt>0&&nh.length-pl.cnt>=0){
+     const snap=JSON.stringify(G);
+     doLayoff(p,mi,[id]);
+     aiLog(G.names[p]+' tauscht einen Jolly gegen '+cardName(id)+'.');await w(D);
+     let ok=false;
+     for(const ms of findMelds(G.hands[p],rules,[r.back]).melds){if(!doMeld(p,ms)){if(ms.includes(r.back))ok=true;await w(D*.7);if(G.roundOver)return;}}
+     if(!ok){G=JSON.parse(snap);render();}
+     break;
+    }
+   }
+  }
+ }
+ // --- Anlegen ---
+ if(canInteract(p)){
+  let prog=true;
+  while(prog&&!G.roundOver){prog=false;
+   const hs=G.hands[p].slice().sort((a,b)=>isJ(a)-isJ(b));
+   for(const id of hs){
+    if(isJ(id)&&G.hands[p].length>3) continue;
+    if(PDF()&&G.hands[p].length<=1) break;
+    const mi=canLayAnywhere(p,id);if(mi<0) continue;
+    if(!canInteract(p)) break;
+    const err=doLayoff(p,mi,[id]);
+    if(!err){const m=G.melds[mi];aiLog(G.names[p]+' legt '+cardName(id)+' an'+(m.owner!==p?' bei '+G.names[m.owner]:'')+'.');prog=true;await w(D*.8);if(G.roundOver)return;break;}
+   }
+  }
+ }
+ if(G.roundOver) return;
+ // --- Abwerfen ---
+ let d=chooseDiscard(p);
+ let err=doDiscard(p,d);
+ if(err){
+  // Notfall: Zug ungültig (z. B. Erstauslage zu klein) – sollte selten vorkommen; dann Karten zurück nicht möglich, also beliebige erlaubte Karte
+  for(const id of G.hands[p]){if(!doDiscard(p,id)){err=null;break;}}
+  if(err){G.turn.taken=[];G.turn.jMust=[];G.out[p]=G.out[p]||freshPts(p)>0;doDiscard(p,d);}
+ }
+ if(!G.roundOver) G.log=G.names[p]+' wirft '+cardName(d)+' ab.';
+ } catch(e){if(e!=="abort")console.error(e);} finally {BUSY=false;if(G)render();}
+}
+
+// ================= Mensch =================
+function myTurn(){return G&&!G.roundOver&&G.cur===0;}
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),2600);}
+$('#deck').onclick=()=>{
+ if(!myTurn()||G.phase!=='draw') return;
+ const id=drawDeck(0);if(id==null)return;
+ SNAP=JSON.stringify(G);G.lastNew=[id];G.log='Du ziehst '+cardName(id)+'.';SEL.clear();render();
+};
+function onRowClick(i){
+ if(!myTurn()||G.phase!=='draw') return;
+ if(!canTakeRow(i)){toast(PDF()?(rowVal()<30?'Aus dem Vorrat erst ab 30 Punkten (jetzt '+rowVal()+').':''):'Nur die oberste Karte darf genommen werden.');return;}
+ if(PDF()&&ROWSEL!==i){ROWSEL=i;render();return;}
+ takeRowHuman(i);
+}
+function takeRowHuman(i){
+ SNAP=JSON.stringify(G);
+ const ids=takeRow(0,i);ROWSEL=-1;G.lastNew=ids.slice();SEL=new Set(ids);
+ G.log='Du nimmst '+ids.map(cardName).join(' ')+' – '+(ids.length>1?'mindestens eine davon':'sie')+' musst du auslegen.';render();
+}
+$('#bMeld').onclick=()=>{
+ if(!myTurn()||G.phase!=='play') return;
+ const ids=[...SEL];if(ids.length<3){toast('Wähle mindestens 3 Karten aus.');return;}
+ const err=doMeld(0,ids);if(err){toast(err);return;}
+ SEL.clear();if(!G.roundOver)G.log='Du legst '+ids.map(cardName).join(' ')+' aus.';render();
+};
+function onMeldClick(mi){
+ if(!myTurn()||G.phase!=='play'||!SEL.size) return;
+ const err=doLayoff(0,mi,[...SEL]);
+ if(err&&err!=='swap'){toast(err);return;}
+ SEL.clear();
+ if(err==='swap'){const j=G.turn.jMust[G.turn.jMust.length-1];SEL.add(j);toast('Jolly eingetauscht – lege ihn in diesem Zug wieder aus.');}
+ render();
+}
+$('#bDisc').onclick=()=>{
+ if(!myTurn()||G.phase!=='play') return;
+ if(SEL.size!==1){toast('Wähle genau eine Karte zum Abwerfen.');return;}
+ const id=[...SEL][0];const err=doDiscard(0,id);if(err){toast(err);return;}
+ SEL.clear();
+};
+$('#bUndo').onclick=()=>{
+ if(!myTurn()||!SNAP) return;
+ G=JSON.parse(SNAP);SEL.clear();ROWSEL=-1;
+ if(G.phase==='draw') SNAP=null;
+ render();
+};
+$('#bSort').onclick=()=>{SET.sort=SET.sort==='suit'?'rank':'suit';saveSet();toast(SET.sort==='suit'?'Sortiert nach Farbe':'Sortiert nach Wert');render();};
+
+// ================= Darstellung =================
+function sortedHand(){
+ const h=G.hands[0].slice();
+ const key=id=>{const c=CARD[id];if(c.j)return 1e4;return SET.sort==='suit'?c.s*100+(c.r):c.r*10+c.s;};
+ return h.sort((a,b)=>key(a)-key(b)||a-b);
+}
+function hintText(){
+ if(!G||G.roundOver) return '';
+ if(G.cur!==0) return G.names[G.cur]+' ist am Zug …';
+ if(G.phase==='draw'){
+  let t='<b>Du bist dran:</b> Stapel antippen';
+  if(G.row.length) t+=PDF()?(rowVal()>=30?' oder Karte(n) aus dem Vorrat nehmen':''):' oder oberste Ablagekarte nehmen';
+  return t+'.';
+ }
+ const pend=[];
+ if(!PDF()&&!G.out[0]){const fp=freshPts(0);pend.push(fp?'Erstauslage: '+fp+'/40':'Erstauslage braucht 40 Punkte');}
+ if(G.turn.taken.length&&!G.turn.taken.some(inMelds)) pend.push('Vorratskarte auslegen');
+ if(G.turn.jMust.some(x=>!inMelds(x))) pend.push('Jolly auslegen');
+ return 'Auslegen, anlegen, dann <b>eine Karte abwerfen</b>.'+(pend.length?' <span style="color:#ffcc80">('+pend.join(', ')+')</span>':'');
+}
+function layout(){
+ const W=Math.min(window.innerWidth,1100),H=window.innerHeight;
+ let hw=Math.max(44,Math.min(84,W/(W<600?6:8.5),H/7.2));
+ let mw=Math.max(32,Math.min(56,W/14,H/11));
+ document.documentElement.style.setProperty('--hw',hw+'px');
+ document.documentElement.style.setProperty('--mw',mw+'px');
+ return {hw,mw};
+}
+function render(){
+ if(!G) return;
+ const {hw}=layout();
+ $('#gi').textContent=(PDF()?'Interspar':'Klassisch')+' · Runde '+G.round+' · Ziel '+G.target;
+ // Gegner + ich
+ $('#opps').innerHTML=G.names.map((n,p)=>'<div class="opp'+(G.cur===p&&!G.roundOver?' turn':'')+'"><span class="dot" style="background:'+COLORS[p]+'"></span><b>'+n+'</b>'+
+  (p?'<span class="cc"><i></i>'+G.hands[p].length+'</span>':'')+(!PDF()&&G.out[p]?'<span class="ok">ausgelegt</span>':'')+'<span class="pt">'+G.scores[p]+'</span></div>').join('');
+ $('#log').textContent=G.log||'';
+ // Stapel
+ const dk=$('#deck');dk.innerHTML=G.deck.length?cardSVG(-1)+'<span class="cnt">'+G.deck.length+'</span>':'<span class="cnt">leer</span>';
+ dk.classList.toggle('can',myTurn()&&G.phase==='draw');
+ // Vorrat
+ const row=$('#row');row.innerHTML='';
+ const canRow=myTurn()&&G.phase==='draw';
+ row.classList.toggle('can',canRow);
+ G.row.forEach((id,i)=>{
+  const e=cardEl(id,(canRow&&canTakeRow(i)?'tk':'')+(ROWSEL>=0&&i>=ROWSEL?' rsel':'')+(G.lastNew.includes(id)&&i===G.row.length-1?' new':''));
+  if(!PDF()&&i<G.row.length-3) e.style.display='none';
+  e.onclick=()=>onRowClick(i);row.appendChild(e);
+ });
+ row.scrollLeft=row.scrollWidth;
+ let ri=PDF()?'Vorratsreihe: '+G.row.length+' Karten, Wert '+rowVal()+(rowVal()>=30?' ✓':' (ab 30 nehmbar)'):'Ablagestapel'+(G.row.length?'':' (leer)');
+ $('#rowInfo').innerHTML=ri+(ROWSEL>=0?' <button id="bTake">'+(G.row.length-ROWSEL)+' nehmen</button> <button class="sec" id="bTakeX">✕</button>':'');
+ if(ROWSEL>=0){$('#bTake').onclick=()=>takeRowHuman(ROWSEL);$('#bTakeX').onclick=()=>{ROWSEL=-1;render();};}
+ // Kombinationen
+ const md=$('#melds');md.innerHTML='';
+ if(!G.melds.length) md.innerHTML='<div id="emptyMelds">Jolly</div>';
+ const target=myTurn()&&G.phase==='play'&&SEL.size>0;
+ G.melds.forEach((m,mi)=>{
+  const e=document.createElement('div');e.className='meld'+(m.closed?' closed':'')+(target&&!m.closed?' target':'');
+  e.style.borderColor=target&&!m.closed?'':COLORS[m.owner]+'55';
+  e.innerHTML='<span class="own" style="background:'+COLORS[m.owner]+'">'+G.names[m.owner]+'</span>';
+  m.slots.forEach(x=>{const c=cardEl(x.id,G.lastNew.includes(x.id)?'new':'');if(PDF()&&x.by!=null&&x.by!==m.owner){const b=document.createElement('span');b.className='by';b.style.background=COLORS[x.by];c.appendChild(b);}
+   if(isJ(x.id)){c.title='Jolly = '+(m.type==='set'?SUIT_SYM[x.s]:SUIT_SYM[m.suit])+RN(x.r);}e.appendChild(c);});
+  e.onclick=()=>onMeldClick(mi);md.appendChild(e);
+ });
+ // Hand
+ const hd=$('#hand');const h=sortedHand();
+ const old={};hd.querySelectorAll('.card').forEach(e=>old[e.dataset.id]=e);
+ const W=hd.clientWidth-16;const n=h.length;
+ let rows=1,per=n;
+ let step=n>1?Math.min(hw*1.02,(W-hw)/(n-1)):0;
+ if(n>1&&step<hw*.42){rows=2;per=Math.ceil(n/2);step=Math.min(hw*1.02,(W-hw)/Math.max(1,per-1));}
+ hd.style.minHeight=(hw*1.47+22+(rows-1)*hw*.8)+'px';
+ const keep=new Set();
+ h.forEach((id,i)=>{
+  let e=old[id];if(!e){e=cardEl(id);e.onclick=()=>{if(!myTurn()||G.phase!=='play')return;SEL.has(id)?SEL.delete(id):SEL.add(id);render();};hd.appendChild(e);}
+  keep.add(String(id));
+  const rI=rows===2&&i>=per?1:0,col=rI?i-per:i,cnt=rI?n-per:Math.min(n,per);
+  const totalW=hw+(cnt-1)*step;
+  e.style.left=(8+(W-totalW)/2+col*step)+'px';e.style.top=(12+rI*hw*.8)+'px';e.style.zIndex=i;
+  e.classList.toggle('sel',SEL.has(id));
+  e.classList.toggle('must',G.turn&&G.cur===0&&(G.turn.jMust.includes(id)||(G.turn.taken.includes(id)&&!G.turn.taken.some(inMelds))));
+  e.classList.toggle('new',G.lastNew.includes(id)&&G.cur===0);
+ });
+ Object.keys(old).forEach(k=>{if(!keep.has(k))old[k].remove();});
+ // Bedienung
+ $('#msg').innerHTML=hintText()||(G.roundOver?'Runde vorbei.':'');
+ const play=myTurn()&&G.phase==='play';
+ $('#bMeld').disabled=!(play&&SEL.size>=3);
+ $('#bDisc').disabled=!(play&&SEL.size===1);
+ $('#bUndo').disabled=!(myTurn()&&SNAP);
+}
+window.addEventListener('resize',()=>render());
+
+// ================= Dialoge =================
+function seg(sel,val,cb){
+ const el=$(sel);el.querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b.dataset.v==String(val));b.onclick=()=>{cb(b.dataset.v);};});
+}
+function refreshStart(){
+ seg('#sRules',SET.rules,v=>{SET.rules=v;refreshStart();});
+ seg('#sOpp',SET.opp,v=>{SET.opp=+v;refreshStart();});
+ seg('#sSpeed',SET.speed,v=>{SET.speed=+v;refreshStart();});
+ const ts=SET.rules==='pdf'?[300,500,1000]:[300,500,1000];
+ $('#sTarget').innerHTML=ts.map(t=>'<button data-v="'+t+'">'+t+'</button>').join('');
+ const tk=SET.rules==='pdf'?'tpdf':'tclassic';
+ seg('#sTarget',SET[tk],v=>{SET[tk]=+v;refreshStart();});
+ $('#sRulesInfo').textContent=SET.rules==='pdf'?'12 Karten, offene Vorratsreihe (ab 30 Punkten nehmbar), Pluspunkte für Ausgelegtes – wer zuerst das Ziel erreicht, gewinnt.':'13 Karten, Erstauslage 40 Punkte, Jolly tauschen, Minuspunkte für Handkarten – wer zuerst das Ziel erreicht, verliert.';
+}
+function openStart(){
+ $('#sName').value=SET.name;refreshStart();
+ const sv=localStorage.getItem('jolly-save');let ok=false;
+ try{const g=JSON.parse(sv);ok=g&&!g.over;}catch(e){}
+ $('#sResume').style.display=ok?'':'none';
+ $('#startDlg').classList.add('show');
+}
+$('#sGo').onclick=()=>{SET.name=$('#sName').value.trim();saveSet();$('#startDlg').classList.remove('show');newGame();};
+$('#sResume').onclick=()=>{
+ $('#startDlg').classList.remove('show');
+ G=JSON.parse(localStorage.getItem('jolly-save'));SEL.clear();SNAP=null;
+ if(G.roundOver){render();showScores(true);return;}
+ // angefangenen Zug neu beginnen lassen ist nicht möglich – Zug läuft weiter
+ render();if(G.cur!==0) aiTurn(G.cur);
+};
+$('#sRules2').onclick=()=>$('#rulesDlg').classList.add('show');
+$('#bRules').onclick=()=>$('#rulesDlg').classList.add('show');
+$('#rClose').onclick=()=>$('#rulesDlg').classList.remove('show');
+$('#bNew').onclick=()=>{if(G&&!G.over&&!confirm('Laufendes Spiel abbrechen und neu beginnen?'))return;openStart();};
+$('#bScore').onclick=()=>showScores(false);
+$('#scClose').onclick=()=>$('#scoreDlg').classList.remove('show');
+$('#scNext').onclick=()=>{$('#scoreDlg').classList.remove('show');if(G.over){openStart();return;}newRound();};
+
+layout();openStart();
+</script>
+</body>
+</html>
