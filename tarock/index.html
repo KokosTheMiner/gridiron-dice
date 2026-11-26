@@ -251,7 +251,7 @@ table.sum td:not(:first-child){text-align:right}
  <h3>Kartenwerte</h3>
  <p>Sküs, Mond, Pagat und Könige 5 Punkte, Damen 4, Reiter 3, Buben 2, alle anderen Karten 1. Gezählt wird in Dreiergruppen (Summe minus 2), zusammen 70 Punkte. Die Spielerpartei braucht <b>36 Punkte</b> zum Gewinnen.</p>
  <h3>Lizitieren</h3>
- <p>Die <b>Vorhand</b> (links vom Geber) beginnt mit „Mein Spiel“ oder einem höheren Spiel bzw. dem Sechserdreier. Dann wird reihum überboten oder „Weiter“ gesagt; wer weiter sagt, ist draußen. Die Vorhand darf ein gleich hohes Spiel „halten“. Bleibt es bei „Mein Spiel“, wählt die Vorhand Rufer, Trischaken oder ein höheres Spiel.</p>
+ <p>Gespielt wird gegen den Uhrzeigersinn. Die <b>Vorhand</b> (rechts vom Geber) beginnt mit „Mein Spiel“ oder einem höheren Spiel bzw. dem Sechserdreier. Dann wird reihum überboten oder „Weiter“ gesagt; wer weiter sagt, ist draußen. Die Vorhand darf ein gleich hohes Spiel „halten“. Bleibt es bei „Mein Spiel“, wählt die Vorhand Rufer, Trischaken oder ein höheres Spiel.</p>
  <table>
   <tr><td><b>Rufer</b> – nur Vorhand. König rufen (wer ihn hat, ist geheimer Partner), eine Talonhälfte nehmen, 3 Karten ablegen.</td><td>1</td></tr>
   <tr><td><b>Trischaken</b> – nur Vorhand. Jeder spielt für sich mit Stichzwang, die Talonkarten gehen der Reihe nach an die ersten 6 Stiche. Wer die meisten Punkte hat, zahlt jedem (Bürgermeister ab 36 und Vorhand doppelt, wer keinen Stich hat, bekommt doppelt).</td><td>2</td></tr>
@@ -1333,7 +1333,7 @@ function render(v){
  if(dk!==discKey){discKey=dk;discSel=new Set();}
  renderTable(v);renderBar(v);renderPrompt(v);renderResult(v);
 }
-function rel(s){return (s-V.me+4)%4;}
+function rel(s){return (V.me-s+4)%4;} // gegen den Uhrzeigersinn: der nächste Spieler sitzt rechts
 function layout(n){
  const t=$('#table'),w=t.clientWidth,h=t.clientHeight,portrait=h>w*1.05;
  const R=RATIO(),hf=1.5/R;
@@ -1579,7 +1579,7 @@ function renderLobby(v){
  const cell=s=>{if(!seats[s])return `<div class="lseat"><small>…</small></div>`;const x=seats[s];
   const cls=['lseat'];if(host)cls.push('click');if(swapSel===s)cls.push('sel');
   return `<div class="${cls.join(' ')}" data-s="${s}"><b>${esc(x.name)}${x.type==='ai'?' 🤖':''}</b><small>${s===v.me?'Du':x.type==='ai'?'KI':'Mitspieler'}${x.off?' · offline':''}</small>${host&&x.type==='human'&&s!==mySeat?`<button class="kick red" data-k="${s}">KI übernimmt</button>`:''}</div>`;};
- const at=r=>(me+r)%4;
+ const at=r=>(me-r+4)%4;
  $('#lbSeats').innerHTML=`<div></div>${cell(at(2))}<div></div>${cell(at(1))}<div class="lmid">T</div>${cell(at(3))}<div></div>${cell(at(0))}<div></div>`;
  if(host){
   $('#lbSeats').querySelectorAll('.lseat[data-s]').forEach(el=>el.onclick=ev=>{
