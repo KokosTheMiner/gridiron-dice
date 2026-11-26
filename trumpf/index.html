@@ -229,7 +229,8 @@ h1{margin:6px 0 2px;font-size:30px;letter-spacing:.5px;color:#f2c84b;text-shadow
   <li>Wer dran ist, wählt einen Wert seiner Karte, z.&nbsp;B. <i>Leistung</i>. Alle decken ihre oberste Karte auf.</li>
   <li>Der <b>beste Wert gewinnt</b> alle aufgedeckten Karten – sie kommen unter den eigenen Stapel. Meist gewinnt der höhere Wert; beim <b>Baujahr</b> sticht die ältere Maschine.</li>
   <li>Der Gewinner wählt in der nächsten Runde.</li>
-  <li><b>Gleichstand (Stechen):</b> Die Karten kommen in die Mitte. In der nächsten Runde <b>muss derselbe Wert</b> gespielt werden (z.&nbsp;B. wieder <i>Länge</i>) – so lange, bis es keinen Gleichstand mehr gibt. Wer gewinnt, bekommt auch die Karten aus der Mitte.</li>
+  <li><b>Gleichstand (Stechen):</b> Die Karten kommen in die Mitte. In der nächsten Runde spielen <b>nur noch die Spieler mit dem gleichen Bestwert</b> mit, und es <b>muss derselbe Wert</b> gespielt werden (z.&nbsp;B. wieder <i>Länge</i>) – so lange, bis einer die Mitte gewinnt.</li>
+  <li><b>Letzte Karte im Stechen:</b> War deine letzte Karte gleich gut wie die eines anderen, ziehst du <b>3 Karten von ihm</b> und suchst dir eine davon aus. Die anderen zwei kommen unter seinen Stapel.</li>
   <li><b>Supertrumpf</b> (Karte mit rotem Band): sticht jede Karte – außer die <b>A-Karten</b> (1A, 2A …). Liegt eine A-Karte dabei, wird normal verglichen.</li>
   <li><b>Aussuchen:</b> Wer nur noch <b>3 oder weniger Karten</b> hat, sieht alle seine Karten und sucht sich aus, welche er spielt – sagt ein anderer den Wert an, erst <i>nach</i> der Ansage. Vorher legen alle anderen ihre Karte <b>offen</b> hin, damit man sieht, welchen Wert man schlagen muss. Dürfen mehrere aussuchen, geht es der Reihe nach. Ab 4 Karten wird immer die oberste gespielt.</li>
   <li><b>Letzte Karte:</b> Wer nur noch eine Karte hat, darf nach der Ansage <b>2× aussetzen</b> – beim 3. Mal muss die Karte gespielt werden. Setzen alle anderen aus, geht die Karte des Ansagers zurück unter seinen Stapel.</li>
@@ -262,6 +263,7 @@ h1{margin:6px 0 2px;font-size:30px;letter-spacing:.5px;color:#f2c84b;text-shadow
 <script src="sets/baeume.js"></script>
 <script src="sets/bienen.js"></script>
 <script src="sets/kunst.js"></script>
+<script src="sets/walkingdead.js"></script>
 
 <script>
 'use strict';
@@ -372,6 +374,7 @@ function ev(type,o){S.evN++;S.ev.push(Object.assign({n:S.evN,type},o||{}));if(S.
 const nm=s=>S.seats[s].name;
 const hasCards=s=>S.piles[s]&&S.piles[s].length>0;
 const activeSeats=()=>S.seats.map((x,i)=>i).filter(hasCards);
+const inRound=s=>hasCards(s)&&(!S.tieSeats||S.tieSeats.includes(s)); // spielt diese Runde mit (beim Stechen nur die Gleichen)
 
 function startGame(){
  clearTimeout(phaseTimer);clearTimeout(aiTimer);aiTimer=null;
@@ -382,7 +385,7 @@ function startGame(){
  const first=Math.floor(Math.random()*n);
  d.forEach((c,i)=>S.piles[(first+i)%n].push(c));
  S.out=S.seats.map(()=>false);S.outOrder=[];S.pot=[];S.pub={};S.round=1;S.stat=null;S.reveal=null;S.winners=null;S.rank=null;
- S.tieStat=null;S.pauses=S.seats.map(()=>0);S.shown=[];S.paused=[];S.solo=false;S.selPending=[];
+ S.tieStat=null;S.tieSeats=null;S.draw=null;S.drawQ=[];S.pauses=S.seats.map(()=>0);S.shown=[];S.paused=[];S.solo=false;S.selPending=[];
  S.chooser=first;S.phase='choose';S.trumpf=!!SET.trumpf;S.limit=+SET.len;S.level=SET.level;S.speed=SET.speed;
  ev('start',{s:first});
  commit();
@@ -406,9 +409,9 @@ function act(seat,a){
   // Wer aussuchen (2–3 Karten) oder aussetzen (letzte Karte) darf, entscheidet NACH der Ansage –
   // der Reihe nach, und sieht dabei die schon offen gelegten Karten der anderen
   const n=S.seats.length,order=[];for(let i=1;i<n;i++)order.push((seat+i)%n);
-  S.selPending=order.filter(s=>hasCards(s)&&(canSelect(s)||canPause(s)));
+  S.selPending=order.filter(s=>inRound(s)&&(canSelect(s)||canPause(s)));
   if(S.selPending.length){
-   S.shown=activeSeats().filter(s=>!S.selPending.includes(s)).map(s=>({s,c:S.piles[s][0]}));
+   S.shown=activeSeats().filter(s=>inRound(s)&&!S.selPending.includes(s)).map(s=>({s,c:S.piles[s][0]}));
    S.phase='select';ev('select',{s:seat,k:S.stat});commit();
    clearTimeout(phaseTimer);phaseTimer=setTimeout(selectTimeout,45000);
   } else doReveal();
@@ -418,7 +421,11 @@ function act(seat,a){
   S.selPending.shift();
   clearTimeout(phaseTimer);
   if(!S.selPending.length)doReveal();else{commit();phaseTimer=setTimeout(selectTimeout,45000);}
- } else if(a.type==='next'&&S.phase==='reveal'&&(!online||seat===mySeat)){
+ } else if(a.type==='take'&&S.phase==='draw'&&S.draw&&seat===S.draw.s&&S.draw.cards.includes(a.c)){
+  clearTimeout(phaseTimer);
+  const d=S.draw;S.piles[seat].push(a.c);S.piles[d.from].push(...d.cards.filter(c=>c!==a.c)); // die anderen kommen unter seinen Stapel
+  ev('took',{s:seat,from:d.from});S.draw=null;nextDraw();
+  } else if(a.type==='next'&&S.phase==='reveal'&&(!online||seat===mySeat)){
   clearTimeout(phaseTimer);resolveRound();
  }
 }
@@ -426,14 +433,14 @@ const SELECT_MAX=3; // ab so wenigen Karten darf man aussuchen
 const canSelect=s=>S.piles[s]&&S.piles[s].length>1&&S.piles[s].length<=SELECT_MAX;
 function toFront(s,c){const p=S.piles[s];if(!p||p.length>SELECT_MAX)return;const i=p.indexOf(c);if(i>0){p.splice(i,1);p.unshift(c);}}
 const PAUSE_MAX=2;   // so oft darf man mit der letzten Karte aussetzen
-const canPause=s=>S.piles[s]&&S.piles[s].length===1&&(S.pauses[s]||0)<PAUSE_MAX&&s!==S.chooser;
+const canPause=s=>S.piles[s]&&S.piles[s].length===1&&(S.pauses[s]||0)<PAUSE_MAX&&s!==S.chooser&&!S.tieSeats;
 // Zeit abgelaufen: der Spieler, der dran ist, spielt seine oberste Karte
 function selectTimeout(){if(!S||S.phase!=='select'||!S.selPending.length)return;const s=S.selPending[0];act(s,{type:'select',c:S.piles[s][0]});}
 function doReveal(){
  const st=SETMAP[S.setId];
  clearTimeout(phaseTimer);
  S.selPending=[];S.shown=[];
- S.reveal=activeSeats().filter(s=>!S.paused.includes(s)).map(s=>({s,c:S.piles[s][0]}));
+ S.reveal=activeSeats().filter(s=>inRound(s)&&!S.paused.includes(s)).map(s=>({s,c:S.piles[s][0]}));
  // Setzen alle anderen aus, spielt der Ansager allein: seine Karte geht zurück unter den Stapel
  S.solo=S.reveal.length<2;
  const r=S.solo?{w:[S.chooser],trumpf:false}:roundWinners(st,S.reveal,S.stat);
@@ -449,6 +456,7 @@ function resolveRound(){
  clearTimeout(phaseTimer);
  const cards=S.reveal;
  cards.forEach(x=>S.piles[x.s].shift());
+ S.drawQ=[];
  if(S.solo){
   S.piles[S.chooser].push(...cards.map(x=>x.c));
   ev('solo',{s:S.chooser});
@@ -458,12 +466,40 @@ function resolveRound(){
   const won=[own.c,...cards.filter(x=>x!==own).map(x=>x.c),...S.pot];
   S.piles[w].push(...won);
   ev('win',{s:w,n:won.length});
-  S.pot=[];S.chooser=w;S.tieStat=null;
+  S.pot=[];S.chooser=w;S.tieStat=null;S.tieSeats=null;
  } else {
   S.pot.push(...cards.map(x=>x.c));
   S.tieStat=S.stat;
+  // Beim Stechen spielen nur noch die Spieler mit dem gleichen Bestwert weiter
+  S.tieSeats=S.winners.slice();
   ev('tie',{w:S.winners,k:S.stat});
-  if(!hasCards(S.chooser)){const c=S.winners.find(hasCards);if(c!=null)S.chooser=c;}
+  // War das die letzte Karte: 3 Karten vom Mitstecher ziehen und eine davon aussuchen
+  for(const s of S.winners)if(!hasCards(s))S.drawQ.push(s);
+ }
+ nextDraw();
+}
+const DRAW_N=3;
+function nextDraw(){
+ while(S.drawQ&&S.drawQ.length){
+  const s=S.drawQ.shift();
+  const donors=(S.tieSeats||[]).filter(o=>o!==s&&S.piles[o].length>=2).sort((a,b)=>S.piles[b].length-S.piles[a].length);
+  if(!donors.length)continue;
+  const from=donors[0],n=Math.min(DRAW_N,S.piles[from].length-1);
+  S.draw={s,from,cards:S.piles[from].splice(0,n)};
+  S.phase='draw';ev('draw',{s,from,n});commit();
+  clearTimeout(phaseTimer);phaseTimer=setTimeout(()=>{if(S&&S.phase==='draw')act(S.draw.s,{type:'take',c:S.draw.cards[0]});},45000);
+  return;
+ }
+ afterRound();
+}
+function afterRound(){
+ S.draw=null;
+ if(S.tieSeats){
+  S.tieSeats=S.tieSeats.filter(hasCards);
+  if(S.tieSeats.length===1){ // nur einer kann noch stechen → er bekommt die Mitte
+   const w=S.tieSeats[0];S.piles[w].push(...S.pot);ev('win',{s:w,n:S.pot.length});S.pot=[];S.chooser=w;S.tieSeats=null;S.tieStat=null;
+  } else if(!S.tieSeats.length){S.tieSeats=null;S.tieStat=null;} // Mitte bleibt liegen, der nächste Sieger bekommt sie
+  else if(!S.tieSeats.includes(S.chooser)){let c=S.chooser;for(let i=0;i<S.seats.length;i++){c=(c+1)%S.seats.length;if(S.tieSeats.includes(c))break;}S.chooser=c;}
  }
  S.seats.forEach((x,s)=>{if(!S.out[s]&&!hasCards(s)){S.out[s]=true;S.outOrder.push(s);ev('out',{s});}});
  const act_=activeSeats();
@@ -496,6 +532,8 @@ function viewFor(seat){
  v.tieStat=S.tieStat||null;
  if(S.piles[seat]&&S.piles[seat].length===1)v.pausesLeft=PAUSE_MAX-(S.pauses[seat]||0);
  if(S.phase==='select'){v.selPending=S.selPending.slice();v.shown=S.shown.slice();v.paused=S.paused.slice();v.canPause=S.selPending[0]===seat&&canPause(seat);}
+ v.tieSeats=S.tieSeats?S.tieSeats.slice():null;
+ if(S.phase==='draw'&&S.draw)v.draw={s:S.draw.s,from:S.draw.from,n:S.draw.cards.length,cards:S.draw.s===seat?S.draw.cards.slice():null};
  if(S.phase==='reveal'){v.reveal=S.reveal;v.winners=S.winners;v.trumpfWin=S.trumpfWin;v.paused=S.paused.slice();v.solo=!!S.solo;}
  if(S.phase==='end')v.rank=S.rank;
  return v;
@@ -512,6 +550,11 @@ function scheduleAI(){
  if(S.phase==='select'){
   const s=S.selPending[0];if(s==null||S.seats[s].type!=='ai')return;
   aiTimer=setTimeout(()=>{aiTimer=null;if(!S||S.phase!=='select'||S.selPending[0]!==s||S.seats[s].type!=='ai')return scheduleAI();try{const c=aiSelect(s);act(s,c===null?{type:'select',pause:true}:{type:'select',c});}catch(e){console.error(e);}},900+Math.random()*700);
+  return;
+ }
+ if(S.phase==='draw'&&S.draw){
+  const s=S.draw.s;if(S.seats[s].type!=='ai')return;
+  aiTimer=setTimeout(()=>{aiTimer=null;if(!S||S.phase!=='draw'||!S.draw||S.draw.s!==s)return scheduleAI();try{act(s,{type:'take',c:aiTake(s)});}catch(e){console.error(e);}},1200+Math.random()*700);
   return;
  }
  if(S.phase!=='choose')return;
@@ -539,7 +582,7 @@ function winChance(s,id,k){
  const hidden=all.filter(c=>!S.pub[c]&&!mine.has(c));
  const unknown=hidden.length?hidden:all.filter(c=>!mine.has(c));
  let p=1;
- for(const o of activeSeats()){
+ for(const o of activeSeats().filter(inRound)){
   if(o===s)continue;
   const pile=S.piles[o];
   if(pile.length<=SELECT_MAX&&pile.length>1){
@@ -563,6 +606,8 @@ function aiChoose(s){
  for(const c of cands)for(const k of ks){const v=winChance(s,c,k)+Math.random()*.01;if(v>bv){bv=v;best={k,c};}}
  return best;
 }
+// Beim Ziehen (letzte Karte im Stechen): die Karte mit dem besten Stech-Wert nehmen
+function aiTake(s){const st=SETMAP[S.setId],k=S.tieStat,all=st.cards.map(c=>c.id),cs=S.draw.cards;if((S.level||'mittel')==='leicht'&&Math.random()<.5)return cs[Math.floor(Math.random()*cs.length)];let b=cs[0],bv=-1;for(const c of cs){const v=k?beatShare(st,c,k,all):0;if(v>bv){bv=v;b=c;}}return b;}
 // Aussuchen/Aussetzen nach der Ansage. Rückgabe: Karte – oder null = aussetzen (nur mit der letzten Karte)
 function aiSelect(s){
  const st=SETMAP[S.setId],k=S.stat,pile=S.piles[s],lvl=S.level||'mittel',all=st.cards.map(c=>c.id);
@@ -711,7 +756,8 @@ function layout(v){
  const opps=v.seats.length-1;
  const land=W>H*1.2;
  let my,op;
- const strip=stripOn(v)?(v.phase==='select'?92:76):(v.canPause||(v.paused||[]).includes(v.me))?46:0;
+ const myDraw=v.phase==='draw'&&v.draw&&v.draw.s===v.me&&v.draw.cards,watch=v.tieSeats&&!v.tieSeats.includes(v.me)&&(v.counts[v.me]||0)>0;
+ const strip=myDraw?92:stripOn(v)?(v.phase==='select'?92:76):(v.canPause||watch||(v.paused||[]).includes(v.me))?46:0;
  if(land){
   my=Math.min((H-34-strip)/1.5,W*.4);
   const RW=W-Math.max(my,250)-30;
@@ -732,6 +778,16 @@ function zoneHTML(v,s,w,isMe){
  const sv=!isMe&&v.phase==='select'&&(v.shown||[]).find(r=>r.s===s); // schon offen gelegt
  const pz=(v.paused||[]).includes(s);
  const rk=v.round+'-'+v.stat;
+ const myDraw=isMe&&v.phase==='draw'&&v.draw&&v.draw.s===v.me&&v.draw.cards;
+ const watch=v.tieSeats&&!v.tieSeats.includes(s)&&cnt>0&&v.phase!=='end';
+ if(myDraw){
+  const dc=v.draw.cards,k=v.tieStat;
+  if(!dc.includes(selCard))selCard=dc[0];
+  const strip=`<div class="strip">${dc.map(c=>`<div class="thumb${c===selCard?' sel':''}" data-c="${c}"><img src="${st.dir}${c}.jpg" alt="">${c}${k?`<div class="tv">${fmt(st,k,st.byId[c].v[k])}</div>`:''}</div>`).join('')}<button id="btnTake">Diese Karte<br>nehmen ▸</button></div>`;
+  slot=strip+cardHTML(st,selCard,{w,hl:k,anim:shownTop!==selCard?'dealin':'',trumpf:v.trumpf});shownTop=selCard;
+ } else if(watch&&!isMe){
+  slot=`<div class="stack">${backHTML(st,w)}</div>`;chip='<div class="chip pz">schaut zu</div>';
+ } else
  if(pz&&!isMe){
   slot=`<div class="stack">${backHTML(st,w)}</div>`;chip='<div class="chip pz">setzt aus</div>';
  } else if(sv){
@@ -747,6 +803,7 @@ function zoneHTML(v,s,w,isMe){
   let show=v.top,strip='';
   if(v.canPause)strip=`<div class="pbar"><button id="btnPlay1">Karte spielen ▸</button><button id="btnPause" class="pz">Aussetzen (noch ${v.pausesLeft}×)</button></div>`;
   else if(pz)strip='<div class="pbar"><div class="chip pz">Du setzt diese Runde aus</div></div>';
+  else if(watch)strip='<div class="pbar"><div class="chip pz">Stechen – du schaust zu</div></div>';
   if(stripOn(v)){
    if(!v.hand.includes(selCard))selCard=v.hand[0];
    show=selCard;
@@ -779,7 +836,8 @@ function renderTable(v){
  let m='';
  const tsn=v.tieStat&&st.statMap[v.tieStat]?st.statMap[v.tieStat].n:'';
  if(v.phase==='choose'){
-  if(v.tieStat)m=v.chooser===v.me?`<b>Stechen!</b> Es muss wieder <b>${tsn}</b> gespielt werden – ${v.hand?'such dir eine Karte aus und tippe auf':'tippe auf'} <b>${tsn}</b>`:`<b>Stechen!</b> Es wird wieder <b>${tsn}</b> gespielt – ${nme(v.chooser)} ist dran …`+(v.hand?' Danach darfst du deine Karte aussuchen.':'');
+  const tp=v.tieSeats?' Nur '+v.tieSeats.map(nme).join(' und ')+' spielen mit.':'';
+  if(v.tieStat)m=(v.chooser===v.me?`<b>Stechen!</b> Es muss wieder <b>${tsn}</b> gespielt werden – ${v.hand?'such dir eine Karte aus und tippe auf':'tippe auf'} <b>${tsn}</b>`:`<b>Stechen!</b> Es wird wieder <b>${tsn}</b> gespielt – ${nme(v.chooser)} ist dran …`+(v.hand?' Danach darfst du deine Karte aussuchen.':''))+tp;
   else m=v.chooser===v.me?(v.hand?'<b>Du bist dran!</b> Such dir oben eine Karte aus und tippe auf einen Wert.':'<b>Du bist dran!</b> Tippe auf einen Wert deiner Karte.'):`<b>${nme(v.chooser)}</b> wählt einen Wert …`+(v.hand?' Danach darfst du deine Karte aussuchen.':'');
  } else if(v.phase==='select'){
   const sn=st.statMap[v.stat].n,pend=v.selPending||[],cur=pend[0];
@@ -789,6 +847,9 @@ function renderTable(v){
   if(v.solo)m=`Alle anderen setzen aus – ${v.chooser===v.me?'deine':'die'} Karte geht zurück unter den Stapel.`;
   else if(v.winners.length===1){const w=v.winners[0];m=`${nme(v.chooser)} ${v.chooser===v.me?'wählst':'wählt'} <b>${sn}</b> – ${v.trumpfWin?'<b>Supertrumpf!</b> ':''}${w===v.me?'<b>Du gewinnst!</b>':`<b>${nme(w)}</b> gewinnt.`}`;}
   else m=`<b>${sn}</b>: Gleichstand – <b>Stechen!</b> Nächste Runde wieder ${sn}.`;
+ } else if(v.phase==='draw'&&v.draw){
+  const d=v.draw;
+  m=d.s===v.me?`<b>Deine letzte Karte war gleich!</b> Du ziehst ${d.n} Karten von ${nme(d.from)} – such dir eine aus.`:`${nme(d.s)} hatte die letzte Karte und zieht ${d.n} Karten von ${d.from===v.me?'<b>dir</b>':nme(d.from)} …`;
  } else if(v.phase==='end')m='Spiel vorbei';
  $('#msg').innerHTML=m;
  $('#btnNext').style.display=v.phase==='reveal'&&(isHost)?'block':'none';
@@ -798,6 +859,7 @@ function renderTable(v){
  $('#mine').querySelectorAll('.thumb').forEach(t=>t.onclick=()=>{selCard=t.dataset.c;SND.tick();const k=revealKey;renderTable(V);revealKey=k;});
  const bp=$('#btnPlay');if(bp)bp.onclick=()=>{SND.pick();bp.disabled=true;send({type:'select',c:selCard});};
  const b1=$('#btnPlay1');if(b1)b1.onclick=()=>{SND.pick();b1.disabled=true;send({type:'select',c:V.top});};
+ const bt=$('#btnTake');if(bt)bt.onclick=()=>{SND.pick();bt.disabled=true;send({type:'take',c:selCard});};
  const bz=$('#btnPause');if(bz)bz.onclick=()=>{SND.tick();bz.disabled=true;send({type:'select',pause:true});};
 }
 let selCard=null,selBubble=null;const SHOWN=new Set();const seenShown=k=>{if(SHOWN.has(k))return true;SHOWN.add(k);return false;};
@@ -831,6 +893,8 @@ function onEvent(e,v){
  else if(e.type==='tie'){SND.tie();if(st.statMap[e.k])toast('Stechen! Nächste Runde muss wieder '+st.statMap[e.k].n+' gespielt werden.');}
  else if(e.type==='pause'){SND.tick();bubble(e.s,'Ich setze aus!');}
  else if(e.type==='solo')SND.tie();
+ else if(e.type==='draw'){SND.tick();bubble(e.s,'Ich ziehe '+e.n+' Karten!');}
+ else if(e.type==='took')SND.pick();
  else if(e.type==='out'){SND.out();toast(e.s===v.me?'Du hast keine Karten mehr.':v.seats[e.s].name+' ist ausgeschieden.');}
  else if(e.type==='end')SND.end();
  else if(e.type==='start')SND.flip();
