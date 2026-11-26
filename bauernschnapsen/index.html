@@ -22,9 +22,19 @@ input{font:inherit;padding:.5em .7em;border-radius:9px;border:1px solid #c9b47a;
 #bar .sc b{font-size:17px;color:#ffe08a;min-width:18px;text-align:center}
 #bar .sc .bum{color:#ff9d8a;font-size:12px;letter-spacing:1px}
 #bar .gi{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;overflow:hidden;text-overflow:ellipsis}
-#bar .gi .si{width:20px;height:20px;background:#fffaf0;border-radius:50%;padding:2px}
+#bar .gi .si{width:28px;height:28px;background:#fffaf0;border-radius:50%;padding:2px}
 #bar .ib{padding:4px 9px;font-size:17px;min-width:36px}
-.chip{background:#0006;border-radius:7px;padding:2px 7px;font-size:12px}
+.chip{background:#0006;border-radius:7px;padding:2px 8px;font-size:15px;font-weight:700}
+#seats .seat .ga{margin:3px auto 1px;background:#c62828;color:#fff;font-weight:800;font-size:1.05em;border-radius:7px;padding:1px 9px;box-shadow:0 0 0 2px #ffe08a,0 0 14px #ffb30088;animation:gaPulse 1.6s ease-in-out 3}
+@keyframes gaPulse{50%{box-shadow:0 0 0 2px #ffe08a,0 0 26px #ffd54f}}
+#trumpBig{position:absolute;left:16px;top:14px;z-index:420;display:none;flex-direction:column;align-items:center;background:linear-gradient(#000b,#0009);border:2px solid #ffe08a;border-radius:14px;padding:4px 10px 6px;pointer-events:none;box-shadow:0 4px 14px #0008}
+#trumpBig.show{display:flex}
+#trumpBig .lb{font-size:calc(var(--lf,14px) * .75);letter-spacing:2px;color:#ffe08a;font-weight:700}
+#trumpBig .sy{width:calc(var(--lf,14px) * 3.4);height:calc(var(--lf,14px) * 3.4);background:#fffaf0;border-radius:50%;padding:calc(var(--lf,14px) * .4);margin:3px 0;box-shadow:inset 0 0 0 2px #d9b860}
+#trumpBig .sy svg{width:100%;height:100%;display:block}
+#trumpBig .nmx{font-size:calc(var(--lf,14px) * 1.1);font-weight:800}
+#trumpBig.no .sy{opacity:.35}
+#trumpBig.no .nmx{font-size:calc(var(--lf,14px) * .85);color:#ffcdd2}
 #table{position:relative;flex:1;overflow:hidden;background:#3b2412}
 #felt{position:absolute;inset:6px;border-radius:26px;background:radial-gradient(ellipse at 50% 42%,#2f8a52 0%,#1d6b3c 45%,#114428 100%);box-shadow:inset 0 0 0 3px #0b3a20,inset 0 0 60px #0009,0 0 0 4px #7a5428,0 0 0 7px #4a2f14,0 6px 20px #000a}
 #felt::after{content:"";position:absolute;inset:0;border-radius:inherit;opacity:.22;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 .1 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
@@ -141,7 +151,7 @@ input{font:inherit;padding:.5em .7em;border-radius:9px;border:1px solid #c9b47a;
 #toast{position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:2000;background:#000d;color:#fff;border-radius:10px;padding:8px 14px;font-size:14px;display:none;max-width:90%;text-align:center}
 #conn{position:fixed;left:50%;bottom:6px;transform:translateX(-50%);z-index:2000;background:#a8281ee8;color:#fff;border-radius:10px;padding:6px 12px;font-size:13px;display:none}
 .si{display:inline-block;vertical-align:middle;width:16px;height:16px}
-@media (max-width:520px){#bar{font-size:12px;gap:4px;padding-left:4px;padding-right:4px}#bar .sc{padding:2px 5px;gap:3px}#bar .sc b{font-size:15px}#bar .lbl{font-size:10px}#bar .tw{display:none}#bar .chip{padding:2px 4px}#bar .ib{min-width:30px;padding:4px 6px}}
+@media (max-width:520px){#bar{font-size:12px;gap:4px;padding-left:4px;padding-right:4px}#bar .sc{padding:2px 5px;gap:3px}#bar .sc b{font-size:15px}#bar .lbl{font-size:10px}#bar .tw{display:none}#bar .chip.tc{display:none}#bar .chip{font-size:13px}#bar .chip{padding:2px 4px}#bar .ib{min-width:30px;padding:4px 6px}}
 @media (max-height:430px){#bar{height:36px;flex-basis:36px}
  #prompt{padding:6px 8px;font-size:13px}#prompt h3{font-size:14px;margin-bottom:4px}#prompt .opts{gap:5px}#prompt .opts button{padding:.35em .7em}#prompt .note{margin-top:3px}
  #seats .seat{padding:2px 7px}.bubble{padding:3px 9px}}
@@ -185,7 +195,7 @@ input{font:inherit;padding:.5em .7em;border-radius:9px;border:1px solid #c9b47a;
  </header>
  <main id="table">
   <div id="felt"></div><div id="logo">Bauernschnapsen</div>
-  <div id="cards"></div><div id="seats"></div><div id="bubbles"></div>
+  <div id="cards"></div><div id="seats"></div><div id="bubbles"></div><div id="trumpBig"></div>
   <div id="eyes"></div><div id="hint"></div><div id="prompt"></div>
  </main>
 </div>
@@ -230,7 +240,7 @@ input{font:inherit;padding:.5em .7em;border-radius:9px;border:1px solid #c9b47a;
  <div class="tog">Originalkarten (alte Scans)<input type="checkbox" id="tgPhoto"></div>
  <div class="tog">Sound<input type="checkbox" id="tgSound"></div>
  <div class="tog">KI-Stärke<select id="selLvl"><option value="leicht">Schwach</option><option value="mittel">Mittel</option><option value="schwer">Stark</option></select></div>
- <div class="tog" id="rowHerz">Herzrunde (Herz-Trumpf zählt doppelt)<input type="checkbox" id="tgHerz"></div>
+ <input type="checkbox" id="tgHerz" hidden>
  <div class="tog" id="rowSpritz">Spritzen erlaubt<input type="checkbox" id="tgSpritz"></div>
  <div class="tog">Augen der Stiche anzeigen<input type="checkbox" id="tgEyes"></div>
  <div id="mSeats"></div>
@@ -267,7 +277,7 @@ input{font:inherit;padding:.5em .7em;border-radius:9px;border:1px solid #c9b47a;
  <h3>Zwanziger &amp; Vierziger</h3>
  <p>Wer ausspielt und König + Ober (Dame) derselben Farbe hat, meldet beim Ausspielen eines der beiden automatisch 20 Augen (in Trumpf 40). Die Meldung zählt erst, wenn das Team einen Stich hat. Karten mit Meldung sind mit „20“/„40“ markiert.</p>
  <h3>Spritzen</h3>
- <p>Vor dem ersten Ausspielen dürfen die Gegner „spritzen“ (Punkte ×2), die Ansager „Retour“ (×4) und die Gegner nochmal „Re“ (×8). Ist Herz Trumpf, zählt das Spiel doppelt (Herzrunde, abschaltbar).</p>
+ <p>Vor dem ersten Ausspielen dürfen die Gegner „spritzen“ (Punkte ×2), die Ansager „Retour“ (×4) und die Gegner nochmal „Re“ (×8). Ist Herz Trumpf, zählt das Spiel ganz normal (keine Herzrunde).</p>
  <h3>Originalkarten</h3>
  <p style="font-size:13px;opacity:.85">Die Originalkarten sind gemeinfreie Scans von Wikimedia Commons: französisches Blatt „Wiener Bild“ von Ferd. Piatnik &amp; Söhne, um 1900 (Smithsonian Cooper Hewitt Museum); deutsches Blatt mit altem bayerischem Bild aus dem 19. Jahrhundert (Serie SPKW-Q9071). Umschalten im Startbildschirm oder im Menü.</p>
  <h3>Bummerl</h3>
@@ -661,7 +671,7 @@ function endNormal(t,why){
 }
 function endHand(win,base,text){
  const g=GAME[S.game];
- const herz=(S.herz&&S.trump===0)?2:1;
+ const herz=1; // Herzrunde zählt normal (keine Verdopplung)
  const pts=base*(S.mult||1)*herz,prev=S.scores.slice();
  S.scores[win]+=pts;
  S.result={win,pts,base,mult:S.mult||1,herz,text,game:g.name,ann:S.ann};
@@ -1171,7 +1181,12 @@ function anchor(r,L){
 function setT(e,x,y,rot,sc){e.style.transform=`translate(${x-LAY.cw/2}px,${y-LAY.ch/2}px) rotate(${rot}deg) scale(${sc})`;}
 function renderTable(v){
  const L=layout();LAY=L;
- $("#table").style.setProperty("--lf",L.lf+"px");const box=$('#cards');box.style.setProperty('--cw',L.cw+'px');box.style.setProperty('--ch',L.ch+'px');
+ $("#table").style.setProperty("--lf",L.lf+"px");
+ {// Trumpfanzeige oben links – rückt nach rechts, wenn sie sonst den linken Spieler verdeckt (Querformat)
+  const TB=$('#trumpBig'),ext=L.cw*L.so*0.3*2+L.cw*L.so/2,bh=L.lf*6.3+16,bw=L.lf*4.4+24,lp=seatLabelPos(1,L);
+  const hits=(lp.y-L.lf*1.6)<14+bh+6;
+  TB.style.left=(hits?Math.max(16,Math.min(lp.x+L.lf*4+12,L.cx-ext-bw-16)):16)+'px';}
+ const box=$('#cards');box.style.setProperty('--cw',L.cw+'px');box.style.setProperty('--ch',L.ch+'px');
  const T=new Map();const H=v.handNo;
  const play=v.prompt&&v.prompt.type==='play';const legal=new Set(play?v.prompt.legal:[]);
  const melds=play?v.prompt.melds:{};
@@ -1228,7 +1243,8 @@ function renderTable(v){
  if(play){hint.style.display='block';hint.textContent=v.trick.length?'Du bist dran – gib eine Karte zu':'Du spielst aus';hint.style.top=(L.portrait?L.h-L.ch*1.25-L.lf*3.6:L.h-L.ch*1.25-30)+"px";}
  else if(v.phase==='play'&&v.sitOut===v.me){hint.style.display='block';hint.textContent='Du setzt in diesem Spiel aus';hint.style.top=(L.portrait?L.h-L.ch*1.25-L.lf*3.6:L.h-L.ch*1.25-30)+"px";}
  else hint.style.display='none';
- {const lp=seatLabelPos(0,L);hint.style.left=lp.x+"px";hint.style.top=(lp.y-L.lf*3.3)+"px";}
+ {const lp=seatLabelPos(0,L),me=document.querySelector('#seats .seat[data-r="0"]');const sh=me?me.offsetHeight:L.lf*2.6;
+  hint.style.left=lp.x+"px";hint.style.top=(lp.y-sh/2-(hint.offsetHeight||L.lf*1.7)-6)+"px";}
  $('#logo').style.top=L.cy+'px';
 }
 const SND_deal_q=[];
@@ -1251,12 +1267,12 @@ function renderSeats(v,L){
   const tg=[];
   if(s===v.dealer)tg.push('<span>Geber</span>');
   if(s===v.rufer)tg.push('<span class="g">Rufer</span>');
-  if(v.game&&v.game.ann===s)tg.push(`<span class="a">${v.game.name}</span>`);
+  const ga=v.game&&v.game.ann===s?v.game.name:(v.phase==='bid'&&v.bid&&v.bid.seat===s?GAME[v.bid.gid].name+' angesagt':'');
   if(v.tricks&&v.tricks[s])tg.push(`<span>${v.tricks[s]} Stich${v.tricks[s]>1?'e':''}</span>`);
   if(s===v.sitOut)tg.push('<span>setzt aus</span>');
   if(x.off)tg.push('<span>offline</span>');
   const cls=['seat'];if(v.turn===s)cls.push('turn');if(teamOf(s)===teamOf(v.me)&&s!==v.me)cls.push('mate');if(x.off)cls.push('off');if(s===v.sitOut)cls.push('out');
-  o+=`<div class="${cls.join(' ')}" data-r="${r}" style="left:${p.x}px;top:${p.y}px"><div class="nm">${s===v.me?'Du':esc(x.name)}${x.type==='ai'?' 🤖':''}</div>${tg.length?`<div class="tg">${tg.join('')}</div>`:''}</div>`;
+  o+=`<div class="${cls.join(' ')}" data-r="${r}" style="left:${p.x}px;top:${p.y}px"><div class="nm">${s===v.me?'Du':esc(x.name)}${x.type==='ai'?' 🤖':''}</div>${ga?`<div class="ga">${ga}</div>`:''}${tg.length?`<div class="tg">${tg.join('')}</div>`:''}</div>`;
  }
  $('#seats').innerHTML=o;
 }
@@ -1268,12 +1284,20 @@ function renderBar(v){
  $('#bmA').textContent=bm(v.bummerl[me]);$('#bmB').textContent=bm(v.bummerl[1-me]);
  let gi='';
  if(v.trump!=null){const g=v.game?GAME[v.game.id]:null;const noT=g&&!g.trump&&g.type!=='instant';
-  gi+=`<span class="chip" style="${noT?'opacity:.5;text-decoration:line-through':''}"><span class="tw">Trumpf </span>${suitIcon(v.trump)} ${suitName(v.trump)}</span>`;}
+  gi+=`<span class="chip tc" style="${noT?'opacity:.5;text-decoration:line-through':''}"><span class="tw">Trumpf </span>${suitIcon(v.trump)} ${suitName(v.trump)}</span>`;}
  if(v.game){gi+=`<span class="chip">${v.game.name}${v.game.ann!=null?' · '+(v.game.ann===v.me?'du':esc(v.seats[v.game.ann].name)):''}</span>`;
-  const m=(v.game.sp||1)*(v.herz&&v.trump===0?2:1);if(m>1)gi+=`<span class="chip" style="background:#c62828">×${m}</span>`;}
+  const m=v.game.sp||1;if(m>1)gi+=`<span class="chip" style="background:#c62828">×${m}</span>`;}
  else if(v.phase==='bid'&&v.bid)gi+=`<span class="chip">Angesagt: ${GAME[v.bid.gid].name}</span>`;
  else if(v.phase==='trump')gi+=`<span class="chip">${v.rufer===v.me?'Du rufst Trumpf':esc(v.seats[v.rufer].name)+' ruft Trumpf'}</span>`;
  $('#gameInfo').innerHTML=gi;
+ // große Trumpfanzeige am Tisch
+ const TB=$('#trumpBig');
+ if(v.trump!=null&&v.phase!=='lobby'){
+  const g=v.game?GAME[v.game.id]:null,noT=!!(g&&!g.trump&&g.type!=='instant');
+  const k=v.trump+'|'+noT+'|'+SET.design;
+  if(TB._k!==k){TB._k=k;TB.innerHTML=`<div class="lb">TRUMPF</div><div class="sy"><svg viewBox="0 0 100 100"><use href="#${DESIGNS[SET.design].sym[v.trump]}"/></svg></div><div class="nmx">${noT?'kein Trumpf':suitName(v.trump)}</div>`;}
+  TB.classList.toggle('no',noT);TB.classList.add('show');
+ } else {TB.classList.remove('show');TB._k=null;}
 }
 let promptKey='';
 function renderPrompt(v){
@@ -1289,7 +1313,7 @@ function renderPrompt(v){
    <div class="note">Du siehst erst 3 deiner 5 Karten.</div>`;
  } else if(p.type==='bid'){
   const cur=v.bid?`Angesagt: <b>${GAME[v.bid.gid].name}</b> (${esc(v.seats[v.bid.seat].name)})`:'Noch nichts angesagt – sonst Normalspiel.';
-  h=`<h3>Ansagen?</h3><div class="note" style="margin:0 0 8px">${cur}</div><div class="opts">${p.opts.map(id=>{const g=GAME[id];return `<button data-a='{"type":"bid","gid":"${id}"}' title="${g.d||''}">${g.name} <small>${g.v}</small></button>`;}).join('')}<button class="sec" data-a='{"type":"pass"}'>Weiter</button></div><div class="note">Trumpf: ${suitIcon(v.trump)} ${suitName(v.trump)}</div>`;
+  h=`<h3>Ansagen?</h3><div class="note" style="margin:0 0 8px">${cur}</div><div class="opts">${p.opts.map(id=>{const g=GAME[id];return `<button data-a='{"type":"bid","gid":"${id}"}' title="${g.d||''}">${g.name} <small>${g.v}</small></button>`;}).join('')}<button class="sec" data-a='{"type":"pass"}'>Weiter</button></div><div class="note" style="font-size:1.15em;font-weight:700;color:#ffe08a">Trumpf: ${suitIcon(v.trump)} ${suitName(v.trump)}</div>`;
  } else if(p.type==='spritz'){
   const g=v.game;const lbl=['','Spritzen ×2','Retour ×4','Re ×8'][p.stage];
   const q=p.stage===2?'Die Gegner haben gespritzt! Zurückspritzen?':p.stage===3?'Retour! Nochmal verdoppeln?':`${g.ann!=null?esc(v.seats[g.ann].name)+' spielt '+g.name:'Normalspiel ('+esc(v.seats[v.rufer].name)+'s Team)'} – spritzen?`;
