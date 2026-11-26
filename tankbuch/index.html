@@ -409,12 +409,15 @@ function fuelioVehicle(text) {
   }
   const V = sec.Vehicle?.[0]; if (!V) return null;
   const log = (sec.Log || []).map(r => ({
-    guid: r.guid || r.UniqueId, d: r.Data.replace(" ", "T").slice(0, 16), odo: parseFloat(r["Odo (km)"]), l: parseFloat(r["Fuel (litres)"]),
+    guid: r.guid, uid: r.UniqueId, d: r.Data.replace(" ", "T").slice(0, 16), odo: parseFloat(r["Odo (km)"]), l: parseFloat(r["Fuel (litres)"]),
     total: parseFloat(r["Price (optional)"]), ppl: parseFloat(r.VolumePrice), voll: r.Full === "1" ? 1 : 0,
     note: [r["City (optional)"], r["Notes (optional)"]].map(s => (s || "").trim()).filter(s => s && s !== "GPS").join(" · "),
   })).filter(x => isFinite(x.odo) && isFinite(x.l) && x.l > 0);
   const tractor = /traktor|schlepper/i.test(V.Description + V.Name) || /^(ihc|ls|steyr|fendt|deutz|john deere|case|massey|kubota|lindner)\b/i.test(V.Name.trim());
-  return { guid: V.guid, name: V.Name.trim(), tractor, log };
+  // ältere Fuelio-Sicherungen haben keine guid → Kennung aus dem Namen bzw. der Eintragsnummer bilden
+  const key = V.guid || "n-" + V.Name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  log.forEach((x, i) => { if (!x.guid) x.guid = key + "-" + (x.uid || x.d.replace(/\D/g, "") || i); });
+  return { guid: key, name: V.Name.trim(), tractor, log };
 }
 async function importFuelio(file) {
   let files;
@@ -425,7 +428,8 @@ async function importFuelio(file) {
   dialog(`<h3>Fuelio-Backup übernehmen</h3>
     <p class="small">Bei Traktoren hast du in Fuelio die Betriebsstunden × 100 eingegeben – für diese Fahrzeuge wird der Stand durch 100 geteilt.</p>
     ${vs.map((v, i) => `<div class="vrow"><span><b>${esc(v.name)}</b><br><span class="small">${v.log.length} Tankungen</span></span>
-      <label class="chk" style="margin:0"><input type="checkbox" id="imT${i}" ${v.tractor ? "checked" : ""}> Traktor (h, ÷100)</label></div>`).join("")}
+      <span><label class="chk" style="margin:0 0 6px"><input type="checkbox" id="imT${i}" ${v.tractor ? "checked" : ""}> Traktor (h, ÷100)</label>
+      <label class="chk" style="margin:0"><input type="checkbox" id="imA${i}"> 📦 Archiv</label></span></div>`).join("")}
     <div class="btns"><button class="btn" onclick="closeDlg()">Abbrechen</button><button class="btn p" id="imGo">Übernehmen</button></div>`);
   $("imGo").onclick = () => {
     let nNew = 0, nUpd = 0;
@@ -433,6 +437,7 @@ async function importFuelio(file) {
       const h = $("imT" + i).checked, vid = "f-" + fv.guid;
       const old = S.v[vid];
       const val = { ...(old || {}), name: old?.name || fv.name, typ: h ? "h" : "km" };
+      if ($("imA" + i).checked) val.archiv = 1;
       S.v[vid] = val; S.pending["v/" + vid] = val;
       for (const r of fv.log) {
         const eid = "f-" + r.guid;
