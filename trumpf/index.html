@@ -98,6 +98,13 @@ h1{margin:6px 0 2px;font-size:30px;letter-spacing:.5px;color:#f2c84b;text-shadow
 .chip{background:#fff;color:#1c1c1c;border-radius:10px;padding:2px 10px;font-weight:800;font-size:15px;box-shadow:0 2px 4px #0006;white-space:nowrap}
 .chip.win{background:#ffd54f}
 .chip.none{visibility:hidden}
+.strip{display:flex;gap:6px;align-items:flex-end;justify-content:center;flex-wrap:wrap;margin-bottom:4px}
+.thumb{width:74px;background:#fff;color:#222;border-radius:8px;padding:3px;cursor:pointer;text-align:center;font-size:11px;font-weight:800;box-shadow:0 2px 4px #0006;border:3px solid transparent;line-height:1.3}
+.thumb img{width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:4px;display:block}
+.thumb.sel{border-color:#f2c84b;transform:translateY(-3px)}
+.thumb .tv{font-size:12px;background:#ffd54f;border-radius:4px;margin-top:2px;white-space:nowrap}
+.strip button{padding:9px 12px;font-size:14px;align-self:center;animation:pulse2 1.4s infinite}
+@keyframes pulse2{50%{transform:scale(1.06)}}
 #msg{text-align:center;font-size:16px;font-weight:600;max-width:520px;line-height:1.3;padding:4px 10px;border-radius:12px;background:#00000033}
 #msg b{color:#f2c84b}
 #pot{display:none;flex-direction:column;align-items:center;font-size:12px;font-weight:700;gap:2px}
@@ -120,6 +127,8 @@ h1{margin:6px 0 2px;font-size:30px;letter-spacing:.5px;color:#f2c84b;text-shadow
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#000c;padding:10px 16px;border-radius:12px;display:none;z-index:99;font-size:15px;max-width:90vw;text-align:center}
 #conn{position:fixed;top:52px;left:50%;transform:translateX(-50%);background:#c62828;padding:6px 14px;border-radius:10px;display:none;z-index:90;font-size:14px}
 .bubble{position:absolute;top:-8px;left:50%;transform:translate(-50%,-100%);background:#fff;color:#222;border-radius:12px;padding:5px 10px;font-weight:700;font-size:14px;white-space:nowrap;z-index:30;box-shadow:0 3px 8px #0007;animation:bub 2.6s forwards;pointer-events:none}
+#opps .bubble{top:30px;animation-name:bubdn}
+@keyframes bubdn{0%{opacity:0;transform:translate(-50%,-20%)}10%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
 @keyframes bub{0%{opacity:0;transform:translate(-50%,-80%)}10%,80%{opacity:1;transform:translate(-50%,-100%)}100%{opacity:0}}
 /* Lobby */
 .lseats{display:flex;flex-direction:column;gap:6px}
@@ -215,6 +224,7 @@ h1{margin:6px 0 2px;font-size:30px;letter-spacing:.5px;color:#f2c84b;text-shadow
   <li>Der Gewinner wählt in der nächsten Runde.</li>
   <li><b>Gleichstand (Stechen):</b> Die Karten kommen in die Mitte, derselbe Spieler wählt noch einmal. Wer die nächste Runde gewinnt, bekommt auch die Karten aus der Mitte.</li>
   <li><b>Supertrumpf</b> (Karte mit rotem Band): sticht jede Karte – außer die <b>A-Karten</b> (1A, 2A …). Liegt eine A-Karte dabei, wird normal verglichen.</li>
+  <li><b>Aussuchen:</b> Wer nur noch <b>3 oder weniger Karten</b> hat, sieht alle seine Karten und sucht sich aus, welche er spielt – sagt ein anderer den Wert an, erst <i>nach</i> der Ansage. Ab 4 Karten wird immer die oberste gespielt.</li>
   <li>Wer keine Karten mehr hat, scheidet aus. Gewonnen hat, wer alle Karten bekommt – oder bei begrenzter Spieldauer am Ende die meisten Karten hat.</li>
  </ul>
  <button id="btnRulesClose" style="width:100%">Alles klar</button>
@@ -352,19 +362,38 @@ function act(seat,a){
  if(!S||!a)return;
  const st=SETMAP[S.setId];
  if(a.type==='choose'&&S.phase==='choose'&&seat===S.chooser&&st.statMap[a.k]){
+  if(a.c)toFront(seat,a.c);
   S.stat=a.k;
-  S.reveal=activeSeats().map(s=>({s,c:S.piles[s][0]}));
-  const r=roundWinners(st,S.reveal,a.k);
-  S.winners=r.w;S.trumpfWin=r.trumpf;
-  S.reveal.forEach(x=>S.pub[x.c]=1);
-  S.phase='reveal';
-  ev('reveal',{s:seat,k:a.k,w:r.w,trumpf:r.trumpf});
-  commit();
-  clearTimeout(phaseTimer);
-  phaseTimer=setTimeout(resolveRound,SPEED[S.speed]||3000);
+  // Spieler mit 3 oder weniger Karten suchen sich nach der Ansage ihre Karte aus
+  S.selPending=activeSeats().filter(s=>s!==seat&&canSelect(s));
+  if(S.selPending.length){
+   S.phase='select';ev('select',{s:seat,k:a.k});commit();
+   clearTimeout(phaseTimer);phaseTimer=setTimeout(selectTimeout,45000);
+  } else doReveal();
+ } else if(a.type==='select'&&S.phase==='select'&&S.selPending.includes(seat)){
+  toFront(seat,a.c);
+  S.selPending=S.selPending.filter(s=>s!==seat);
+  if(!S.selPending.length)doReveal();else commit();
  } else if(a.type==='next'&&S.phase==='reveal'&&(!online||seat===mySeat)){
   clearTimeout(phaseTimer);resolveRound();
  }
+}
+const SELECT_MAX=3; // ab so wenigen Karten darf man aussuchen
+const canSelect=s=>S.piles[s]&&S.piles[s].length>1&&S.piles[s].length<=SELECT_MAX;
+function toFront(s,c){const p=S.piles[s];if(!p||p.length>SELECT_MAX)return;const i=p.indexOf(c);if(i>0){p.splice(i,1);p.unshift(c);}}
+function selectTimeout(){if(!S||S.phase!=='select')return;S.selPending=[];doReveal();}
+function doReveal(){
+ const st=SETMAP[S.setId];
+ clearTimeout(phaseTimer);
+ S.selPending=[];
+ S.reveal=activeSeats().map(s=>({s,c:S.piles[s][0]}));
+ const r=roundWinners(st,S.reveal,S.stat);
+ S.winners=r.w;S.trumpfWin=r.trumpf;
+ S.reveal.forEach(x=>S.pub[x.c]=1);
+ S.phase='reveal';
+ ev('reveal',{s:S.chooser,k:S.stat,w:r.w,trumpf:r.trumpf});
+ commit();
+ phaseTimer=setTimeout(resolveRound,SPEED[S.speed]||3000);
 }
 function resolveRound(){
  if(!S||S.phase!=='reveal')return;
@@ -408,6 +437,8 @@ function viewFor(seat){
   counts:S.seats.map((x,i)=>S.piles[i]?S.piles[i].length:0),out:S.out.slice(),
   chooser:S.chooser,stat:S.stat,round:S.round,limit:S.limit,pot:S.pot.length,trumpf:S.trumpf,level:S.level,speed:S.speed,
   top:S.piles[seat]&&S.piles[seat][0]||null,ev:S.ev.slice(),chat:S.chat||[]};
+ if(S.piles[seat]&&S.piles[seat].length>1&&S.piles[seat].length<=SELECT_MAX)v.hand=S.piles[seat].slice();
+ if(S.phase==='select')v.selPending=S.selPending.slice();
  if(S.phase==='reveal'){v.reveal=S.reveal;v.winners=S.winners;v.trumpfWin=S.trumpfWin;}
  if(S.phase==='end')v.rank=S.rank;
  return v;
@@ -420,9 +451,15 @@ function commit(){
  scheduleAI();
 }
 function scheduleAI(){
- if(aiTimer||!S||S.phase!=='choose')return;
+ if(aiTimer||!S)return;
+ if(S.phase==='select'){
+  const s=S.selPending.find(i=>S.seats[i].type==='ai');if(s==null)return;
+  aiTimer=setTimeout(()=>{aiTimer=null;if(!S||S.phase!=='select'||!S.selPending.includes(s)||S.seats[s].type!=='ai')return scheduleAI();try{act(s,{type:'select',c:aiSelect(s)});}catch(e){console.error(e);}},700+Math.random()*700);
+  return;
+ }
+ if(S.phase!=='choose')return;
  const s=S.chooser,x=S.seats[s];if(!x||x.type!=='ai')return;
- aiTimer=setTimeout(()=>{aiTimer=null;if(!S||S.phase!=='choose'||S.chooser!==s||S.seats[s].type!=='ai')return scheduleAI();try{act(s,{type:'choose',k:aiChoose(s)});}catch(e){console.error(e);}},1100+Math.random()*900);
+ aiTimer=setTimeout(()=>{aiTimer=null;if(!S||S.phase!=='choose'||S.chooser!==s||S.seats[s].type!=='ai')return scheduleAI();try{act(s,Object.assign({type:'choose'},aiChoose(s)));}catch(e){console.error(e);}},1100+Math.random()*900);
 }
 
 // ================= KI =================
@@ -436,28 +473,44 @@ function beatShare(st,id,k,pool){
   else if(ov===v)w+=.4;else if(hi?v>ov:v<ov)w+=1;}
  return n?w/n:1;
 }
-function aiChoose(s){
- const st=SETMAP[S.setId],id=S.piles[s][0],lvl=S.level||'mittel';
- const ks=st.stats.map(x=>x.k);
- if(lvl==='leicht'&&Math.random()<.55)return ks[Math.floor(Math.random()*ks.length)];
- const all=st.cards.map(c=>c.id);
- if(lvl!=='schwer'){let b=ks[0],bv=-1;for(const k of ks){const v=beatShare(st,id,k,all)+Math.random()*.02;if(v>bv){bv=v;b=k;}}return b;}
+// Siegchance der Karte id bei Wert k aus Sicht von Platz s
+function winChance(s,id,k){
+ const st=SETMAP[S.setId],lvl=S.level||'mittel',all=st.cards.map(c=>c.id);
+ if(lvl!=='schwer')return beatShare(st,id,k,all);
  // schwer: Kartenzählen. Öffentlich bekannte Karten (schon einmal aufgedeckt) behält die KI im Kopf.
  const mine=new Set(S.piles[s]);
  const hidden=all.filter(c=>!S.pub[c]&&!mine.has(c));
- const opps=activeSeats().filter(o=>o!==s);
- let best=ks[0],bv=-1;
- for(const k of ks){
-  let p=1;
-  for(const o of opps){
-   const top=S.piles[o][0];
+ const unknown=hidden.length?hidden:all.filter(c=>!mine.has(c));
+ let p=1;
+ for(const o of activeSeats()){
+  if(o===s)continue;
+  const pile=S.piles[o];
+  if(pile.length<=SELECT_MAX&&pile.length>1){
+   // Gegner darf aussuchen: er nimmt seine beste Karte. Bekannte Karten genau, unbekannte geschätzt.
+   let worst=1;for(const c of pile){const q=S.pub[c]?beatShare(st,id,k,[c]):Math.pow(beatShare(st,id,k,unknown),1.5);worst=Math.min(worst,q);}
+   p*=worst;
+  } else {
+   const top=pile[0];
    // Liegt oben eine schon einmal aufgedeckte Karte, weiß die KI genau, welche es ist
-   const pool=S.pub[top]?[top]:(hidden.length?hidden:all.filter(c=>!mine.has(c)));
-   p*=beatShare(st,id,k,pool);
+   p*=beatShare(st,id,k,S.pub[top]?[top]:unknown);
   }
-  if(p>bv){bv=p;best=k;}
  }
+ return p;
+}
+function aiChoose(s){
+ const st=SETMAP[S.setId],lvl=S.level||'mittel';
+ const ks=st.stats.map(x=>x.k);
+ const pile=S.piles[s],cands=pile.length<=SELECT_MAX?pile.slice():[pile[0]];
+ if(lvl==='leicht'&&Math.random()<.55)return {k:ks[Math.floor(Math.random()*ks.length)],c:cands[Math.floor(Math.random()*cands.length)]};
+ let best={k:ks[0],c:cands[0]},bv=-1;
+ for(const c of cands)for(const k of ks){const v=winChance(s,c,k)+Math.random()*.01;if(v>bv){bv=v;best={k,c};}}
  return best;
+}
+function aiSelect(s){
+ const pile=S.piles[s];
+ if((S.level||'mittel')==='leicht'&&Math.random()<.5)return pile[Math.floor(Math.random()*pile.length)];
+ let b=pile[0],bv=-1;for(const c of pile){const v=winChance(s,c,S.stat);if(v>bv){bv=v;b=c;}}
+ return b;
 }
 
 // ================= Firebase (online) =================
@@ -586,13 +639,14 @@ function layout(v){
  const opps=v.seats.length-1;
  const land=W>H*1.2;
  let my,op;
+ const strip=stripOn(v)?(v.phase==='select'?92:76):0;
  if(land){
-  my=Math.min((H-34)/1.5,W*.4);
-  const RW=W-my-30;
+  my=Math.min((H-34-strip)/1.5,W*.4);
+  const RW=W-Math.max(my,250)-30;
   op=Math.min((RW-10*opps)/opps,(H-60-34-30)/1.5,240);
  } else {
   op=Math.min((W-12-8*(opps-1))/opps,190,(H*.36-50)/1.5);
-  const rest=H-(op*1.5+52)-60-34;
+  const rest=H-(op*1.5+52)-60-34-strip;
   my=Math.min(W*.88,rest/1.5,420);
  }
  return {land,my:Math.floor(my),op:Math.floor(op)};
@@ -600,7 +654,7 @@ function layout(v){
 function zoneHTML(v,s,w,isMe){
  const st=SETMAP[v.setId];
  const x=v.seats[s],cnt=v.counts[s]||0,out=v.out[s];
- const turn=(v.phase==='choose'||v.phase==='reveal')&&v.chooser===s;
+ const turn=v.phase==='select'?(v.selPending||[]).includes(s):(v.phase==='choose'||v.phase==='reveal')&&v.chooser===s;
  let slot='',chip='<div class="chip none">–</div>';
  const rv=v.reveal&&v.reveal.find(r=>r.s===s);
  const rk=v.round+'-'+v.stat;
@@ -610,7 +664,15 @@ function zoneHTML(v,s,w,isMe){
   chip=`<div class="chip${win?' win':''}">${fmt(st,v.stat,st.byId[rv.c].v[v.stat])}</div>`;
  } else if(isMe&&v.top){
   const pick=v.phase==='choose'&&v.chooser===v.me;
-  slot=cardHTML(st,v.top,{w,pick,anim:shownTop!==v.top?'dealin':'',trumpf:v.trumpf});
+  const mustSel=v.phase==='select'&&(v.selPending||[]).includes(v.me);
+  let show=v.top,strip='';
+  if(stripOn(v)){
+   if(!v.hand.includes(selCard))selCard=v.hand[0];
+   show=selCard;
+   strip=`<div class="strip">${v.hand.map(c=>`<div class="thumb${c===selCard?' sel':''}" data-c="${c}"><img src="${st.dir}${c}.jpg" alt="">${c}${v.phase==='select'?`<div class="tv">${fmt(st,v.stat,st.byId[c].v[v.stat])}</div>`:''}</div>`).join('')}${mustSel?'<button id="btnPlay">Diese Karte<br>spielen ▸</button>':''}</div>`;
+  }
+  slot=strip+cardHTML(st,show,{w,pick,hl:v.phase==='select'?v.stat:null,anim:shownTop!==show?'dealin':'',trumpf:v.trumpf});
+  shownTop=show;
  } else if(cnt>0){
   const sh=Math.min(4,Math.ceil(cnt/4));let sd='';for(let i=sh;i>0;i--)sd+=`<div class="sh" style="--w:${w}px;transform:translate(${i*2}px,${i*2}px)"></div>`;
   slot=`<div class="stack">${sd}${backHTML(st,w)}</div>`;
@@ -626,7 +688,7 @@ function renderTable(v){
  const order=[];for(let r=1;r<n;r++)order.push((v.me+r)%n);
  $('#opps').innerHTML=order.map(s=>zoneHTML(v,s,L.op,false)).join('');
  $('#mine').innerHTML=zoneHTML(v,v.me,L.my,true);
- shownTop=v.top;
+ if(!v.top)shownTop=null;
  if(v.reveal)revealKey=v.round+'-'+v.stat;
  // Mitte
  const pot=$('#pot');
@@ -635,8 +697,11 @@ function renderTable(v){
  const nme=s=>s===v.me?'Du':esc(v.seats[s].name);
  let m='';
  if(v.phase==='choose'){
-  m=v.chooser===v.me?'<b>Du bist dran!</b> Tippe auf einen Wert deiner Karte.':`<b>${nme(v.chooser)}</b> wählt einen Wert …`;
+  m=v.chooser===v.me?(v.hand?'<b>Du bist dran!</b> Such dir oben eine Karte aus und tippe auf einen Wert.':'<b>Du bist dran!</b> Tippe auf einen Wert deiner Karte.'):`<b>${nme(v.chooser)}</b> wählt einen Wert …`+(v.hand?' Danach darfst du deine Karte aussuchen.':'');
   if(v.pot)m='Stechen! '+m;
+ } else if(v.phase==='select'){
+  const sn=st.statMap[v.stat].n,pend=v.selPending||[];
+  m=`${nme(v.chooser)} ${v.chooser===v.me?'wählst':'wählt'} <b>${sn}</b> – `+(pend.includes(v.me)?'<b>Such dir deine Karte aus!</b>':`${pend.map(nme).join(', ')} ${pend.length>1?'suchen':'sucht'} eine Karte aus …`);
  } else if(v.phase==='reveal'){
   const sn=st.statMap[v.stat].n;
   if(v.winners.length===1){const w=v.winners[0];m=`${nme(v.chooser)} ${v.chooser===v.me?'wählst':'wählt'} <b>${sn}</b> – ${v.trumpfWin?'<b>Supertrumpf!</b> ':''}${w===v.me?'<b>Du gewinnst!</b>':`<b>${nme(w)}</b> gewinnt.`}`;}
@@ -646,8 +711,12 @@ function renderTable(v){
  $('#btnNext').style.display=v.phase==='reveal'&&(isHost)?'block':'none';
  $('#barT').textContent=`${st.name} · Runde ${v.round}${v.limit?' / '+v.limit:''}`;
  const card=$('#mine .card.pick');
- if(card)card.querySelectorAll('.crow').forEach(r=>r.onclick=()=>{SND.pick();send({type:'choose',k:r.dataset.k});});
+ if(card)card.querySelectorAll('.crow').forEach(r=>r.onclick=()=>{SND.pick();const a={type:'choose',k:r.dataset.k};if(V.hand)a.c=selCard;send(a);});
+ $('#mine').querySelectorAll('.thumb').forEach(t=>t.onclick=()=>{selCard=t.dataset.c;SND.tick();const k=revealKey;renderTable(V);revealKey=k;});
+ const bp=$('#btnPlay');if(bp)bp.onclick=()=>{SND.pick();bp.disabled=true;send({type:'select',c:selCard});};
 }
+let selCard=null,selBubble=null;
+const stripOn=v=>!!(v.hand&&v.top&&(v.phase==='choose'||(v.phase==='select'&&(v.selPending||[]).includes(v.me))));
 // Karten zum Gewinner (oder in die Mitte) fliegen lassen
 function flyCards(prev,v){
  const tie=prev.winners.length!==1;
@@ -671,7 +740,8 @@ function processEvents(v){
 }
 function onEvent(e,v){
  const st=SETMAP[v.setId];
- if(e.type==='reveal'){SND.flip();bubble(e.s,st.statMap[e.k].n+'!');}
+ if(e.type==='select'){SND.pick();bubble(e.s,st.statMap[e.k].n+'!');selBubble=v.round;}
+ else if(e.type==='reveal'){SND.flip();if(selBubble!==v.round)bubble(e.s,st.statMap[e.k].n+'!');}
  else if(e.type==='win'){if(e.s===v.me)SND.win();else SND.lose();}
  else if(e.type==='tie')SND.tie();
  else if(e.type==='out'){SND.out();toast(e.s===v.me?'Du hast keine Karten mehr.':v.seats[e.s].name+' ist ausgeschieden.');}
