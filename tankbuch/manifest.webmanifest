@@ -1,0 +1,3 @@
+{ "name": "Tankbuch", "short_name": "Tankbuch", "start_url": "./", "scope": "./", "display": "standalone",
+  "background_color": "#1d1524", "theme_color": "#2a1f33",
+  "icons": [ { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" } ] }
