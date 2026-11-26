@@ -114,6 +114,8 @@ function put(kind, id, val) {
 }
 
 let syncing = false;
+// Ohne Antwort nach 8 s gilt der Server als nicht erreichbar (z. B. schwaches Netz an der Tankstelle)
+const fetch = (url, opt = {}) => { const ac = new AbortController(); const t = setTimeout(() => ac.abort(), 8000); return window.fetch(url, { ...opt, signal: ac.signal }).finally(() => clearTimeout(t)); };
 async function sync() {
   if (syncing) return; syncing = true;
   try {
@@ -135,7 +137,8 @@ async function sync() {
 function setSync(st) {
   const n = Object.keys(S.pending).length, el = document.getElementById("sync");
   el.className = st === "err" ? "err" : "";
-  el.textContent = st === "err" ? (n ? `offline · ${n} warten` : "offline") : "✓ gespeichert";
+  el.textContent = st === "err" ? (n ? `📴 ${n} am Handy gespeichert` : "📴 offline") : "✓ gespeichert";
+  el.title = st === "err" ? "Kein Heimserver erreichbar. Einträge bleiben am Handy und werden automatisch übertragen, sobald wieder Verbindung da ist." : "";
 }
 
 // ---------- Zahlen ----------
@@ -458,7 +461,7 @@ render(); setSync(Object.keys(S.pending).length ? "err" : "ok"); sync();
 setInterval(sync, 60000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) sync(); });
 addEventListener("online", sync);
-if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js");
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js");
 </script>
 </body>
 </html>
